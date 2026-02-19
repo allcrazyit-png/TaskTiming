@@ -1,10 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function Input() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { productName, partNumber } = location.state || { productName: "鋁合金散熱片 A-204", partNumber: "" };
+    // Default values for testing
+    const { productName, partNumber, carModel, standardTime, operator } = location.state || {
+        productName: "鋁合金散熱片 A-204",
+        partNumber: "SAMPLE-001",
+        carModel: "SAMPLE-CAR",
+        standardTime: 0,
+        operator: "[001] 王大明"
+    };
 
     const [goodCount, setGoodCount] = useState(128);
     const [scraps, setScraps] = useState({
@@ -13,6 +20,23 @@ export default function Input() {
         appearance: 0,
         others: 0
     });
+
+    // Time state
+    const [startTime, setStartTime] = useState("");
+    const [endTime, setEndTime] = useState("");
+    const [remarks, setRemarks] = useState("");
+
+    // Initialize start time on mount
+    useEffect(() => {
+        const now = new Date();
+        const timeString = now.toTimeString().slice(0, 5); // HH:MM
+        setStartTime(timeString);
+        setEndTime(timeString); // Default end time to now as well
+    }, []);
+
+    const getCurrentTime = () => {
+        return new Date().toTimeString().slice(0, 5);
+    };
 
     // Calculate total scrap
     const totalScrap = Object.values(scraps).reduce((a, b) => a + b, 0);
@@ -24,13 +48,34 @@ export default function Input() {
         }));
     };
 
+    const calculateDuration = (start, end) => {
+        if (!start || !end) return "";
+        const [startH, startM] = start.split(':').map(Number);
+        const [endH, endM] = end.split(':').map(Number);
+        let diffMins = (endH * 60 + endM) - (startH * 60 + startM);
+        if (diffMins < 0) diffMins += 24 * 60; // Handle overnight
+        const hours = Math.floor(diffMins / 60);
+        const mins = diffMins % 60;
+        return `${hours}小時${mins}分`;
+    };
+
     const handleConfirm = () => {
+        const totalTime = calculateDuration(startTime, endTime);
+
         navigate('/confirm', {
             state: {
                 productName,
+                partNumber,
+                carModel,
+                standardTime,
+                operator,
                 goodCount,
                 totalScrap,
-                scraps
+                scraps,
+                startTime,
+                endTime,
+                totalTime,
+                remarks
             }
         });
     };
@@ -44,7 +89,7 @@ export default function Input() {
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-3xl text-primary">account_circle</span>
                     <div className="text-sm font-extrabold text-slate-800 dark:text-white">
-                        作業者: <span className="text-primary">001</span> 王大明
+                        作業者: <span className="text-primary">{operator}</span>
                     </div>
                 </div>
                 <div className="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-sm font-bold text-slate-500">
@@ -67,6 +112,7 @@ export default function Input() {
                         <h1 className="text-lg font-black leading-tight">作業內容回報</h1>
                         <div className="mt-1">
                             <span className="product-name-badge">產品: {productName}</span>
+                            <span className="block text-xs font-bold text-slate-500 mt-0.5">品番: {partNumber}</span>
                         </div>
                     </div>
                 </div>
@@ -81,8 +127,16 @@ export default function Input() {
                         <div className="space-y-2">
                             <label className="block text-sm font-black text-slate-500">開始時間</label>
                             <div className="flex items-center gap-2">
-                                <input className="time-input" type="time" defaultValue="08:00" />
-                                <button className="flex-shrink-0 bg-primary text-white h-full px-4 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform border-b-2 border-blue-800 shadow-sm">
+                                <input
+                                    className="time-input"
+                                    type="time"
+                                    value={startTime}
+                                    onChange={(e) => setStartTime(e.target.value)}
+                                />
+                                <button
+                                    onClick={() => setStartTime(getCurrentTime())}
+                                    className="flex-shrink-0 bg-primary text-white h-full px-4 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform border-b-2 border-blue-800 shadow-sm"
+                                >
                                     填入現在時間
                                 </button>
                             </div>
@@ -90,8 +144,16 @@ export default function Input() {
                         <div className="space-y-2">
                             <label className="block text-sm font-black text-slate-500">結束時間</label>
                             <div className="flex items-center gap-2">
-                                <input className="time-input" type="time" defaultValue="10:30" />
-                                <button className="flex-shrink-0 bg-primary text-white h-full px-4 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform border-b-2 border-blue-800 shadow-sm">
+                                <input
+                                    className="time-input"
+                                    type="time"
+                                    value={endTime}
+                                    onChange={(e) => setEndTime(e.target.value)}
+                                />
+                                <button
+                                    onClick={() => setEndTime(getCurrentTime())}
+                                    className="flex-shrink-0 bg-primary text-white h-full px-4 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform border-b-2 border-blue-800 shadow-sm"
+                                >
                                     填入現在時間
                                 </button>
                             </div>
@@ -143,7 +205,7 @@ export default function Input() {
                     <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-danger">
                         <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border-2 border-red-200 dark:border-red-800 flex items-center justify-between">
                             <div>
-                                <p class="text-sm font-black text-danger uppercase tracking-wider">總不良數量</p>
+                                <p className="text-sm font-black text-danger uppercase tracking-wider">總不良數量</p>
                                 <p className="text-xs text-slate-500 font-bold">Total Scrap</p>
                             </div>
                             <div className="flex items-baseline gap-1">
@@ -227,7 +289,12 @@ export default function Input() {
                         <span className="material-symbols-outlined text-2xl">edit_note</span>
                         備註說明
                     </h2>
-                    <textarea className="w-full h-32 p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-lg font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all outline-none resize-none shadow-sm" placeholder="如有其他異常狀況請在此輸入..."></textarea>
+                    <textarea
+                        className="w-full h-32 p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-lg font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all outline-none resize-none shadow-sm"
+                        placeholder="如有其他異常狀況請在此輸入..."
+                        value={remarks}
+                        onChange={(e) => setRemarks(e.target.value)}
+                    ></textarea>
                 </section>
             </main>
             <footer className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-t-2 border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] z-40">
