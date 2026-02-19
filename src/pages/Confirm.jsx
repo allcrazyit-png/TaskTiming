@@ -4,10 +4,21 @@ import { useNavigate, useLocation } from 'react-router-dom';
 export default function Confirm() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { productName, goodCount, totalScrap } = location.state || {
+    const { productName, goodCount, totalScrap, scraps } = location.state || {
         productName: "零件 A",
         goodCount: 500,
-        totalScrap: 5
+        totalScrap: 5,
+        scraps: { missing: 2, damage: 3, appearance: 0, others: 0 }
+    };
+
+    const getScrapLabel = (key) => {
+        const labels = {
+            missing: "缺料",
+            damage: "撞(刮)傷",
+            appearance: "外觀不良",
+            others: "其他"
+        };
+        return labels[key] || key;
     };
 
     return (
@@ -71,11 +82,24 @@ export default function Confirm() {
                         </div>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-2">
                             <span className="material-symbols-outlined text-slate-400 text-sm">report_problem</span>
                             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">報廢原因</p>
                         </div>
-                        <p className="text-lg font-bold">刮傷</p>
+                        <div className="space-y-1">
+                            {scraps && Object.entries(scraps).map(([key, value]) => {
+                                if (value <= 0) return null;
+                                return (
+                                    <div key={key} className="flex justify-between items-center text-base font-bold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700 last:border-0 pb-1 last:pb-0">
+                                        <span>{getScrapLabel(key)}</span>
+                                        <span className="text-red-500">{value}</span>
+                                    </div>
+                                );
+                            })}
+                            {(!scraps || Object.values(scraps).every(v => v === 0)) && (
+                                <p className="text-base font-bold text-slate-400">無</p>
+                            )}
+                        </div>
                     </div>
                     <div className="bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border-l-4 border-blue-500">
                         <div className="flex items-center gap-2 mb-1">

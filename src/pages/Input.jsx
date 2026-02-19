@@ -8,9 +8,9 @@ export default function Input() {
 
     const [goodCount, setGoodCount] = useState(128);
     const [scraps, setScraps] = useState({
-        missing: 1,
-        burrs: 2,
-        scratch: 0,
+        missing: 0,
+        damage: 0,
+        appearance: 0,
         others: 0
     });
 
@@ -152,9 +152,10 @@ export default function Input() {
                             </div>
                         </div>
                         <div className="space-y-2">
+                            {/* 1. Missing Material */}
                             <div className="scrap-row">
                                 <div className="flex-1">
-                                    <p className="text-base font-black text-orange-600">缺料</p>
+                                    <p className="text-base font-black text-orange-600">1. 缺料</p>
                                     <p className="text-xs font-bold text-slate-400">Missing Mat.</p>
                                 </div>
                                 <div className="flex items-center gap-2">
@@ -167,39 +168,45 @@ export default function Input() {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* 2. Dent/Scratch */}
                             <div className="scrap-row">
                                 <div className="flex-1">
-                                    <p className="text-base font-black text-purple-600">毛邊</p>
-                                    <p className="text-xs font-bold text-slate-400">Burrs</p>
+                                    <p className="text-base font-black text-blue-600">2. 撞(刮)傷</p>
+                                    <p className="text-xs font-bold text-slate-400">Dent / Scratch</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => handleScrapChange('burrs', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                    <button onClick={() => handleScrapChange('damage', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                     </button>
-                                    <input className="reason-input text-purple-600" inputMode="numeric" type="number" value={scraps.burrs} readOnly />
-                                    <button onClick={() => handleScrapChange('burrs', 1)} className="circle-btn bg-purple-500 text-white">
+                                    <input className="reason-input text-blue-600" inputMode="numeric" type="number" value={scraps.damage} readOnly />
+                                    <button onClick={() => handleScrapChange('damage', 1)} className="circle-btn bg-blue-500 text-white">
                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                     </button>
                                 </div>
                             </div>
+
+                            {/* 3. Appearance Defect */}
                             <div className="scrap-row">
                                 <div className="flex-1">
-                                    <p className="text-base font-black text-blue-600">刮傷</p>
-                                    <p className="text-xs font-bold text-slate-400">Scratch</p>
+                                    <p className="text-base font-black text-purple-600">3. 外觀不良</p>
+                                    <p className="text-xs font-bold text-slate-400">(無法修噴)</p>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => handleScrapChange('scratch', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                    <button onClick={() => handleScrapChange('appearance', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                     </button>
-                                    <input className="reason-input text-blue-600" inputMode="numeric" type="number" value={scraps.scratch} readOnly />
-                                    <button onClick={() => handleScrapChange('scratch', 1)} className="circle-btn bg-blue-500 text-white">
+                                    <input className="reason-input text-purple-600" inputMode="numeric" type="number" value={scraps.appearance} readOnly />
+                                    <button onClick={() => handleScrapChange('appearance', 1)} className="circle-btn bg-purple-500 text-white">
                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                     </button>
                                 </div>
                             </div>
+
+                            {/* 4. Others */}
                             <div className="scrap-row">
                                 <div className="flex-1">
-                                    <p className="text-base font-black text-slate-600 dark:text-slate-300">其他</p>
+                                    <p className="text-base font-black text-slate-600 dark:text-slate-300">4. 其他</p>
                                     <p className="text-xs font-bold text-slate-400">Others</p>
                                 </div>
                                 <div className="flex items-center gap-2">
