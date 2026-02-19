@@ -15,49 +15,50 @@ body {
 }
 
 /* Custom utility classes from original HTML */
+/* Custom utility classes from original HTML */
 .huge-btn {
-  min-height: 80px;
-  font-size: 28px;
-  font-weight: 800;
+  min-height: 56px;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .counter-input {
-  @apply bg-transparent border-none text-center focus:ring-8 focus:ring-primary/20 rounded-3xl transition-all;
-  font-size: 96px;
+  @apply bg-transparent border-none text-center focus:ring-4 focus:ring-primary/20 rounded-xl transition-all;
+  font-size: 48px;
   font-weight: 900;
   line-height: 1;
   width: 100%;
-  padding: 10px 0;
-}
-
-.reason-input {
-  @apply bg-transparent border-none text-center focus:ring-4 focus:ring-primary/30 rounded-2xl transition-all;
-  font-size: 52px;
-  font-weight: 800;
-  width: 100px;
   padding: 4px 0;
 }
 
-.product-name-badge {
+.reason-input {
+  @apply bg-transparent border-none text-center focus:ring-2 focus:ring-primary/30 rounded-lg transition-all;
   font-size: 24px;
-  font-weight: 800;
-  padding: 10px 20px;
+  font-weight: 700;
+  width: 60px;
+  padding: 2px 0;
+}
+
+.product-name-badge {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 12px;
   background: #e2e8f0;
-  border-radius: 14px;
+  border-radius: 8px;
   color: #1e293b;
   display: inline-block;
 }
 
 .scrap-row {
-  @apply flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-5 rounded-[32px] border-4 border-slate-200 dark:border-slate-700;
+  @apply flex items-center justify-between bg-slate-50 dark:bg-slate-800 p-3 rounded-2xl border-2 border-slate-200 dark:border-slate-700;
 }
 
 .circle-btn {
-  @apply w-[80px] h-[80px] rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-md;
+  @apply w-[40px] h-[40px] rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-sm;
 }
 
 .time-input {
-  @apply bg-slate-100 dark:bg-slate-800 border-4 border-slate-200 dark:border-slate-700 rounded-3xl px-6 py-4 text-4xl font-black text-center w-full focus:ring-8 focus:ring-primary/20 transition-all outline-none;
+  @apply bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-2xl font-black text-center w-full focus:ring-4 focus:ring-primary/20 transition-all outline-none;
 }
 
 /* Hide spin buttons for number inputs */
