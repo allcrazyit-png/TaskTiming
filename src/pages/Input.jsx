@@ -1,0 +1,244 @@
+import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+export default function Input() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { productName, partNumber } = location.state || { productName: "鋁合金散熱片 A-204", partNumber: "" };
+
+    const [goodCount, setGoodCount] = useState(128);
+    const [scraps, setScraps] = useState({
+        missing: 1,
+        burrs: 2,
+        scratch: 0,
+        others: 0
+    });
+
+    // Calculate total scrap
+    const totalScrap = Object.values(scraps).reduce((a, b) => a + b, 0);
+
+    const handleScrapChange = (type, delta) => {
+        setScraps(prev => ({
+            ...prev,
+            [type]: Math.max(0, prev[type] + delta)
+        }));
+    };
+
+    const handleConfirm = () => {
+        navigate('/confirm', {
+            state: {
+                productName,
+                goodCount,
+                totalScrap,
+                scraps
+            }
+        });
+    };
+
+    return (
+        <div className="bg-background-light dark:bg-background-dark text-[#1e293b] dark:text-white min-h-screen flex flex-col pb-80">
+            <div className="bg-corporate text-white py-4 px-6 text-center font-bold text-3xl shadow-lg z-30">
+                瑞全企業股份有限公司
+            </div>
+            <div className="bg-white dark:bg-slate-900 border-b-4 border-slate-200 dark:border-slate-800 px-6 py-5 flex items-center justify-between z-20">
+                <div className="flex items-center gap-4">
+                    <span className="material-symbols-outlined text-5xl text-primary">account_circle</span>
+                    <div className="text-3xl font-extrabold text-slate-800 dark:text-white">
+                        作業者: <span className="text-primary">001</span> 王大明
+                    </div>
+                </div>
+                <div className="bg-slate-100 dark:bg-slate-800 px-6 py-2 rounded-full text-2xl font-bold text-slate-500">
+                    早班
+                </div>
+            </div>
+            <header className="sticky top-0 z-20 bg-white/95 dark:bg-background-dark/95 backdrop-blur-sm border-b-4 border-slate-200 dark:border-slate-800 px-6 py-6 flex items-center shadow-md">
+                <button
+                    onClick={() => navigate(-1)}
+                    className="flex items-center justify-center p-3 rounded-2xl active:bg-slate-200 dark:active:bg-slate-700 transition-colors mr-4"
+                >
+                    <span className="material-symbols-outlined text-7xl font-black">arrow_back</span>
+                </button>
+                <div className="flex items-center gap-6 flex-1">
+                    <div className="relative">
+                        <img alt="Product Image" className="w-[120px] h-[120px] rounded-3xl border-4 border-primary object-cover shadow-sm" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC26HTULzZRNyK3aPJ85gkDbFl8fPJB61fnfsLFyZRrNHHPdXr-IL_yifmeiWvfV3ScKuapkpICys8PsiVmcL0eiwsGUCzPPsSZ-b6wovZ0j8nDNARKJ8931OOxp7aM7wAq7vfI1odbZHquiuyGs_R0KsaAoCvwqrP5MPr9j1YrOptsixABvY4_NCkFxq8g0MMrMVIjE3cHIXOU6oxnFKvMAcNXZ_rbSNbmQ_A9_kpSbZmcA6BzuhiRSwvrBgP6f_W2i9UK_GVksRw" />
+                        <div className="absolute -bottom-2 -right-2 bg-primary text-white text-sm px-3 py-1 rounded-lg font-bold">產品照</div>
+                    </div>
+                    <div className="flex flex-col">
+                        <h1 className="text-3xl font-black">作業內容與時間回報</h1>
+                        <div className="mt-2">
+                            <span className="product-name-badge">當前產品: {productName}</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <main className="flex-1 p-6 space-y-12">
+                <section className="space-y-6">
+                    <h2 className="text-4xl font-black flex items-center gap-4 px-2 text-primary">
+                        <span className="material-symbols-outlined text-6xl">schedule</span>
+                        作業時間
+                    </h2>
+                    <div className="bg-white dark:bg-slate-900 p-10 rounded-[48px] shadow-xl border-t-[20px] border-primary space-y-8">
+                        <div className="space-y-4">
+                            <label className="block text-2xl font-black text-slate-500">開始時間</label>
+                            <div className="flex items-center gap-4">
+                                <input className="time-input" type="time" defaultValue="08:00" />
+                                <button className="flex-shrink-0 bg-primary text-white h-full px-6 py-4 rounded-3xl font-black text-2xl active:scale-95 transition-transform border-b-4 border-blue-800 shadow-md">
+                                    填入現在時間
+                                </button>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            <label className="block text-2xl font-black text-slate-500">結束時間</label>
+                            <div className="flex items-center gap-4">
+                                <input className="time-input" type="time" defaultValue="10:30" />
+                                <button className="flex-shrink-0 bg-primary text-white h-full px-6 py-4 rounded-3xl font-black text-2xl active:scale-95 transition-transform border-b-4 border-blue-800 shadow-md">
+                                    填入現在時間
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section className="space-y-6">
+                    <h2 className="text-4xl font-black flex items-center gap-4 px-2 text-success">
+                        <span className="material-symbols-outlined text-6xl">check_circle</span>
+                        良品產量 (合格)
+                    </h2>
+                    <div className="bg-white dark:bg-slate-900 p-10 rounded-[48px] shadow-xl border-t-[20px] border-success">
+                        <div className="flex items-center justify-between gap-6">
+                            <button
+                                onClick={() => setGoodCount(Math.max(0, goodCount - 1))}
+                                className="w-[120px] h-[120px] rounded-[36px] bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-transform border-4 border-slate-300 dark:border-slate-700"
+                            >
+                                <span className="material-symbols-outlined text-8xl font-black text-slate-600 dark:text-slate-300">remove</span>
+                            </button>
+                            <div className="flex-1 text-center">
+                                <input
+                                    className="counter-input text-success focus:outline-none"
+                                    type="number"
+                                    value={goodCount}
+                                    onChange={(e) => setGoodCount(parseInt(e.target.value) || 0)}
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                />
+                                <p className="text-3xl font-black text-slate-400 mt-2 tracking-widest uppercase">Pcs</p>
+                            </div>
+                            <button
+                                onClick={() => setGoodCount(goodCount + 1)}
+                                className="w-[120px] h-[120px] rounded-[36px] bg-success text-white flex items-center justify-center active:scale-90 transition-transform border-4 border-success shadow-lg"
+                            >
+                                <span className="material-symbols-outlined text-8xl font-black">add</span>
+                            </button>
+                        </div>
+                        <div className="mt-10 grid grid-cols-2 gap-6">
+                            <button onClick={() => setGoodCount(goodCount + 10)} className="huge-btn bg-slate-100 dark:bg-slate-800 rounded-3xl border-4 border-slate-300 dark:border-slate-700 active:bg-slate-200">+ 10</button>
+                            <button onClick={() => setGoodCount(goodCount + 50)} className="huge-btn bg-slate-100 dark:bg-slate-800 rounded-3xl border-4 border-slate-300 dark:border-slate-700 active:bg-slate-200">+ 50</button>
+                        </div>
+                    </div>
+                </section>
+                <section className="space-y-6">
+                    <h2 className="text-4xl font-black flex items-center gap-4 px-2 text-danger">
+                        <span className="material-symbols-outlined text-6xl">cancel</span>
+                        不良品報廢 (原因分類)
+                    </h2>
+                    <div className="bg-white dark:bg-slate-900 p-10 rounded-[48px] shadow-xl border-t-[20px] border-danger">
+                        <div className="mb-10 p-8 bg-red-50 dark:bg-red-900/20 rounded-[36px] border-4 border-red-200 dark:border-red-800 flex items-center justify-between">
+                            <div>
+                                <p class="text-3xl font-black text-danger uppercase tracking-wider">總不良數量</p>
+                                <p className="text-xl text-slate-500 font-bold">Total Scrap</p>
+                            </div>
+                            <div className="flex items-baseline gap-3">
+                                <span className="text-8xl font-black text-danger">{totalScrap}</span>
+                                <span className="text-4xl font-bold text-danger/60">Pcs</span>
+                            </div>
+                        </div>
+                        <div className="space-y-8">
+                            <div className="scrap-row">
+                                <div className="flex-1">
+                                    <p className="text-3xl font-black text-orange-600">缺料</p>
+                                    <p className="text-lg font-bold text-slate-400">Missing Mat.</p>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                    <button onClick={() => handleScrapChange('missing', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                        <span className="material-symbols-outlined text-5xl font-black">remove</span>
+                                    </button>
+                                    <input className="reason-input text-orange-600" inputMode="numeric" type="number" value={scraps.missing} readOnly />
+                                    <button onClick={() => handleScrapChange('missing', 1)} className="circle-btn bg-orange-500 text-white">
+                                        <span className="material-symbols-outlined text-5xl font-black">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="scrap-row">
+                                <div className="flex-1">
+                                    <p className="text-3xl font-black text-purple-600">毛邊</p>
+                                    <p className="text-lg font-bold text-slate-400">Burrs</p>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                    <button onClick={() => handleScrapChange('burrs', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                        <span className="material-symbols-outlined text-5xl font-black">remove</span>
+                                    </button>
+                                    <input className="reason-input text-purple-600" inputMode="numeric" type="number" value={scraps.burrs} readOnly />
+                                    <button onClick={() => handleScrapChange('burrs', 1)} className="circle-btn bg-purple-500 text-white">
+                                        <span className="material-symbols-outlined text-5xl font-black">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="scrap-row">
+                                <div className="flex-1">
+                                    <p className="text-3xl font-black text-blue-600">刮傷</p>
+                                    <p className="text-lg font-bold text-slate-400">Scratch</p>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                    <button onClick={() => handleScrapChange('scratch', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                        <span className="material-symbols-outlined text-5xl font-black">remove</span>
+                                    </button>
+                                    <input className="reason-input text-blue-600" inputMode="numeric" type="number" value={scraps.scratch} readOnly />
+                                    <button onClick={() => handleScrapChange('scratch', 1)} className="circle-btn bg-blue-500 text-white">
+                                        <span className="material-symbols-outlined text-5xl font-black">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="scrap-row">
+                                <div className="flex-1">
+                                    <p className="text-3xl font-black text-slate-600 dark:text-slate-300">其他</p>
+                                    <p className="text-lg font-bold text-slate-400">Others</p>
+                                </div>
+                                <div className="flex items-center gap-6">
+                                    <button onClick={() => handleScrapChange('others', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                        <span className="material-symbols-outlined text-5xl font-black">remove</span>
+                                    </button>
+                                    <input className="reason-input text-slate-600 dark:text-slate-300" inputMode="numeric" type="number" value={scraps.others} readOnly />
+                                    <button onClick={() => handleScrapChange('others', 1)} className="circle-btn bg-slate-500 text-white">
+                                        <span className="material-symbols-outlined text-5xl font-black">add</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <section className="space-y-6">
+                    <h2 className="text-4xl font-black flex items-center gap-4 px-2">
+                        <span className="material-symbols-outlined text-6xl">edit_note</span>
+                        備註說明
+                    </h2>
+                    <textarea className="w-full h-48 p-8 rounded-[36px] bg-white dark:bg-slate-900 border-4 border-slate-200 dark:border-slate-700 text-3xl font-medium focus:ring-[12px] focus:ring-primary/10 focus:border-primary transition-all outline-none resize-none shadow-sm" placeholder="如有其他異常狀況請在此輸入..."></textarea>
+                </section>
+            </main>
+            <footer className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-t-4 border-slate-200 dark:border-slate-800 p-8 space-y-6 shadow-[0_-15px_40px_rgba(0,0,0,0.2)] z-40">
+                <button
+                    onClick={handleConfirm}
+                    className="w-full h-28 bg-success text-white rounded-[32px] shadow-xl flex items-center justify-center gap-6 active:scale-95 transition-transform border-b-8 border-green-800"
+                >
+                    <span className="text-4xl font-black">完成並輸入下一個產品</span>
+                    <span className="material-symbols-outlined text-6xl font-black">arrow_forward</span>
+                </button>
+                <button
+                    onClick={() => navigate('/')}
+                    className="w-full h-24 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-[32px] flex items-center justify-center gap-6 active:scale-95 transition-transform border-4 border-slate-300 dark:border-slate-600"
+                >
+                    <span className="material-symbols-outlined text-5xl font-black">check_circle</span>
+                    <span className="text-3xl font-bold">結束今日作業</span>
+                </button>
+            </footer>
+        </div>
+    );
+}
