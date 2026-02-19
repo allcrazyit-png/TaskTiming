@@ -4,6 +4,7 @@ import Papa from 'papaparse';
 
 export default function Home() {
     const navigate = useNavigate();
+    console.log("VERSION 1.1 LOADED");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -356,7 +357,7 @@ export default function Home() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
                             <span className="material-symbols-outlined text-2xl">home</span>
                         </div>
-                        <span className="text-xs font-bold text-primary">首頁</span>
+                        <span className="text-xs font-bold text-primary">首頁 v1.1</span>
                     </a>
                     <a href="#" className="flex flex-col items-center gap-1 group opacity-60">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400">
