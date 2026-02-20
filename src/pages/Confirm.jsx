@@ -432,11 +432,11 @@ export default function Confirm() {
                         )}
                     </button>
                     <button
-                        onClick={() => navigate(-1)}
+                        onClick={() => isUploaded ? navigate('/') : navigate(-1)}
                         className="w-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 h-12 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors active:scale-95 border-b-4 border-slate-300 dark:border-slate-950"
                     >
-                        <span className="material-symbols-outlined text-xl">edit</span>
-                        返回修改
+                        <span className="material-symbols-outlined text-xl">{isUploaded ? 'home' : 'edit'}</span>
+                        {isUploaded ? '返回首頁' : '返回修改'}
                     </button>
                 </div>
             </main>
