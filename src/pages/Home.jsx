@@ -15,6 +15,7 @@ export default function Home() {
     const [employees, setEmployees] = useState([]);
     const [selectedOperator, setSelectedOperator] = useState('');
     const [operatorHistory, setOperatorHistory] = useState([]); // Added state for today's history
+    const [favoriteProducts, setFavoriteProducts] = useState([]); // Store array of favorite `品番`
 
     // Password Modal State
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -81,6 +82,7 @@ export default function Home() {
                     console.log("Found employee, restoring:", operatorStr);
                     setSelectedOperator(operatorStr);
                     loadOperatorHistory(foundEmp['作業者編號']); // Load history on startup
+                    loadOperatorFavorites(foundEmp['作業者編號']); // Load favorites on startup
                 } else {
                     console.log("Saved ID not found in employee list");
                 }
@@ -93,6 +95,7 @@ export default function Home() {
         if (!value) {
             setSelectedOperator('');
             setOperatorHistory([]); // Clear history displayed
+            setFavoriteProducts([]); // Clear favorites displayed
             localStorage.removeItem('savedOperatorId'); // Clear saved session
             return;
         }
@@ -123,6 +126,45 @@ export default function Home() {
         }
     };
 
+    const loadOperatorFavorites = (id) => {
+        try {
+            const favoritesKey = `favoriteProducts_${id}`;
+            const existingFavorites = JSON.parse(localStorage.getItem(favoritesKey) || '[]');
+            setFavoriteProducts(existingFavorites);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const toggleFavorite = (e, partNumber) => {
+        e.stopPropagation(); // Prevent product card click if overlapping
+        if (!selectedOperator) {
+            alert("請先登入才能將產品加入我的最愛！\nPlease log in first to use favorites.");
+            return;
+        }
+
+        // Get actual ID from current selected operator
+        const match = selectedOperator.match(/\[(.*?)\]/);
+        if (!match) return;
+        const operatorId = match[1];
+        const favoritesKey = `favoriteProducts_${operatorId}`;
+
+        setFavoriteProducts(prev => {
+            let newFavorites;
+            if (prev.includes(partNumber)) {
+                // Remove
+                newFavorites = prev.filter(pn => pn !== partNumber);
+            } else {
+                // Add
+                newFavorites = [...prev, partNumber];
+            }
+
+            // Save immediately to local storage
+            localStorage.setItem(favoritesKey, JSON.stringify(newFavorites));
+            return newFavorites;
+        });
+    };
+
     const verifyPassword = () => {
         if (!tempOperator) return;
 
@@ -134,6 +176,7 @@ export default function Home() {
             setSelectedOperator(operatorStr);
             localStorage.setItem('savedOperatorId', tempOperator['作業者編號']); // Save just the ID
             loadOperatorHistory(tempOperator['作業者編號']); // Load history
+            loadOperatorFavorites(tempOperator['作業者編號']); // Load favorites
             setShowPasswordModal(false);
             setTempOperator(null);
         } else {
@@ -195,6 +238,56 @@ export default function Home() {
     const getImageUrl = (filename) => {
         if (!filename) return null;
         return import.meta.env.BASE_URL + filename;
+    };
+
+    const renderProductCard = (product, index, isFavoriteList = false) => {
+        const isFav = favoriteProducts.includes(product['品番']);
+        return (
+            <div key={`product-${product['品番']}-${index}`} className="overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg transition-transform active:scale-[0.98]">
+                <div className="aspect-video w-full bg-slate-200 relative overflow-hidden">
+                    {product['產品圖片'] ? (
+                        <img
+                            alt={product['品名']}
+                            className="h-full w-full object-cover"
+                            src={getImageUrl(product['產品圖片'])}
+                            onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://placehold.co/600x400?text=No+Image';
+                            }}
+                        />
+                    ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400">
+                            <span className="material-symbols-outlined text-4xl">image_not_supported</span>
+                        </div>
+                    )}
+                    <div className="absolute top-3 right-3 flex items-center gap-2">
+                        <button
+                            onClick={(e) => toggleFavorite(e, product['品番'])}
+                            className="bg-white/90 dark:bg-slate-900/90 backdrop-blur text-primary p-1.5 rounded-full shadow-md hover:scale-110 active:scale-95 transition-transform"
+                        >
+                            <span className={`material-symbols-outlined text-[20px] ${isFav ? 'font-variation-fill text-red-500' : 'text-slate-400'}`}>favorite</span>
+                        </button>
+                        <div className="bg-primary text-white px-3 py-1.5 rounded-full font-bold text-xs shadow-md border border-white/20">
+                            在庫: {product['收容數'] || '-'}
+                        </div>
+                    </div>
+                </div>
+                <div className="p-4">
+                    <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-50 mb-1">{product['品名']}</h3>
+                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[16px]">label</span>
+                        品番: {product['品番']}
+                    </p>
+                    <button
+                        onClick={() => handleStartWork(product)}
+                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-lg font-black text-white shadow-md hover:bg-primary/90 active:bg-primary/80 transition-colors"
+                    >
+                        <span className="material-symbols-outlined text-2xl">play_circle</span>
+                        開始作業
+                    </button>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -390,9 +483,22 @@ export default function Home() {
                     </div>
                 </section>
 
+                {/* Favorite Products Grid */}
+                {favoriteProducts.length > 0 && selectedOperator && (
+                    <div className="grid grid-cols-1 gap-6 mb-8 mt-2">
+                        <h2 className="text-lg font-bold border-l-4 border-red-500 pl-3 flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                            <span className="material-symbols-outlined text-red-500 font-variation-fill">favorite</span>
+                            我的最愛
+                        </h2>
+                        {products
+                            .filter(p => favoriteProducts.includes(p['品番']))
+                            .map((product, index) => renderProductCard(product, index, true))}
+                    </div>
+                )}
+
                 {/* Product Grid */}
                 <div className="grid grid-cols-1 gap-6">
-                    <h2 className="text-lg font-bold border-l-4 border-primary pl-3">目前可作業產品</h2>
+                    <h2 className="text-lg font-bold border-l-4 border-primary pl-3 text-slate-800 dark:text-slate-100">全部產品目錄</h2>
 
                     {loading ? (
                         <div className="text-center py-12 text-slate-500">
@@ -401,45 +507,12 @@ export default function Home() {
                         </div>
                     ) : filteredProducts.length === 0 ? (
                         <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                            <span className="material-symbols-outlined text-4xl mb-2">search_off</span>
-                            <p>沒有找到符合的產品</p>
+                            <span className="material-symbols-outlined text-4xl mb-2 flex justify-center opacity-50">search_off</span>
+                            <p className="font-bold">沒有找到符合的產品</p>
+                            <p className="text-xs mt-1">請嘗試清除篩選條件</p>
                         </div>
                     ) : (
-                        filteredProducts.map((product, index) => (
-                            <div key={`${product['品番']}-${index}`} className="overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg transition-transform active:scale-[0.98]">
-                                <div className="aspect-video w-full bg-slate-200 relative overflow-hidden">
-                                    {product['產品圖片'] ? (
-                                        <img
-                                            alt={product['品名']}
-                                            className="h-full w-full object-cover"
-                                            src={getImageUrl(product['產品圖片'])}
-                                            onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = 'https://placehold.co/600x400?text=No+Image';
-                                            }}
-                                        />
-                                    ) : (
-                                        <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-400">
-                                            <span className="material-symbols-outlined text-4xl">image_not_supported</span>
-                                        </div>
-                                    )}
-                                    <div className="absolute top-3 right-3 bg-primary text-white px-3 py-1 rounded-full font-bold text-xs shadow-md">
-                                        在庫: {product['收容數'] || '-'}
-                                    </div>
-                                </div>
-                                <div className="p-4">
-                                    <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-50 mb-1">{product['品名']}</h3>
-                                    <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-4">品番: {product['品番']}</p>
-                                    <button
-                                        onClick={() => handleStartWork(product)}
-                                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-lg font-black text-white shadow-md hover:bg-primary/90 active:bg-primary/80 transition-colors"
-                                    >
-                                        <span className="material-symbols-outlined text-2xl">play_circle</span>
-                                        開始作業
-                                    </button>
-                                </div>
-                            </div>
-                        ))
+                        filteredProducts.map((product, index) => renderProductCard(product, index))
                     )}
                 </div>
             </main>
