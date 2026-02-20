@@ -440,38 +440,6 @@ export default function Confirm() {
                     </button>
                 </div>
             </main>
-
-            {/* Show Navigation Bar ONLY after successful upload */}
-            {isUploaded && (
-                <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-6 pt-2 px-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] animate-[slideUp_0.3s_ease-out]">
-                    <div className="flex items-center justify-around max-w-lg mx-auto">
-                        <button onClick={() => navigate('/')} className="flex flex-col items-center gap-1 group active:scale-95 transition-transform">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                                <span className="material-symbols-outlined text-2xl">home</span>
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">首頁</span>
-                        </button>
-                        <button
-                            onClick={() => navigate('/')}
-                            className="flex flex-col items-center gap-1 group active:scale-95 transition-transform"
-                        >
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                                <span className="material-symbols-outlined text-2xl">history</span>
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">歷史紀錄</span>
-                        </button>
-                        <button
-                            onClick={() => navigate('/')}
-                            className="flex flex-col items-center gap-1 group active:scale-95 transition-transform"
-                        >
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                                <span className="material-symbols-outlined text-2xl">settings</span>
-                            </div>
-                            <span className="text-xs font-bold text-slate-600 dark:text-slate-400">個人設定</span>
-                        </button>
-                    </div>
-                </nav>
-            )}
         </div >
     );
 }
