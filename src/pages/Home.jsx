@@ -590,14 +590,131 @@ export default function Home() {
                         </div>
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-400">歷史紀錄</span>
                     </button>
-                    <a href="#" className="flex flex-col items-center gap-1 group opacity-60">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400">
+                    <button
+                        onClick={() => {
+                            if (!selectedOperator) {
+                                alert("請先選擇並登入作業員！\nPlease log in first to view settings.");
+                                return;
+                            }
+                            setShowSettingsPopup(true);
+                        }}
+                        className="flex flex-col items-center gap-1 group active:scale-95 transition-transform"
+                    >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                             <span className="material-symbols-outlined text-2xl">settings</span>
                         </div>
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-400">個人設定</span>
-                    </a>
+                    </button>
                 </div>
-            </nav >
-        </div >
+            </nav>
+
+            {/* Settings Popup */}
+            {showSettingsPopup && selectedOperator && (
+                <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4">
+                    <div className="bg-white dark:bg-slate-900 w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col transform transition-all animate-[slideUp_0.3s_ease-out]">
+                        <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-slate-500">settings</span>
+                                個人設定
+                            </h2>
+                            <button
+                                onClick={() => setShowSettingsPopup(false)}
+                                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="p-5 flex flex-col gap-6 overflow-y-auto max-h-[70vh]">
+
+                            {/* Profile Section */}
+                            <div className="flex flex-col items-center bg-slate-100 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
+                                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+                                    <span className="material-symbols-outlined text-4xl text-primary">account_circle</span>
+                                </div>
+                                <div className="text-lg font-black text-slate-800 dark:text-white">
+                                    {selectedOperator}
+                                </div>
+                                <div className="text-xs font-bold text-slate-500 mt-1 bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full">
+                                    當前登入身分
+                                </div>
+                            </div>
+
+                            {/* Appearance Preferences */}
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 border-b border-slate-200 dark:border-slate-700 pb-2">
+                                    <span className="material-symbols-outlined text-[16px]">palette</span>
+                                    介面偏好
+                                </h3>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">深淺色主題</label>
+                                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                                        <button
+                                            onClick={() => setTheme('light')}
+                                            className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-1 transition-colors ${theme === 'light' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">light_mode</span>
+                                            淺色
+                                        </button>
+                                        <button
+                                            onClick={() => setTheme('dark')}
+                                            className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-1 transition-colors ${theme === 'dark' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">dark_mode</span>
+                                            深色
+                                        </button>
+                                        <button
+                                            onClick={() => setTheme('system')}
+                                            className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-1 transition-colors ${theme === 'system' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                        >
+                                            <span className="material-symbols-outlined text-[18px]">devices</span>
+                                            系統預設
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2 pt-2">
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">字體大小</label>
+                                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                                        <button
+                                            onClick={() => setFontSize('normal')}
+                                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${fontSize === 'normal' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                        >
+                                            標準
+                                        </button>
+                                        <button
+                                            onClick={() => setFontSize('large')}
+                                            className={`flex-1 py-2 text-lg font-bold rounded-lg transition-colors ${fontSize === 'large' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                        >
+                                            加大
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Danger Zone */}
+                            <div className="space-y-4 pt-4 mt-2 border-t-2 border-dashed border-slate-200 dark:border-slate-700">
+                                <h3 className="text-sm font-bold text-red-500 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[16px]">warning</span>
+                                    危險區
+                                </h3>
+                                <button
+                                    onClick={handleLogoutAndClear}
+                                    className="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-2 border-red-200 dark:border-red-800/30 font-bold py-3 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 active:scale-[0.98] transition-all"
+                                >
+                                    <span className="material-symbols-outlined">delete_forever</span>
+                                    清除「我的最愛」紀錄並登出
+                                </button>
+                                <p className="text-xs text-center text-slate-400 dark:text-slate-500">
+                                    如果您要更換崗位或是給其他人使用此裝置，請點擊上方按鈕。
+                                </p>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        </div>
     );
 }
