@@ -14,7 +14,38 @@ export default function Input() {
     };
 
     // Check if the part number matches the dual-cavity pattern (e.g., has _X before a dash, like 53827_8-02280-1)
-    const isDual = partNumber && /_(\d+)-/.test(partNumber);
+    const originalIsDual = partNumber && /_(\d+)-/.test(partNumber);
+    const [activeMode, setActiveMode] = useState('both'); // 'both', 'r', 'l'
+
+    // Derive single part numbers if needed
+    const { partR, partL } = React.useMemo(() => {
+        let pR = partNumber + "-R";
+        let pL = partNumber + "-L";
+        if (originalIsDual) {
+            const match = partNumber.match(/^(.*?)_(\d+)-(.*)$/);
+            if (match) {
+                const prefixBase = match[1];
+                const suffix = match[3];
+                const prefixMatch = prefixBase.match(/^(.*?)(\d+)$/);
+                if (prefixMatch) {
+                    const baseStr = prefixMatch[1];
+                    const numRStr = prefixMatch[2];
+                    const numR = parseInt(numRStr, 10);
+                    const numL = numR + 1;
+                    pR = `${baseStr}${numR}-${suffix}`;
+                    pL = `${baseStr}${numL}-${suffix}`;
+                }
+            }
+        }
+        return { partR: pR, partL: pL };
+    }, [partNumber, originalIsDual]);
+
+    const isDual = originalIsDual && activeMode === 'both';
+
+    // Compute display names
+    const displayProductName = activeMode === 'both' ? productName : activeMode === 'r' ? `${productName} (R邊)` : `${productName} (L邊)`;
+    const displayPartNumber = activeMode === 'both' ? partNumber : activeMode === 'r' ? partR : partL;
+
     const [goodCount, setGoodCount] = useState(128);
     const [goodCountR, setGoodCountR] = useState(0);
     const [goodCountL, setGoodCountL] = useState(0);
@@ -68,8 +99,8 @@ export default function Input() {
 
         navigate('/confirm', {
             state: {
-                productName,
-                partNumber,
+                productName: displayProductName,
+                partNumber: displayPartNumber,
                 carModel,
                 standardTime,
                 operator,
@@ -86,6 +117,7 @@ export default function Input() {
             }
         });
     };
+
 
     return (
         <div className="bg-background-light dark:bg-background-dark text-[#1e293b] dark:text-white min-h-screen flex flex-col pb-40">
@@ -118,13 +150,42 @@ export default function Input() {
                     <div className="flex flex-col">
                         <h1 className="text-lg font-black leading-tight">作業內容回報</h1>
                         <div className="mt-1">
-                            <span className="product-name-badge">產品: {productName}</span>
-                            <span className="block text-xs font-bold text-slate-500 mt-0.5">品番: {partNumber}</span>
+                            <span className="product-name-badge">產品: {displayProductName}</span>
+                            <span className="block text-xs font-bold text-slate-500 mt-0.5">品番: {displayPartNumber}</span>
                         </div>
                     </div>
                 </div>
             </header>
             <main className="flex-1 p-4 space-y-6">
+                {originalIsDual && (
+                    <section className="space-y-3">
+                        <h2 className="text-lg font-black flex items-center gap-2 px-1 text-slate-700 dark:text-slate-300">
+                            <span className="material-symbols-outlined text-2xl">rule</span>
+                            選擇作業模式
+                        </h2>
+                        <div className="bg-slate-100 dark:bg-slate-900 p-2 rounded-2xl flex gap-1 border-2 border-slate-200 dark:border-slate-800 shadow-sm">
+                            <button
+                                onClick={() => setActiveMode('both')}
+                                className={`flex-1 py-3 px-2 rounded-xl text-sm font-black transition-all ${activeMode === 'both' ? 'bg-primary text-white shadow-md scale-100' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 scale-95'}`}
+                            >
+                                左右同時做
+                            </button>
+                            <button
+                                onClick={() => setActiveMode('r')}
+                                className={`flex-1 py-3 px-2 rounded-xl text-sm font-black transition-all ${activeMode === 'r' ? 'bg-blue-600 text-white shadow-md scale-100' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 scale-95'}`}
+                            >
+                                單做 R 邊
+                            </button>
+                            <button
+                                onClick={() => setActiveMode('l')}
+                                className={`flex-1 py-3 px-2 rounded-xl text-sm font-black transition-all ${activeMode === 'l' ? 'bg-purple-600 text-white shadow-md scale-100' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 scale-95'}`}
+                            >
+                                單做 L 邊
+                            </button>
+                        </div>
+                    </section>
+                )}
+
                 <section className="space-y-3">
                     <h2 className="text-lg font-black flex items-center gap-2 px-1 text-primary">
                         <span className="material-symbols-outlined text-2xl">schedule</span>
