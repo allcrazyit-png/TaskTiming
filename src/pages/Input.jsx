@@ -13,7 +13,10 @@ export default function Input() {
         operator: "[001] 王大明"
     };
 
+    const isDual = partNumber && partNumber.includes('_2');
     const [goodCount, setGoodCount] = useState(128);
+    const [goodCountR, setGoodCountR] = useState(0);
+    const [goodCountL, setGoodCountL] = useState(0);
     const [scraps, setScraps] = useState({
         missing: 0,
         damage: 0,
@@ -69,7 +72,10 @@ export default function Input() {
                 carModel,
                 standardTime,
                 operator,
-                goodCount,
+                goodCount: isDual ? goodCountR + goodCountL : goodCount,
+                goodCountR,
+                goodCountL,
+                isDual,
                 totalScrap,
                 scraps,
                 startTime,
@@ -163,39 +169,114 @@ export default function Input() {
                 <section className="space-y-3">
                     <h2 className="text-lg font-black flex items-center gap-2 px-1 text-success">
                         <span className="material-symbols-outlined text-2xl">check_circle</span>
-                        良品產量 (合格)
+                        良品產量 (合格) {isDual && <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full ml-2">左右雙穴模式</span>}
                     </h2>
-                    <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-success">
-                        <div className="flex items-center justify-between gap-3">
-                            <button
-                                onClick={() => setGoodCount(Math.max(0, goodCount - 1))}
-                                className="w-[50px] h-[50px] rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-transform border-2 border-slate-300 dark:border-slate-700"
-                            >
-                                <span className="material-symbols-outlined text-3xl font-black text-slate-600 dark:text-slate-300">remove</span>
-                            </button>
-                            <div className="flex-1 text-center">
-                                <input
-                                    className="counter-input text-success focus:outline-none"
-                                    type="number"
-                                    value={goodCount}
-                                    onChange={(e) => setGoodCount(parseInt(e.target.value) || 0)}
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                />
-                                <p className="text-xs font-black text-slate-400 mt-0 tracking-widest uppercase">Pcs</p>
+
+                    {!isDual && (
+                        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-success">
+                            <div className="flex items-center justify-between gap-3">
+                                <button
+                                    onClick={() => setGoodCount(Math.max(0, goodCount - 1))}
+                                    className="w-[50px] h-[50px] rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-transform border-2 border-slate-300 dark:border-slate-700"
+                                >
+                                    <span className="material-symbols-outlined text-3xl font-black text-slate-600 dark:text-slate-300">remove</span>
+                                </button>
+                                <div className="flex-1 text-center">
+                                    <input
+                                        className="counter-input text-success focus:outline-none"
+                                        type="number"
+                                        value={goodCount}
+                                        onChange={(e) => setGoodCount(parseInt(e.target.value) || 0)}
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                    />
+                                    <p className="text-xs font-black text-slate-400 mt-0 tracking-widest uppercase">Pcs</p>
+                                </div>
+                                <button
+                                    onClick={() => setGoodCount(goodCount + 1)}
+                                    className="w-[50px] h-[50px] rounded-xl bg-success text-white flex items-center justify-center active:scale-90 transition-transform border-2 border-success shadow-md"
+                                >
+                                    <span className="material-symbols-outlined text-3xl font-black">add</span>
+                                </button>
                             </div>
-                            <button
-                                onClick={() => setGoodCount(goodCount + 1)}
-                                className="w-[50px] h-[50px] rounded-xl bg-success text-white flex items-center justify-center active:scale-90 transition-transform border-2 border-success shadow-md"
-                            >
-                                <span className="material-symbols-outlined text-3xl font-black">add</span>
-                            </button>
+                            <div className="mt-4 grid grid-cols-2 gap-3">
+                                <button onClick={() => setGoodCount(goodCount + 10)} className="huge-btn bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200">+ 10</button>
+                                <button onClick={() => setGoodCount(goodCount + 50)} className="huge-btn bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200">+ 50</button>
+                            </div>
                         </div>
-                        <div className="mt-4 grid grid-cols-2 gap-3">
-                            <button onClick={() => setGoodCount(goodCount + 10)} className="huge-btn bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200">+ 10</button>
-                            <button onClick={() => setGoodCount(goodCount + 50)} className="huge-btn bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200">+ 50</button>
+                    )}
+
+                    {isDual && (
+                        <div className="space-y-4">
+                            {/* R Side */}
+                            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-success border-l-4 border-l-blue-500 relative">
+                                <div className="absolute top-0 right-0 bg-blue-500 text-white font-black px-3 py-1 rounded-bl-xl rounded-tr-xl text-sm shadow-sm">R 邊</div>
+                                <div className="flex items-center justify-between gap-3 pt-2">
+                                    <button
+                                        onClick={() => setGoodCountR(Math.max(0, goodCountR - 1))}
+                                        className="w-[45px] h-[45px] rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-transform border-2 border-slate-300 dark:border-slate-700"
+                                    >
+                                        <span className="material-symbols-outlined text-2xl font-black text-slate-600 dark:text-slate-300">remove</span>
+                                    </button>
+                                    <div className="flex-1 text-center">
+                                        <input
+                                            className="counter-input text-blue-600 focus:outline-none"
+                                            type="number"
+                                            value={goodCountR}
+                                            onChange={(e) => setGoodCountR(parseInt(e.target.value) || 0)}
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                        />
+                                        <p className="text-xs font-black text-slate-400 mt-0 tracking-widest uppercase">Pcs</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setGoodCountR(goodCountR + 1)}
+                                        className="w-[45px] h-[45px] rounded-xl bg-blue-500 text-white flex items-center justify-center active:scale-90 transition-transform border-2 border-blue-600 shadow-md"
+                                    >
+                                        <span className="material-symbols-outlined text-2xl font-black">add</span>
+                                    </button>
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                    <button onClick={() => setGoodCountR(goodCountR + 10)} className="py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200 font-bold text-slate-700 dark:text-slate-300">+ 10</button>
+                                    <button onClick={() => setGoodCountR(goodCountR + 50)} className="py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200 font-bold text-slate-700 dark:text-slate-300">+ 50</button>
+                                </div>
+                            </div>
+
+                            {/* L Side */}
+                            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-success border-l-4 border-l-purple-500 relative">
+                                <div className="absolute top-0 right-0 bg-purple-500 text-white font-black px-3 py-1 rounded-bl-xl rounded-tr-xl text-sm shadow-sm">L 邊</div>
+                                <div className="flex items-center justify-between gap-3 pt-2">
+                                    <button
+                                        onClick={() => setGoodCountL(Math.max(0, goodCountL - 1))}
+                                        className="w-[45px] h-[45px] rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-transform border-2 border-slate-300 dark:border-slate-700"
+                                    >
+                                        <span className="material-symbols-outlined text-2xl font-black text-slate-600 dark:text-slate-300">remove</span>
+                                    </button>
+                                    <div className="flex-1 text-center">
+                                        <input
+                                            className="counter-input text-purple-600 focus:outline-none"
+                                            type="number"
+                                            value={goodCountL}
+                                            onChange={(e) => setGoodCountL(parseInt(e.target.value) || 0)}
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                        />
+                                        <p className="text-xs font-black text-slate-400 mt-0 tracking-widest uppercase">Pcs</p>
+                                    </div>
+                                    <button
+                                        onClick={() => setGoodCountL(goodCountL + 1)}
+                                        className="w-[45px] h-[45px] rounded-xl bg-purple-500 text-white flex items-center justify-center active:scale-90 transition-transform border-2 border-purple-600 shadow-md"
+                                    >
+                                        <span className="material-symbols-outlined text-2xl font-black">add</span>
+                                    </button>
+                                </div>
+                                <div className="mt-3 grid grid-cols-2 gap-3">
+                                    <button onClick={() => setGoodCountL(goodCountL + 10)} className="py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200 font-bold text-slate-700 dark:text-slate-300">+ 10</button>
+                                    <button onClick={() => setGoodCountL(goodCountL + 50)} className="py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200 font-bold text-slate-700 dark:text-slate-300">+ 50</button>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </section>
                 <section className="space-y-3">
                     <h2 className="text-lg font-black flex items-center gap-2 px-1 text-danger">

@@ -18,6 +18,9 @@ export default function Confirm() {
         standardTime,
         operator,
         goodCount,
+        goodCountR,
+        goodCountL,
+        isDual,
         totalScrap,
         scraps,
         startTime,
@@ -31,6 +34,9 @@ export default function Confirm() {
         standardTime: 100,
         operator: "[001] 王大明",
         goodCount: 500,
+        goodCountR: 0,
+        goodCountL: 0,
+        isDual: false,
         totalScrap: 5,
         scraps: { missing: 2, damage: 3, appearance: 0, others: 0 },
         startTime: "08:00",
@@ -79,6 +85,30 @@ export default function Confirm() {
 
     const metrics = calculateMetrics();
 
+    const deriveDualPartNumbers = (pn) => {
+        if (pn && pn.includes('_2')) {
+            const parts = pn.split('_2');
+            const prefix = parts[0];
+            const suffix = parts.slice(1).join('_2');
+            const numR = parseInt(prefix.slice(-1));
+            if (!isNaN(numR)) {
+                const prefixBase = prefix.slice(0, -1);
+                const numL = numR + 1;
+                return {
+                    partR: `${prefixBase}${numR}${suffix}`,
+                    partL: `${prefixBase}${numL}${suffix}`
+                };
+            }
+        }
+        return { partR: pn + "-R", partL: pn + "-L" };
+    };
+
+    const formatTimeHelper = (seconds) => {
+        const h = Math.floor(seconds / 3600);
+        const m = Math.floor((seconds % 3600) / 60);
+        return `${h}小時${m}分`;
+    };
+
     const handleSubmit = () => {
         if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT_URL")) {
             alert("錯誤: Google Script URL 未設定!");
@@ -87,37 +117,126 @@ export default function Confirm() {
 
         setIsSubmitting(true);
 
-        const payload = {
-            operator: operator,
-            carModel: carModel,
-            partNumber: partNumber,
-            carName: carModel, // Chinese Name mapped to Car Model
-            productName: productName,
-            startTime: startTime,
-            endTime: endTime,
-            totalTime: totalTime,
-            avgTime: metrics.avgTime,
-            efficiency: metrics.efficiency + "%",
-            goodCount: goodCount,
-            missing: scraps?.missing || 0,
-            damage: scraps?.damage || 0,
-            appearance: scraps?.appearance || 0,
-            others: scraps?.others || 0,
-            totalScrap: totalScrap,
-            scrapRate: metrics.scrapRate + "%",
-            remarks: remarks
+        const submitPayload = (payload) => {
+            fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                keepalive: true,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            }).catch(err => console.error(err));
         };
 
-        // Fire and forget using keepalive for actual data
-        fetch(GOOGLE_SCRIPT_URL, {
-            method: "POST",
-            mode: "no-cors",
-            keepalive: true,
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-        }).catch(err => console.error(err));
+        if (isDual) {
+            // Logic A: Split by production proportion
+            const timeParts = totalTime.match(/(\d+)小時(\d+)分/);
+            let totalSeconds = 0;
+            if (timeParts) {
+                const hours = parseInt(timeParts[1]) || 0;
+                const mins = parseInt(timeParts[2]) || 0;
+                totalSeconds = hours * 3600 + mins * 60;
+            }
+
+            const totalOutput = goodCount + totalScrap;
+            const totalGood = goodCountR + goodCountL;
+            const ratioR = totalGood > 0 ? (goodCountR / totalGood) : 0.5;
+            const ratioL = totalGood > 0 ? (goodCountL / totalGood) : 0.5;
+
+            const secondsR = Math.round(totalSeconds * ratioR);
+            const secondsL = totalSeconds - secondsR;
+
+            const { partR, partL } = deriveDualPartNumbers(partNumber);
+
+            const sRatioR = totalOutput > 0 ? ((goodCountR + (totalScrap * ratioR)) / totalOutput) : 0.5;
+
+            const scrapR = Math.round(totalScrap * sRatioR);
+            const scrapL = totalScrap - scrapR;
+
+            const calcMetrics = (seconds, gCount, tScrap) => {
+                const avg = gCount > 0 ? (seconds / gCount).toFixed(1) : 0;
+                const eff = seconds > 0 ? ((standardTime * gCount) / seconds * 100).toFixed(1) : 0;
+                const out = gCount + tScrap;
+                const sr = out > 0 ? ((tScrap / out) * 100).toFixed(1) : 0;
+                return { avgTime: avg, efficiency: eff, scrapRate: sr };
+            };
+
+            const metricsR = calcMetrics(secondsR, goodCountR, scrapR);
+            const metricsL = calcMetrics(secondsL, goodCountL, scrapL);
+
+            const getPropScrap = (val, ratio) => Math.round((val || 0) * ratio);
+
+            const missingR = getPropScrap(scraps?.missing, sRatioR);
+            const damageR = getPropScrap(scraps?.damage, sRatioR);
+            const appearanceR = getPropScrap(scraps?.appearance, sRatioR);
+            const othersR = getPropScrap(scraps?.others, sRatioR);
+
+            const payloadR = {
+                operator: operator,
+                carModel: carModel,
+                partNumber: partR,
+                carName: carModel,
+                productName: `${productName} (R邊)`,
+                startTime: startTime,
+                endTime: endTime,
+                totalTime: formatTimeHelper(secondsR),
+                avgTime: metricsR.avgTime,
+                efficiency: metricsR.efficiency + "%",
+                goodCount: goodCountR,
+                missing: missingR,
+                damage: damageR,
+                appearance: appearanceR,
+                others: othersR,
+                totalScrap: scrapR,
+                scrapRate: metricsR.scrapRate + "%",
+                remarks: remarks
+            };
+
+            const payloadL = {
+                operator: operator,
+                carModel: carModel,
+                partNumber: partL,
+                carName: carModel,
+                productName: `${productName} (L邊)`,
+                startTime: startTime,
+                endTime: endTime,
+                totalTime: formatTimeHelper(secondsL),
+                avgTime: metricsL.avgTime,
+                efficiency: metricsL.efficiency + "%",
+                goodCount: goodCountL,
+                missing: (scraps?.missing || 0) - missingR,
+                damage: (scraps?.damage || 0) - damageR,
+                appearance: (scraps?.appearance || 0) - appearanceR,
+                others: (scraps?.others || 0) - othersR,
+                totalScrap: scrapL,
+                scrapRate: metricsL.scrapRate + "%",
+                remarks: remarks
+            };
+
+            submitPayload(payloadR);
+            submitPayload(payloadL);
+        } else {
+            const payload = {
+                operator: operator,
+                carModel: carModel,
+                partNumber: partNumber,
+                carName: carModel, // Chinese Name mapped to Car Model
+                productName: productName,
+                startTime: startTime,
+                endTime: endTime,
+                totalTime: totalTime,
+                avgTime: metrics.avgTime,
+                efficiency: metrics.efficiency + "%",
+                goodCount: goodCount,
+                missing: scraps?.missing || 0,
+                damage: scraps?.damage || 0,
+                appearance: scraps?.appearance || 0,
+                others: scraps?.others || 0,
+                totalScrap: totalScrap,
+                scrapRate: metrics.scrapRate + "%",
+                remarks: remarks
+            };
+            submitPayload(payload);
+        }
 
         // Simulate UX delay for "Uploading..." feel
         setTimeout(() => {
@@ -197,11 +316,20 @@ export default function Confirm() {
                     </div>
                     <hr className="border-slate-100 dark:border-slate-800" />
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-primary/10 dark:bg-primary/5 p-3 rounded-xl border border-primary/20">
+                        <div className="bg-primary/10 dark:bg-primary/5 p-3 rounded-xl border border-primary/20 flex flex-col justify-center gap-1">
                             <p className="text-xs font-bold text-emerald-800 dark:text-primary uppercase tracking-wider">良品數量</p>
-                            <p className="text-3xl font-extrabold text-emerald-600 dark:text-primary">{goodCount}</p>
+                            {isDual ? (
+                                <div>
+                                    <p className="text-2xl font-extrabold text-emerald-600 dark:text-primary tracking-tight">
+                                        <span className="text-blue-600 text-lg">R:</span>{goodCountR} <span className="text-purple-600 text-lg ml-1">L:</span>{goodCountL}
+                                    </p>
+                                    <p className="text-xs font-bold text-slate-500 mt-0.5">總計: {goodCount} Pcs</p>
+                                </div>
+                            ) : (
+                                <p className="text-3xl font-extrabold text-emerald-600 dark:text-primary">{goodCount}</p>
+                            )}
                         </div>
-                        <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-xl border border-red-100 dark:border-red-900/30">
+                        <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-xl border border-red-100 dark:border-red-900/30 flex flex-col justify-center gap-1">
                             <p className="text-xs font-bold text-red-800 dark:text-red-400 uppercase tracking-wider">報廢數量</p>
                             <p className="text-3xl font-extrabold text-red-600 dark:text-red-500">{totalScrap}</p>
                         </div>
