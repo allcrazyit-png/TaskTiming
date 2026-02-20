@@ -13,7 +13,8 @@ export default function Input() {
         operator: "[001] 王大明"
     };
 
-    const isDual = partNumber && partNumber.includes('_2');
+    // Check if the part number matches the dual-cavity pattern (e.g., has _X before a dash, like 53827_8-02280-1)
+    const isDual = partNumber && /_(\d+)-/.test(partNumber);
     const [goodCount, setGoodCount] = useState(128);
     const [goodCountR, setGoodCountR] = useState(0);
     const [goodCountL, setGoodCountL] = useState(0);

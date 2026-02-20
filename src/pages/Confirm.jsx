@@ -86,18 +86,28 @@ export default function Confirm() {
     const metrics = calculateMetrics();
 
     const deriveDualPartNumbers = (pn) => {
-        if (pn && pn.includes('_2')) {
-            const parts = pn.split('_2');
-            const prefix = parts[0];
-            const suffix = parts.slice(1).join('_2');
-            const numR = parseInt(prefix.slice(-1));
-            if (!isNaN(numR)) {
-                const prefixBase = prefix.slice(0, -1);
-                const numL = numR + 1;
-                return {
-                    partR: `${prefixBase}${numR}${suffix}`,
-                    partL: `${prefixBase}${numL}${suffix}`
-                };
+        // Match a pattern like "53827_8-02280-1" where "\_8" is before the first dash
+        if (pn) {
+            const match = pn.match(/^(.*?)_(\d+)-(.*)$/);
+            if (match) {
+                const prefixBase = match[1]; // e.g. "53827"
+                const underscoreDigit = match[2]; // e.g. "8"
+                const suffix = match[3]; // e.g. "02280-1"
+
+                // Extract the trailing numbers of prefixBase
+                const prefixMatch = prefixBase.match(/^(.*?)(\d+)$/);
+
+                if (prefixMatch) {
+                    const baseStr = prefixMatch[1]; // e.g. "5382"
+                    const numRStr = prefixMatch[2]; // e.g. "7"
+                    const numR = parseInt(numRStr, 10);
+                    const numL = numR + 1;
+
+                    return {
+                        partR: `${baseStr}${numR}-${suffix}`,
+                        partL: `${baseStr}${numL}-${suffix}`
+                    };
+                }
             }
         }
         return { partR: pn + "-R", partL: pn + "-L" };
