@@ -75,3 +75,7 @@ input[type=number] {
 body {
   min-height: 100dvh;
 }
+
+html.text-large {
+  font-size: 115%;
+}

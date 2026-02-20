@@ -26,6 +26,40 @@ export default function Home() {
     // History Modal State
     const [showHistoryPopup, setShowHistoryPopup] = useState(false);
 
+    // Settings Modal State
+    const [showSettingsPopup, setShowSettingsPopup] = useState(false);
+    const [theme, setTheme] = useState(() => localStorage.getItem('appTheme') || 'system'); // 'system', 'light', 'dark'
+    const [fontSize, setFontSize] = useState(() => localStorage.getItem('appFontSize') || 'normal'); // 'normal', 'large'
+
+    // Apply Theme
+    useEffect(() => {
+        const root = document.documentElement;
+        if (theme === 'dark') {
+            root.classList.add('dark');
+        } else if (theme === 'light') {
+            root.classList.remove('dark');
+        } else {
+            // System
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                root.classList.add('dark');
+            } else {
+                root.classList.remove('dark');
+            }
+        }
+        localStorage.setItem('appTheme', theme);
+    }, [theme]);
+
+    // Apply Font Size
+    useEffect(() => {
+        const root = document.documentElement;
+        if (fontSize === 'large') {
+            root.classList.add('text-large');
+        } else {
+            root.classList.remove('text-large');
+        }
+        localStorage.setItem('appFontSize', fontSize);
+    }, [fontSize]);
+
     // Fetch and parse CSV data
     useEffect(() => {
         const fetchData = async () => {
@@ -238,6 +272,24 @@ export default function Home() {
     const getImageUrl = (filename) => {
         if (!filename) return null;
         return import.meta.env.BASE_URL + filename;
+    };
+
+    const handleLogoutAndClear = () => {
+        if (!selectedOperator) return;
+
+        const confirmClear = window.confirm("確定要登出並清除您的「我的最愛」紀錄嗎？\n此動作無法還原。");
+        if (confirmClear) {
+            const match = selectedOperator.match(/\[(.*?)\]/);
+            if (match) {
+                const operatorId = match[1];
+                localStorage.removeItem(`favoriteProducts_${operatorId}`);
+            }
+            localStorage.removeItem('savedOperatorId');
+            setSelectedOperator('');
+            setOperatorHistory([]);
+            setFavoriteProducts([]);
+            setShowSettingsPopup(false);
+        }
     };
 
     const renderProductCard = (product, index, isFavoriteList = false) => {
