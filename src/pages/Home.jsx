@@ -4,7 +4,7 @@ import Papa from 'papaparse';
 
 export default function Home() {
     const navigate = useNavigate();
-    console.log("VERSION 1.1 LOADED");
+    console.log("VERSION 1.4 LOADED");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -14,6 +14,7 @@ export default function Home() {
 
     const [employees, setEmployees] = useState([]);
     const [selectedOperator, setSelectedOperator] = useState('');
+    const [operatorHistory, setOperatorHistory] = useState([]); // Added state for today's history
 
     // Password Modal State
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -50,10 +51,6 @@ export default function Home() {
                         // Assuming columns: 作業者編號, 作業者名稱, 密碼
                         const validEmployees = results.data.filter(item => item['作業者名稱']);
                         setEmployees(validEmployees);
-                        if (validEmployees.length > 0) {
-                            // Default to first one or keep empty
-                            // setSelectedOperator(validEmployees[0]['作業者名稱']); 
-                        }
                     },
                     error: (err) => console.error('Employee CSV Error:', err)
                 });
@@ -68,10 +65,32 @@ export default function Home() {
         fetchData();
     }, []);
 
+    // Restore session when employees are loaded
+    useEffect(() => {
+        if (employees.length > 0) {
+            const savedOperatorId = localStorage.getItem('savedOperatorId');
+            console.log("Restoring session, saved ID:", savedOperatorId);
+
+            if (savedOperatorId) {
+                const foundEmp = employees.find(emp => emp['作業者編號'] === savedOperatorId);
+                if (foundEmp) {
+                    const operatorStr = `[${foundEmp['作業者編號']}] ${foundEmp['作業者名稱']}`;
+                    console.log("Found employee, restoring:", operatorStr);
+                    setSelectedOperator(operatorStr);
+                    loadOperatorHistory(foundEmp['作業者編號']); // Load history on startup
+                } else {
+                    console.log("Saved ID not found in employee list");
+                }
+            }
+        }
+    }, [employees]);
+
     const handleOperatorChange = (e) => {
         const value = e.target.value;
         if (!value) {
             setSelectedOperator('');
+            setOperatorHistory([]); // Clear history displayed
+            localStorage.removeItem('savedOperatorId'); // Clear saved session
             return;
         }
 
@@ -89,6 +108,18 @@ export default function Home() {
         }
     };
 
+    const loadOperatorHistory = (id) => {
+        try {
+            const historyKey = `uploadHistory_${id}`;
+            const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
+            const todayStr = new Date().toLocaleDateString();
+            const todaysRecords = existingHistory.filter(record => record.submitDate === todayStr);
+            setOperatorHistory(todaysRecords);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
     const verifyPassword = () => {
         if (!tempOperator) return;
 
@@ -96,7 +127,10 @@ export default function Home() {
         const correctPassword = tempOperator['密碼'] || tempOperator['作業者編號'];
 
         if (passwordInput === correctPassword) {
-            setSelectedOperator(`[${tempOperator['作業者編號']}] ${tempOperator['作業者名稱']}`);
+            const operatorStr = `[${tempOperator['作業者編號']}] ${tempOperator['作業者名稱']}`;
+            setSelectedOperator(operatorStr);
+            localStorage.setItem('savedOperatorId', tempOperator['作業者編號']); // Save just the ID
+            loadOperatorHistory(tempOperator['作業者編號']); // Load history
             setShowPasswordModal(false);
             setTempOperator(null);
         } else {
@@ -348,6 +382,51 @@ export default function Home() {
                         ))
                     )}
                 </div>
+
+                {/* Operator Daily History Section */}
+                {selectedOperator && (
+                    <div className="mt-8 mb-4">
+                        <h2 className="text-lg font-bold border-l-4 border-blue-500 pl-3 text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-blue-500">history</span>
+                            本日上傳紀錄 ({operatorHistory.length})
+                        </h2>
+
+                        {operatorHistory.length === 0 ? (
+                            <div className="text-center py-8 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                                <span className="material-symbols-outlined text-4xl mb-2 opacity-50">inbox</span>
+                                <p className="text-sm">今日尚無上傳紀錄</p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-3">
+                                {operatorHistory.map((record, index) => {
+                                    const timeStr = new Date(record.submitTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                    return (
+                                        <div key={index} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-xl shadow-sm flex items-start gap-3">
+                                            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-2 flex flex-col items-center justify-center min-w-[50px]">
+                                                <span className="text-xs font-bold text-slate-400">完成</span>
+                                                <span className="text-sm font-black text-slate-700 dark:text-slate-200">{timeStr.slice(0, 5)}</span>
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight mb-1">{record.productName}</p>
+                                                <p className="text-xs font-medium text-slate-500 mb-2">{record.partNumber}</p>
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-md">
+                                                        良品: {record.goodCount}
+                                                    </span>
+                                                    {record.totalScrap > 0 && (
+                                                        <span className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded-md">
+                                                            報廢: {record.totalScrap}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
             </main>
 
             {/* Bottom Navigation Bar */}
@@ -357,7 +436,7 @@ export default function Home() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
                             <span className="material-symbols-outlined text-2xl">home</span>
                         </div>
-                        <span className="text-xs font-bold text-red-500">首頁 v1.2 (最新)</span>
+                        <span className="text-xs font-bold text-red-500">首頁 v1.4 (ID記憶版)</span>
                     </a>
                     <a href="#" className="flex flex-col items-center gap-1 group opacity-60">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400">

@@ -135,6 +135,34 @@ export default function Confirm() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             }).catch(err => console.error(err));
+
+            // Save to LocalStorage History
+            try {
+                // Extract Operator ID from "[ID] Name" format
+                const match = payload.operator.match(/\[(.*?)\]/);
+                const opId = match ? match[1] : 'unknown';
+                const historyKey = `uploadHistory_${opId}`;
+
+                const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
+
+                // Add timestamp to the payload copy
+                const historyRecord = {
+                    ...payload,
+                    submitDate: new Date().toLocaleDateString(),
+                    submitTimestamp: new Date().getTime()
+                };
+
+                // Keep only today's records to save space and keep it relevant
+                const todayStr = new Date().toLocaleDateString();
+                const updatedHistory = [
+                    historyRecord,
+                    ...existingHistory.filter(record => record.submitDate === todayStr)
+                ].slice(0, 50); // Keep max 50 records per day
+
+                localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
+            } catch (e) {
+                console.error("Failed to save history to localStorage", e);
+            }
         };
 
         if (isDual) {
