@@ -86,26 +86,29 @@ export default function Confirm() {
     const metrics = calculateMetrics();
 
     const deriveDualPartNumbers = (pn) => {
-        // Match a pattern like "53827_8-02280-1" where "\_8" is before the first dash
+        // Match a pattern like "53827_8-02280-1" or "CW785401_2XA" where "\_8" or "\_2" is present
         if (pn) {
-            const match = pn.match(/^(.*?)_(\d+)-(.*)$/);
+            // Group 1: prefixBase (e.g. "53827", "CW785401")
+            // Group 2: underscoreDigit (e.g. "8", "2")
+            // Group 3: optional remaining suffix (e.g. "-02280-1", "XA")
+            const match = pn.match(/^(.*?)_(\d+)(.*)$/);
             if (match) {
-                const prefixBase = match[1]; // e.g. "53827"
-                const underscoreDigit = match[2]; // e.g. "8"
-                const suffix = match[3]; // e.g. "02280-1"
+                const prefixBase = match[1];
+                const underscoreDigit = match[2];
+                const suffix = match[3] || "";
 
                 // Extract the trailing numbers of prefixBase
                 const prefixMatch = prefixBase.match(/^(.*?)(\d+)$/);
 
                 if (prefixMatch) {
-                    const baseStr = prefixMatch[1]; // e.g. "5382"
-                    const numRStr = prefixMatch[2]; // e.g. "7"
+                    const baseStr = prefixMatch[1]; // e.g. "5382", "CW78540"
+                    const numRStr = prefixMatch[2]; // e.g. "7", "1"
                     const numR = parseInt(numRStr, 10);
                     const numL = numR + 1;
 
                     return {
-                        partR: `${baseStr}${numR}-${suffix}`,
-                        partL: `${baseStr}${numL}-${suffix}`
+                        partR: `${baseStr}${numR}${suffix}`,
+                        partL: `${baseStr}${numL}${suffix}`
                     };
                 }
             }

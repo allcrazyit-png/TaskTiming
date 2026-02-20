@@ -13,8 +13,8 @@ export default function Input() {
         operator: "[001] 王大明"
     };
 
-    // Check if the part number matches the dual-cavity pattern (e.g., has _X before a dash, like 53827_8-02280-1)
-    const originalIsDual = partNumber && /_(\d+)-/.test(partNumber);
+    // Check if the part number matches the dual-cavity pattern (e.g., has _X before a dash, like 53827_8-02280-1, or CW785401_2XA)
+    const originalIsDual = partNumber && /_(\d+)/.test(partNumber);
     const [activeMode, setActiveMode] = useState('both'); // 'both', 'r', 'l'
 
     // Derive single part numbers if needed
@@ -22,18 +22,18 @@ export default function Input() {
         let pR = partNumber + "-R";
         let pL = partNumber + "-L";
         if (originalIsDual) {
-            const match = partNumber.match(/^(.*?)_(\d+)-(.*)$/);
+            const match = partNumber.match(/^(.*?)_(\d+)(.*)$/);
             if (match) {
                 const prefixBase = match[1];
-                const suffix = match[3];
+                const suffix = match[3] || "";
                 const prefixMatch = prefixBase.match(/^(.*?)(\d+)$/);
                 if (prefixMatch) {
                     const baseStr = prefixMatch[1];
                     const numRStr = prefixMatch[2];
                     const numR = parseInt(numRStr, 10);
                     const numL = numR + 1;
-                    pR = `${baseStr}${numR}-${suffix}`;
-                    pL = `${baseStr}${numL}-${suffix}`;
+                    pR = `${baseStr}${numR}${suffix}`;
+                    pL = `${baseStr}${numL}${suffix}`;
                 }
             }
         }
