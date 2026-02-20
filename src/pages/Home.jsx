@@ -22,6 +22,9 @@ export default function Home() {
     const [tempOperator, setTempOperator] = useState(null);
     const [passwordError, setPasswordError] = useState(false);
 
+    // History Modal State
+    const [showHistoryPopup, setShowHistoryPopup] = useState(false);
+
     // Fetch and parse CSV data
     useEffect(() => {
         const fetchData = async () => {
@@ -254,6 +257,63 @@ export default function Home() {
                 </div>
             )}
 
+            {/* History Popup */}
+            {showHistoryPopup && selectedOperator && (
+                <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4">
+                    <div className="bg-white dark:bg-slate-900 w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col h-[80vh] sm:h-[600px] overflow-hidden transform transition-all animate-[slideUp_0.3s_ease-out]">
+                        <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+                            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-blue-500">history</span>
+                                本日上傳紀錄 ({operatorHistory.length})
+                            </h2>
+                            <button
+                                onClick={() => setShowHistoryPopup(false)}
+                                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                            {operatorHistory.length === 0 ? (
+                                <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 m-auto w-full">
+                                    <span className="material-symbols-outlined text-4xl mb-2 opacity-50">inbox</span>
+                                    <p className="text-sm font-bold">今日尚無上傳紀錄</p>
+                                    <p className="text-xs mt-1">作業完成後，紀錄會顯示在這裡</p>
+                                </div>
+                            ) : (
+                                operatorHistory.map((record, index) => {
+                                    const timeStr = new Date(record.submitTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                    return (
+                                        <div key={index} className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl shadow-sm flex items-start gap-3">
+                                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 flex flex-col items-center justify-center min-w-[50px] border border-blue-100 dark:border-blue-800/30">
+                                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Done</span>
+                                                <span className="text-sm font-black text-slate-700 dark:text-slate-200">{timeStr.slice(0, 5)}</span>
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-sm font-black text-slate-800 dark:text-slate-100 leading-tight mb-1">{record.productName}</p>
+                                                <p className="text-xs font-bold text-slate-500 mb-2 bg-slate-100 dark:bg-slate-900 inline-block px-2 py-0.5 rounded-md">{record.partNumber}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-1 rounded-md flex items-center gap-1">
+                                                        <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                                                        良品 {record.goodCount}
+                                                    </span>
+                                                    {record.totalScrap > 0 && (
+                                                        <span className="text-xs font-bold text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 px-2 py-1 rounded-md flex items-center gap-1">
+                                                            <span className="material-symbols-outlined text-[14px]">cancel</span>
+                                                            報廢 {record.totalScrap}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header Section */}
             <header className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
                 <div className="flex items-center justify-between gap-3">
@@ -382,51 +442,6 @@ export default function Home() {
                         ))
                     )}
                 </div>
-
-                {/* Operator Daily History Section */}
-                {selectedOperator && (
-                    <div className="mt-8 mb-4">
-                        <h2 className="text-lg font-bold border-l-4 border-blue-500 pl-3 text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-blue-500">history</span>
-                            本日上傳紀錄 ({operatorHistory.length})
-                        </h2>
-
-                        {operatorHistory.length === 0 ? (
-                            <div className="text-center py-8 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                                <span className="material-symbols-outlined text-4xl mb-2 opacity-50">inbox</span>
-                                <p className="text-sm">今日尚無上傳紀錄</p>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col gap-3">
-                                {operatorHistory.map((record, index) => {
-                                    const timeStr = new Date(record.submitTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                                    return (
-                                        <div key={index} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-3 rounded-xl shadow-sm flex items-start gap-3">
-                                            <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-2 flex flex-col items-center justify-center min-w-[50px]">
-                                                <span className="text-xs font-bold text-slate-400">完成</span>
-                                                <span className="text-sm font-black text-slate-700 dark:text-slate-200">{timeStr.slice(0, 5)}</span>
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100 leading-tight mb-1">{record.productName}</p>
-                                                <p className="text-xs font-medium text-slate-500 mb-2">{record.partNumber}</p>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-md">
-                                                        良品: {record.goodCount}
-                                                    </span>
-                                                    {record.totalScrap > 0 && (
-                                                        <span className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded-md">
-                                                            報廢: {record.totalScrap}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                )}
             </main>
 
             {/* Bottom Navigation Bar */}
@@ -436,14 +451,23 @@ export default function Home() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
                             <span className="material-symbols-outlined text-2xl">home</span>
                         </div>
-                        <span className="text-xs font-bold text-red-500">首頁 v1.4 (ID記憶版)</span>
+                        <span className="text-xs font-bold text-red-500">首頁 v1.4 (歷史版)</span>
                     </a>
-                    <a href="#" className="flex flex-col items-center gap-1 group opacity-60">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400">
+                    <button
+                        onClick={() => {
+                            if (!selectedOperator) {
+                                alert("請先選擇並登入作業員！\nPlease log in first to view your history.");
+                                return;
+                            }
+                            setShowHistoryPopup(true);
+                        }}
+                        className="flex flex-col items-center gap-1 group active:scale-95 transition-transform"
+                    >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                             <span className="material-symbols-outlined text-2xl">history</span>
                         </div>
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-400">歷史紀錄</span>
-                    </a>
+                    </button>
                     <a href="#" className="flex flex-col items-center gap-1 group opacity-60">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400">
                             <span className="material-symbols-outlined text-2xl">settings</span>
@@ -451,7 +475,7 @@ export default function Home() {
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-400">個人設定</span>
                     </a>
                 </div>
-            </nav>
-        </div>
+            </nav >
+        </div >
     );
 }
