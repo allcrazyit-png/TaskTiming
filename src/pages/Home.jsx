@@ -267,9 +267,6 @@ export default function Home() {
                         >
                             <span className={`material-symbols-outlined text-[20px] ${isFav ? 'font-variation-fill text-red-500' : 'text-slate-400'}`}>favorite</span>
                         </button>
-                        <div className="bg-primary text-white px-3 py-1.5 rounded-full font-bold text-xs shadow-md border border-white/20">
-                            在庫: {product['收容數'] || '-'}
-                        </div>
                     </div>
                 </div>
                 <div className="p-4">
