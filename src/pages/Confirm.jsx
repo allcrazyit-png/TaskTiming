@@ -43,7 +43,7 @@ export default function Confirm() {
         scraps: { missing: 2, damage: 3, appearance: 0, others: 0 },
         startTime: "08:00",
         endTime: "10:00",
-        totalTime: "2小時0分",
+        totalTime: "02:00:00",
         remarks: "無"
     };
 
@@ -59,13 +59,14 @@ export default function Confirm() {
 
     // Calculate Metrics
     const calculateMetrics = () => {
-        // Convert Total Time to Seconds
-        const timeParts = totalTime.match(/(\d+)小時(\d+)分/);
+        // Convert Total Time to Seconds (Format: HH:mm:ss)
+        const timeParts = totalTime.match(/(\d{2}):(\d{2}):(\d{2})/);
         let totalSeconds = 0;
         if (timeParts) {
             const hours = parseInt(timeParts[1]) || 0;
             const mins = parseInt(timeParts[2]) || 0;
-            totalSeconds = hours * 3600 + mins * 60;
+            const secs = parseInt(timeParts[3]) || 0;
+            totalSeconds = hours * 3600 + mins * 60 + secs;
         }
 
         // Avoid division by zero
@@ -122,7 +123,8 @@ export default function Confirm() {
     const formatTimeHelper = (seconds) => {
         const h = Math.floor(seconds / 3600);
         const m = Math.floor((seconds % 3600) / 60);
-        return `${h}小時${m}分`;
+        const s = seconds % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     };
 
     const handleSubmit = () => {
@@ -173,12 +175,13 @@ export default function Confirm() {
 
         if (isDual) {
             // Logic A: Use actual R/L scraps if available, otherwise fallback to proportion (for backwards compatibility/safety)
-            const timeParts = totalTime.match(/(\d+)小時(\d+)分/);
+            const timeParts = totalTime.match(/(\d{2}):(\d{2}):(\d{2})/);
             let totalSeconds = 0;
             if (timeParts) {
                 const hours = parseInt(timeParts[1]) || 0;
                 const mins = parseInt(timeParts[2]) || 0;
-                totalSeconds = hours * 3600 + mins * 60;
+                const secs = parseInt(timeParts[3]) || 0;
+                totalSeconds = hours * 3600 + mins * 60 + secs;
             }
 
             const totalOutput = goodCount + totalScrap;

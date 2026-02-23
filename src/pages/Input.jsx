@@ -124,7 +124,7 @@ export default function Input() {
         if (diffMins < 0) diffMins += 24 * 60; // Handle overnight
         const hours = Math.floor(diffMins / 60);
         const mins = diffMins % 60;
-        return `${hours}小時${mins}分`;
+        return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:00`;
     };
 
     const handleConfirm = () => {
