@@ -500,12 +500,12 @@ export default function Home() {
                                 </div>
                             ) : (
                                 operatorHistory.map((record, index) => {
-                                    const timeStr = new Date(record.submitTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                                    const timeStr = new Date(record.submitTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
                                     return (
                                         <div key={index} className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl shadow-sm flex items-start gap-3">
-                                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg py-2 px-3 flex flex-col items-center justify-center whitespace-nowrap border border-blue-100 dark:border-blue-800/30 shrink-0">
+                                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 flex flex-col items-center justify-center min-w-[60px] border border-blue-100 dark:border-blue-800/30">
                                                 <span className="text-[10px] font-black text-blue-500 uppercase tracking-tight">Done</span>
-                                                <span className="text-sm font-black text-slate-700 dark:text-slate-200 tracking-tight">{timeStr.slice(0, 5)}</span>
+                                                <span className="text-sm font-black text-slate-700 dark:text-slate-200 tracking-tight">{timeStr}</span>
                                             </div>
                                             <div className="flex-1">
                                                 <p className="text-sm font-black text-slate-800 dark:text-slate-100 leading-tight mb-1">{record.productName}</p>
@@ -533,7 +533,7 @@ export default function Home() {
             )}
 
             {/* Company Banner */}
-            <div className="bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-400 py-2 px-4 text-center font-black text-sm shadow-sm z-[50] relative tracking-widest">
+            <div className="bg-black text-white py-2 px-4 text-center font-black text-base shadow-md z-[50] relative tracking-widest">
                 {t('app_title')}
             </div>
             {/* Header Section */}
@@ -743,6 +743,11 @@ export default function Home() {
                         <div className="text-center py-12 text-slate-500">
                             <span className="material-symbols-outlined text-4xl animate-spin mb-2">progress_activity</span>
                             <p>{t('loading_data')}</p>
+                        </div>
+                    ) : !filters.carModel ? (
+                        <div className="text-center py-12 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                            <span className="material-symbols-outlined text-5xl mb-3 opacity-30">directions_car</span>
+                            <p className="font-bold">{t('select_car_model_placeholder')}</p>
                         </div>
                     ) : filteredProducts.length === 0 ? (
                         <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
