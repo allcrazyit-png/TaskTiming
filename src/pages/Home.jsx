@@ -503,7 +503,7 @@ export default function Home() {
                                     const timeStr = new Date(record.submitTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                                     return (
                                         <div key={index} className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl shadow-sm flex items-start gap-3">
-                                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 flex flex-col items-center justify-center min-w-[60px] border border-blue-100 dark:border-blue-800/30">
+                                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg py-2 px-3 flex flex-col items-center justify-center whitespace-nowrap border border-blue-100 dark:border-blue-800/30 shrink-0">
                                                 <span className="text-[10px] font-black text-blue-500 uppercase tracking-tight">Done</span>
                                                 <span className="text-sm font-black text-slate-700 dark:text-slate-200 tracking-tight">{timeStr.slice(0, 5)}</span>
                                             </div>
