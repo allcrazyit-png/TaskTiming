@@ -442,22 +442,22 @@ export default function Input() {
                                         {isDual ? (
                                             <div className="flex flex-col items-center justify-center gap-3 w-full mt-2 sm:mt-0 xl:flex-row xl:justify-end">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-black text-blue-600 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg whitespace-nowrap min-w-[3rem] text-center">R 邊</span>
+                                                    <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
                                                     <button onClick={() => handleScrapChangeR('missing', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                     </button>
-                                                    <input className="reason-input text-blue-600" inputMode="numeric" type="number" value={scrapsR.missing} readOnly />
-                                                    <button onClick={() => handleScrapChangeR('missing', 1)} className="circle-btn bg-blue-500 text-white">
+                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsR.missing} readOnly />
+                                                    <button onClick={() => handleScrapChangeR('missing', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-black text-purple-600 px-2 py-1 bg-purple-50 dark:bg-purple-900/30 rounded-lg whitespace-nowrap min-w-[3rem] text-center">L 邊</span>
+                                                    <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
                                                     <button onClick={() => handleScrapChangeL('missing', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                     </button>
-                                                    <input className="reason-input text-purple-600" inputMode="numeric" type="number" value={scrapsL.missing} readOnly />
-                                                    <button onClick={() => handleScrapChangeL('missing', 1)} className="circle-btn bg-purple-500 text-white">
+                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsL.missing} readOnly />
+                                                    <button onClick={() => handleScrapChangeL('missing', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
                                                 </div>
@@ -484,22 +484,22 @@ export default function Input() {
                                         {isDual ? (
                                             <div className="flex flex-col items-center justify-center gap-3 w-full mt-2 sm:mt-0 xl:flex-row xl:justify-end">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-black text-blue-600 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg whitespace-nowrap min-w-[3rem] text-center">R 邊</span>
+                                                    <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
                                                     <button onClick={() => handleScrapChangeR('damage', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                     </button>
-                                                    <input className="reason-input text-blue-600" inputMode="numeric" type="number" value={scrapsR.damage} readOnly />
-                                                    <button onClick={() => handleScrapChangeR('damage', 1)} className="circle-btn bg-blue-500 text-white">
+                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsR.damage} readOnly />
+                                                    <button onClick={() => handleScrapChangeR('damage', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-black text-purple-600 px-2 py-1 bg-purple-50 dark:bg-purple-900/30 rounded-lg whitespace-nowrap min-w-[3rem] text-center">L 邊</span>
+                                                    <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
                                                     <button onClick={() => handleScrapChangeL('damage', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                     </button>
-                                                    <input className="reason-input text-purple-600" inputMode="numeric" type="number" value={scrapsL.damage} readOnly />
-                                                    <button onClick={() => handleScrapChangeL('damage', 1)} className="circle-btn bg-purple-500 text-white">
+                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsL.damage} readOnly />
+                                                    <button onClick={() => handleScrapChangeL('damage', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
                                                 </div>
@@ -526,22 +526,22 @@ export default function Input() {
                                         {isDual ? (
                                             <div className="flex flex-col items-center justify-center gap-3 w-full mt-2 sm:mt-0 xl:flex-row xl:justify-end">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-black text-blue-600 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg whitespace-nowrap min-w-[3rem] text-center">R 邊</span>
+                                                    <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
                                                     <button onClick={() => handleScrapChangeR('appearance', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                     </button>
-                                                    <input className="reason-input text-blue-600" inputMode="numeric" type="number" value={scrapsR.appearance} readOnly />
-                                                    <button onClick={() => handleScrapChangeR('appearance', 1)} className="circle-btn bg-blue-500 text-white">
+                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsR.appearance} readOnly />
+                                                    <button onClick={() => handleScrapChangeR('appearance', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-black text-purple-600 px-2 py-1 bg-purple-50 dark:bg-purple-900/30 rounded-lg whitespace-nowrap min-w-[3rem] text-center">L 邊</span>
+                                                    <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
                                                     <button onClick={() => handleScrapChangeL('appearance', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                     </button>
-                                                    <input className="reason-input text-purple-600" inputMode="numeric" type="number" value={scrapsL.appearance} readOnly />
-                                                    <button onClick={() => handleScrapChangeL('appearance', 1)} className="circle-btn bg-purple-500 text-white">
+                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsL.appearance} readOnly />
+                                                    <button onClick={() => handleScrapChangeL('appearance', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
                                                 </div>
@@ -568,22 +568,22 @@ export default function Input() {
                                         {isDual ? (
                                             <div className="flex flex-col items-center justify-center gap-3 w-full mt-2 sm:mt-0 xl:flex-row xl:justify-end">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-black text-blue-600 px-2 py-1 bg-blue-50 dark:bg-blue-900/30 rounded-lg whitespace-nowrap min-w-[3rem] text-center">R 邊</span>
+                                                    <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
                                                     <button onClick={() => handleScrapChangeR('others', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                     </button>
-                                                    <input className="reason-input text-blue-600" inputMode="numeric" type="number" value={scrapsR.others} readOnly />
-                                                    <button onClick={() => handleScrapChangeR('others', 1)} className="circle-btn bg-blue-500 text-white">
+                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsR.others} readOnly />
+                                                    <button onClick={() => handleScrapChangeR('others', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-black text-purple-600 px-2 py-1 bg-purple-50 dark:bg-purple-900/30 rounded-lg whitespace-nowrap min-w-[3rem] text-center">L 邊</span>
+                                                    <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
                                                     <button onClick={() => handleScrapChangeL('others', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                     </button>
-                                                    <input className="reason-input text-purple-600" inputMode="numeric" type="number" value={scrapsL.others} readOnly />
-                                                    <button onClick={() => handleScrapChangeL('others', 1)} className="circle-btn bg-purple-500 text-white">
+                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsL.others} readOnly />
+                                                    <button onClick={() => handleScrapChangeL('others', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
                                                 </div>
