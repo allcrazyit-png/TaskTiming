@@ -9,23 +9,27 @@ function doPost(e) {
         // startTime, endTime, totalTime, 
         // goodCount, missing, damage, appearance, others, 
         // totalScrap, remarks
-
         var rowData = [
-            data.operator || "",          // 作業者
-            data.carModel || "",          // 車型
-            data.partNumber || "",        // 品番
-            data.carName || "",           // 中文名稱 (目前與車型相同或自訂)
-            data.productName || "",       // 產品中文名稱
-            data.startTime || "",         // 開始時間
-            data.endTime || "",           // 結束時間
-            data.totalTime || "",         // 總時間
-            data.goodCount || 0,          // 良品數量
-            data.missing || 0,            // 缺料
-            data.damage || 0,             // 撞(刮)傷
-            data.appearance || 0,         // 外觀不良
-            data.others || 0,             // 其他
-            data.totalScrap || 0,         // 報廢數量
-            data.remarks || ""            // 備註
+            data.operator || "",          // 1. 作業者
+            data.carModel || "",          // 2. 車型
+            data.partNumber || "",        // 3. 品番
+            data.productName || "",       // 4. 產品中文名稱
+            data.date || "",              // 5. 日期 (NEW)
+            data.startTime || "",         // 6. 開始時間
+            data.endTime || "",           // 7. 結束時間
+            data.totalTime || "",         // 8. 總時間
+            data.avgTime || "",           // 9. 平均組裝時間
+            data.standardTime || 0,       // 10. 標準組裝秒數
+            data.goodCount || 0,          // 11. 良品數量
+            data.missing || 0,            // 12. 缺料
+            data.damage || 0,             // 13. 撞(刮)傷
+            data.appearance || 0,         // 14. 外觀不良
+            data.others || 0,             // 15. 其他
+            data.totalScrap || 0,         // 16. 報廢數量
+            data.remarks || "",           // 17. 備註
+            data.scrapRate || "",         // 18. 不良率
+            data.yieldRate || "",         // 19. 良品率
+            data.efficiency || ""         // 20. 效率值
         ];
 
         // 3. 寫入 Google Sheet

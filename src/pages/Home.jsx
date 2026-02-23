@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
+import { useTranslation } from 'react-i18next';
 
 export default function Home() {
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    console.log("VERSION 1.4 LOADED");
+    console.log("VERSION 1.5 LOADED - i18n");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -16,6 +18,12 @@ export default function Home() {
     const [selectedOperator, setSelectedOperator] = useState('');
     const [operatorHistory, setOperatorHistory] = useState([]); // Added state for today's history
     const [favoriteProducts, setFavoriteProducts] = useState([]); // Store array of favorite `品番`
+    const [weather, setWeather] = useState(null); // Local weather state
+
+    // Custom Product Entry State
+    const [isCustomProduct, setIsCustomProduct] = useState(false);
+    const [customProductName, setCustomProductName] = useState('');
+    const [customPartNumber, setCustomPartNumber] = useState('');
 
     // Password Modal State
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -100,7 +108,34 @@ export default function Home() {
             }
         };
 
+        const fetchWeather = async () => {
+            try {
+                // Open-Meteo free API for Puyan, Changhua
+                const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=23.9972&longitude=120.4638&current=temperature_2m,weather_code&timezone=Asia%2FTaipei');
+                const data = await res.json();
+                if (data && data.current) {
+                    const code = data.current.weather_code;
+                    let icon = '☁️';
+                    let desc = '多雲';
+                    if (code === 0) { icon = '☀️'; desc = '晴天'; }
+                    else if (code <= 3) { icon = '⛅️'; desc = '多雲時晴'; }
+                    else if (code <= 48) { icon = '🌫️'; desc = '起霧'; }
+                    else if (code <= 67 || (code >= 80 && code <= 82)) { icon = '🌧️'; desc = '下雨'; }
+                    else if (code >= 95) { icon = '⚡️'; desc = '雷雨'; }
+
+                    setWeather({
+                        temp: Math.round(data.current.temperature_2m),
+                        icon,
+                        desc
+                    });
+                }
+            } catch (e) {
+                console.error('Weather fetch error:', e);
+            }
+        };
+
         fetchData();
+        fetchWeather();
     }, []);
 
     // Restore session when employees are loaded
@@ -173,7 +208,7 @@ export default function Home() {
     const toggleFavorite = (e, partNumber) => {
         e.stopPropagation(); // Prevent product card click if overlapping
         if (!selectedOperator) {
-            alert("請先登入才能將產品加入我的最愛！\nPlease log in first to use favorites.");
+            alert(t('login_required_fav') + "\nPlease log in first to use favorites.");
             return;
         }
 
@@ -220,7 +255,7 @@ export default function Home() {
 
     const handleStartWork = (product) => {
         if (!selectedOperator) {
-            alert("請先選擇作業者！ (Please select an operator first)");
+            alert(t('login_required_work') + " (Please select an operator first)");
             return;
         }
 
@@ -230,9 +265,40 @@ export default function Home() {
                 partNumber: product['品番'],
                 carModel: product['車型'],
                 standardTime: product['標準組裝秒數'] || 0, // Pass Standard Time
-                operator: selectedOperator // Pass Operator
+                operator: selectedOperator, // Pass Operator
+                productImage: product['產品圖片'] // Pass Product Image
             }
         });
+    };
+
+    const handleStartCustomWork = () => {
+        if (!selectedOperator) {
+            alert(t('login_required_work') + " (Please select an operator first)");
+            return;
+        }
+
+        if (!customProductName.trim()) {
+            alert(t('login_required_custom') + " (Custom product name is required)");
+            return;
+        }
+
+        // Scroll to top before navigating
+        window.scrollTo(0, 0);
+
+        navigate('/input', {
+            state: {
+                productName: customProductName.trim(),
+                partNumber: customPartNumber.trim(),
+                carModel: filters.carModel || '未指定',
+                standardTime: 0,
+                operator: selectedOperator,
+                productImage: null
+            }
+        });
+    };
+
+    const toggleCustomProduct = () => {
+        setIsCustomProduct(prev => !prev);
     };
 
     // Extract unique filter options
@@ -245,7 +311,17 @@ export default function Home() {
         if (filters.carModel) {
             filtered = filtered.filter(p => p['車型'] === filters.carModel);
         }
-        return [...new Set(filtered.map(p => p['品番']).filter(Boolean))].sort();
+
+        const partMap = new Map();
+        filtered.forEach(p => {
+            if (p['品番'] && !partMap.has(p['品番'])) {
+                partMap.set(p['品番'], p['品名'] || '');
+            }
+        });
+
+        return Array.from(partMap.entries())
+            .map(([partNumber, productName]) => ({ partNumber, productName }))
+            .sort((a, b) => a.partNumber.localeCompare(b.partNumber));
     }, [products, filters.carModel]);
 
     // Filter products based on selection
@@ -277,7 +353,7 @@ export default function Home() {
     const handleLogoutAndClear = () => {
         if (!selectedOperator) return;
 
-        const confirmClear = window.confirm("確定要登出並清除您的「我的最愛」紀錄嗎？\n此動作無法還原。");
+        const confirmClear = window.confirm(t('confirm_logout'));
         if (confirmClear) {
             const match = selectedOperator.match(/\[(.*?)\]/);
             if (match) {
@@ -325,14 +401,14 @@ export default function Home() {
                     <h3 className="text-lg font-extrabold text-slate-900 dark:text-slate-50 mb-1">{product['品名']}</h3>
                     <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-4 flex items-center gap-1">
                         <span className="material-symbols-outlined text-[16px]">label</span>
-                        品番: {product['品番']}
+                        {t('part_number_label')} {product['品番']}
                     </p>
                     <button
                         onClick={() => handleStartWork(product)}
                         className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-lg font-black text-white shadow-md hover:bg-primary/90 active:bg-primary/80 transition-colors"
                     >
                         <span className="material-symbols-outlined text-2xl">play_circle</span>
-                        開始作業
+                        {t('start_work')}
                     </button>
                 </div>
             </div>
@@ -349,9 +425,9 @@ export default function Home() {
                             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
                                 <span className="material-symbols-outlined text-3xl text-primary">lock</span>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">請輸入密碼</h3>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('enter_password_title')}</h3>
                             <p className="text-sm text-slate-500 mt-1">
-                                作業者: <span className="font-bold text-primary">{tempOperator?.['作業者名稱']}</span>
+                                {t('operator_label')} <span className="font-bold text-primary">{tempOperator?.['作業者名稱']}</span>
                             </p>
                         </div>
 
@@ -362,7 +438,7 @@ export default function Home() {
                                     inputMode="numeric"
                                     pattern="[0-9]*"
                                     className={`w-full h-12 text-center text-xl font-bold tracking-widest rounded-xl border-2 bg-slate-50 dark:bg-slate-900 focus:outline-none transition-colors ${passwordError ? 'border-red-500 text-red-600' : 'border-slate-200 dark:border-slate-700 focus:border-primary'}`}
-                                    placeholder="請輸入密碼"
+                                    placeholder={t('password_placeholder')}
                                     value={passwordInput}
                                     onChange={(e) => {
                                         setPasswordInput(e.target.value);
@@ -373,7 +449,7 @@ export default function Home() {
                                 />
                                 {passwordError && (
                                     <p className="text-red-500 text-xs font-bold text-center mt-2 animate-shake">
-                                        密碼錯誤，請重新輸入
+                                        {t('password_error')}
                                     </p>
                                 )}
                             </div>
@@ -382,7 +458,7 @@ export default function Home() {
                                 onClick={verifyPassword}
                                 className="w-full h-12 bg-primary text-white rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform"
                             >
-                                確認登入
+                                {t('confirm_login')}
                             </button>
                             <button
                                 onClick={() => {
@@ -392,7 +468,7 @@ export default function Home() {
                                 }}
                                 className="w-full h-10 text-slate-400 font-bold text-sm hover:text-slate-600 dark:hover:text-slate-200"
                             >
-                                取消
+                                {t('cancel')}
                             </button>
                         </div>
                     </div>
@@ -406,7 +482,7 @@ export default function Home() {
                         <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                 <span className="material-symbols-outlined text-blue-500">history</span>
-                                本日上傳紀錄 ({operatorHistory.length})
+                                {t('today_history')} ({operatorHistory.length})
                             </h2>
                             <button
                                 onClick={() => setShowHistoryPopup(false)}
@@ -419,8 +495,8 @@ export default function Home() {
                             {operatorHistory.length === 0 ? (
                                 <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 m-auto w-full">
                                     <span className="material-symbols-outlined text-4xl mb-2 opacity-50">inbox</span>
-                                    <p className="text-sm font-bold">今日尚無上傳紀錄</p>
-                                    <p className="text-xs mt-1">作業完成後，紀錄會顯示在這裡</p>
+                                    <p className="text-sm font-bold">{t('no_history')}</p>
+                                    <p className="text-xs mt-1">{t('no_history_sub')}</p>
                                 </div>
                             ) : (
                                 operatorHistory.map((record, index) => {
@@ -437,12 +513,12 @@ export default function Home() {
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-1 rounded-md flex items-center gap-1">
                                                         <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                                                        良品 {record.goodCount}
+                                                        {t('good_count')} {record.goodCount}
                                                     </span>
                                                     {record.totalScrap > 0 && (
                                                         <span className="text-xs font-bold text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 px-2 py-1 rounded-md flex items-center gap-1">
                                                             <span className="material-symbols-outlined text-[14px]">cancel</span>
-                                                            報廢 {record.totalScrap}
+                                                            {t('scrap_count')} {record.totalScrap}
                                                         </span>
                                                     )}
                                                 </div>
@@ -456,42 +532,126 @@ export default function Home() {
                 </div>
             )}
 
+            {/* Company Banner */}
+            <div className="bg-black text-white py-2 px-4 text-center font-black text-base shadow-md z-[50] relative tracking-widest">
+                {t('app_title')}
+            </div>
             {/* Header Section */}
-            <header className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                    <div className="flex flex-col">
-                        <h1 className="text-lg font-bold tracking-tight text-primary">瑞全企業股份有限公司</h1>
-                        <div className="flex items-center gap-2 mt-0.5">
-                            <span className="material-symbols-outlined text-slate-500 text-lg">person</span>
-                            {/* Operator Selector in Header */}
-                            <select
-                                value={selectedOperator}
-                                onChange={handleOperatorChange}
-                                className="text-sm font-semibold text-slate-600 dark:text-slate-400 bg-transparent border-none focus:ring-0 p-0 cursor-pointer"
-                            >
-                                <option value="">選擇作業者 (Select Operator)</option>
-                                {employees.map((emp, idx) => (
-                                    <option key={idx} value={`[${emp['作業者編號']}] ${emp['作業者名稱']}`}>
-                                        [{emp['作業者編號']}] {emp['作業者名稱']}
-                                    </option>
-                                ))}
-                            </select>
+            <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm relative z-40">
+                {/* Combined Operator Selector & Personalized Greeting Card */}
+                <div className={`transition-all duration-300 ${selectedOperator ? 'bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 border-b-2 border-primary/20' : ''} px-4 py-3`}>
+                    <div className="flex flex-col gap-3">
+                        {/* Row 1: Greeting & Operator Dropdown */}
+                        <div className="flex justify-between items-start">
+                            <div className="flex-1 mt-1">
+                                {(() => {
+                                    if (!selectedOperator) {
+                                        return <h2 className="text-lg font-black text-slate-400 dark:text-slate-500 mb-1 tracking-wide">{t('login_operator')}</h2>;
+                                    }
+                                    const hour = new Date().getHours();
+                                    const match = selectedOperator.match(/\]\s*(.*)$/);
+                                    const name = match ? match[1] : '';
+                                    let greetingTitle = '';
+                                    let greetingSub = '';
+                                    if (hour < 12) {
+                                        greetingTitle = t('good_morning', { name });
+                                        greetingSub = t('good_morning_sub');
+                                    } else if (hour < 18) {
+                                        greetingTitle = t('good_afternoon', { name });
+                                        greetingSub = t('good_afternoon_sub');
+                                    } else {
+                                        greetingTitle = t('good_evening', { name });
+                                        greetingSub = t('good_evening_sub');
+                                    }
+                                    return (
+                                        <>
+                                            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-0.5 tracking-wide">{greetingTitle}</h2>
+                                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{greetingSub}</p>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* Operator Selector Dropdown */}
+                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm shrink-0 transition-colors ${selectedOperator ? 'bg-white/80 dark:bg-slate-800/80 border-white/50 dark:border-slate-700/50' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+                                <span className={`material-symbols-outlined text-lg ${selectedOperator ? 'text-primary' : 'text-slate-500'}`}>person</span>
+                                <select
+                                    value={selectedOperator}
+                                    onChange={handleOperatorChange}
+                                    className={`text-sm font-bold bg-transparent border-none focus:ring-0 p-0 cursor-pointer outline-none ${selectedOperator ? 'text-primary' : 'text-slate-500'}`}
+                                >
+                                    <option value="">{t('select_operator')}</option>
+                                    {employees.map((emp, idx) => (
+                                        <option key={idx} value={`[${emp['作業者編號']}] ${emp['作業者名稱']}`}>
+                                            [{emp['作業者編號']}] {emp['作業者名稱']}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
-                    </div>
-                    <div className="bg-primary/10 p-2 rounded-full">
-                        <span className="material-symbols-outlined text-primary text-2xl">factory</span>
+
+                        {/* Row 2: Date and Weather info (Only show when operator is selected to maintain focus) */}
+                        {selectedOperator && (
+                            <div className="flex gap-2.5 mt-1 border-t border-slate-200/50 dark:border-slate-700/50 pt-3">
+                                <div className="flex items-center gap-1.5 bg-white/60 dark:bg-black/20 px-3 py-1.5 rounded-xl border border-white/50 dark:border-white/5 shadow-sm">
+                                    <span className="material-symbols-outlined text-blue-500 text-lg">calendar_today</span>
+                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                                        {new Date().toLocaleDateString('zh-TW')} ({['日', '一', '二', '三', '四', '五', '六'][new Date().getDay()]})
+                                    </span>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 bg-white/60 dark:bg-black/20 px-3 py-1.5 rounded-xl border border-white/50 dark:border-white/5 shadow-sm">
+                                    <span className="material-symbols-outlined text-orange-500 text-lg">location_on</span>
+                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">彰化埔鹽</span>
+                                    {weather ? (
+                                        <span className="text-sm font-black text-slate-800 dark:text-slate-200 ml-1 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md shadow-sm">
+                                            {weather.icon} {weather.temp}°C
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-slate-400 ml-1">載入中</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </header>
 
             {/* Main Content Area */}
             <main className="flex-1 p-4 pb-24">
+                {/* Favorite Products Grid (Moved to Top) */}
+                {favoriteProducts.length > 0 && selectedOperator && (
+                    <div className="grid grid-cols-1 gap-6 mb-8 mt-2">
+                        <h2 className="text-lg font-bold border-l-4 border-red-500 pl-3 flex items-center gap-2 text-slate-800 dark:text-slate-100">
+                            <span className="material-symbols-outlined text-red-500 font-variation-fill">favorite</span>
+                            {t('favorites')}
+                        </h2>
+                        {products
+                            .filter(p => favoriteProducts.includes(p['品番']))
+                            .map((product, index) => renderProductCard(product, index, true))}
+                    </div>
+                )}
+
                 {/* Filter Section */}
                 <section className="space-y-4 mb-6">
                     <div>
-                        <label className="block text-sm font-bold mb-2 text-slate-800 dark:text-slate-200">
-                            1. 選擇車型 (Filter Car Model)
-                        </label>
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="block text-sm font-bold text-slate-800 dark:text-slate-200">
+                                {t('filter_car_model')}
+                            </label>
+                            <button
+                                onClick={toggleCustomProduct}
+                                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${isCustomProduct
+                                    ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:border-red-800'
+                                    : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                                    }`}
+                            >
+                                <span className="material-symbols-outlined text-[16px]">
+                                    {isCustomProduct ? 'close' : 'add'}
+                                </span>
+                                {isCustomProduct ? t('custom_btn_cancel') : t('custom_btn_add')}
+                            </button>
+                        </div>
                         <div className="relative">
                             <select
                                 value={filters.carModel}
@@ -499,7 +659,7 @@ export default function Home() {
                                 className="block w-full h-12 rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-base font-medium focus:border-primary focus:ring-primary appearance-none disabled:opacity-50"
                                 disabled={loading}
                             >
-                                <option value="">{loading ? '載入中...' : '請點擊選擇車型'}</option>
+                                <option value="">{loading ? t('select_car_model_loading') : t('select_car_model_placeholder')}</option>
                                 {uniqueCarModels.map(model => (
                                     <option key={model} value={model}>{model}</option>
                                 ))}
@@ -511,7 +671,7 @@ export default function Home() {
                     </div>
                     <div>
                         <label className="block text-sm font-bold mb-2 text-slate-800 dark:text-slate-200">
-                            2. 選擇產品品番 (Filter Part Number)
+                            {t('filter_part_number')}
                         </label>
                         <div className="relative">
                             <select
@@ -520,9 +680,11 @@ export default function Home() {
                                 className="block w-full h-12 rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-base font-medium focus:border-primary focus:ring-primary appearance-none disabled:opacity-50"
                                 disabled={loading || !filters.carModel}
                             >
-                                <option value="">請點擊選擇品番</option>
-                                {uniquePartNumbers.map(part => (
-                                    <option key={part} value={part}>{part}</option>
+                                <option value="">{t('select_part_number_placeholder')}</option>
+                                {uniquePartNumbers.map(({ partNumber, productName }) => (
+                                    <option key={partNumber} value={partNumber}>
+                                        {partNumber}{productName ? ` - ${productName}` : ''}
+                                    </option>
                                 ))}
                             </select>
                             <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
@@ -530,35 +692,63 @@ export default function Home() {
                             </div>
                         </div>
                     </div>
-                </section>
 
-                {/* Favorite Products Grid */}
-                {favoriteProducts.length > 0 && selectedOperator && (
-                    <div className="grid grid-cols-1 gap-6 mb-8 mt-2">
-                        <h2 className="text-lg font-bold border-l-4 border-red-500 pl-3 flex items-center gap-2 text-slate-800 dark:text-slate-100">
-                            <span className="material-symbols-outlined text-red-500 font-variation-fill">favorite</span>
-                            我的最愛
-                        </h2>
-                        {products
-                            .filter(p => favoriteProducts.includes(p['品番']))
-                            .map((product, index) => renderProductCard(product, index, true))}
-                    </div>
-                )}
+                    {/* Custom Product Entry Rendering */}
+                    {isCustomProduct && (
+                        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl space-y-4 animate-fade-in">
+                            <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                                <span className="material-symbols-outlined">edit_square</span>
+                                {t('custom_input_title')}
+                            </h3>
+                            <div>
+                                <label className="block text-sm font-bold mb-1 text-slate-700 dark:text-slate-300">
+                                    {t('custom_part_number_label')}
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder={t('custom_part_number_placeholder')}
+                                    value={customPartNumber}
+                                    onChange={(e) => setCustomPartNumber(e.target.value)}
+                                    className="w-full h-12 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold mb-1 text-slate-700 dark:text-slate-300">
+                                    {t('custom_product_name_label')} <span className="text-red-500">{t('custom_product_name_req')}</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder={t('custom_product_name_placeholder')}
+                                    value={customProductName}
+                                    onChange={(e) => setCustomProductName(e.target.value)}
+                                    className="w-full h-12 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            <button
+                                onClick={handleStartCustomWork}
+                                className="w-full mt-2 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 font-black text-lg active:scale-95 transition-transform"
+                            >
+                                <span className="material-symbols-outlined">play_circle</span>
+                                {t('start_custom_work')}
+                            </button>
+                        </div>
+                    )}
+                </section>
 
                 {/* Product Grid */}
                 <div className="grid grid-cols-1 gap-6">
-                    <h2 className="text-lg font-bold border-l-4 border-primary pl-3 text-slate-800 dark:text-slate-100">全部產品目錄</h2>
+                    <h2 className="text-lg font-bold border-l-4 border-primary pl-3 text-slate-800 dark:text-slate-100">{t('all_products')}</h2>
 
                     {loading ? (
                         <div className="text-center py-12 text-slate-500">
                             <span className="material-symbols-outlined text-4xl animate-spin mb-2">progress_activity</span>
-                            <p>資料讀取中...</p>
+                            <p>{t('loading_data')}</p>
                         </div>
                     ) : filteredProducts.length === 0 ? (
                         <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                             <span className="material-symbols-outlined text-4xl mb-2 flex justify-center opacity-50">search_off</span>
-                            <p className="font-bold">沒有找到符合的產品</p>
-                            <p className="text-xs mt-1">請嘗試清除篩選條件</p>
+                            <p className="font-bold">{t('no_products_found')}</p>
+                            <p className="text-xs mt-1">{t('clear_filters_hint')}</p>
                         </div>
                     ) : (
                         filteredProducts.map((product, index) => renderProductCard(product, index))
@@ -573,12 +763,12 @@ export default function Home() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
                             <span className="material-symbols-outlined text-2xl">home</span>
                         </div>
-                        <span className="text-xs font-bold text-red-500">首頁 v1.4 (歷史版)</span>
+                        <span className="text-xs font-bold text-red-500">{t('home_tab')} v1.5</span>
                     </a>
                     <button
                         onClick={() => {
                             if (!selectedOperator) {
-                                alert("請先選擇並登入作業員！\nPlease log in first to view your history.");
+                                alert(t('login_required_history'));
                                 return;
                             }
                             setShowHistoryPopup(true);
@@ -588,12 +778,12 @@ export default function Home() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                             <span className="material-symbols-outlined text-2xl">history</span>
                         </div>
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">歷史紀錄</span>
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{t('history_tab')}</span>
                     </button>
                     <button
                         onClick={() => {
                             if (!selectedOperator) {
-                                alert("請先選擇並登入作業員！\nPlease log in first to view settings.");
+                                alert(t('login_required_history'));
                                 return;
                             }
                             setShowSettingsPopup(true);
@@ -603,7 +793,7 @@ export default function Home() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                             <span className="material-symbols-outlined text-2xl">settings</span>
                         </div>
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">個人設定</span>
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{t('settings_tab')}</span>
                     </button>
                 </div>
             </nav>
@@ -615,7 +805,7 @@ export default function Home() {
                         <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                 <span className="material-symbols-outlined text-slate-500">settings</span>
-                                個人設定
+                                {t('settings_title')}
                             </h2>
                             <button
                                 onClick={() => setShowSettingsPopup(false)}
@@ -643,50 +833,74 @@ export default function Home() {
                             <div className="space-y-4">
                                 <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 border-b border-slate-200 dark:border-slate-700 pb-2">
                                     <span className="material-symbols-outlined text-[16px]">palette</span>
-                                    介面偏好
+                                    {t('appearance')}
                                 </h3>
 
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">深淺色主題</label>
                                     <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                                         <button
                                             onClick={() => setTheme('light')}
                                             className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-1 transition-colors ${theme === 'light' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
                                         >
                                             <span className="material-symbols-outlined text-[18px]">light_mode</span>
-                                            淺色
+                                            {t('theme_light')}
                                         </button>
                                         <button
                                             onClick={() => setTheme('dark')}
                                             className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-1 transition-colors ${theme === 'dark' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
                                         >
                                             <span className="material-symbols-outlined text-[18px]">dark_mode</span>
-                                            深色
+                                            {t('theme_dark')}
                                         </button>
                                         <button
                                             onClick={() => setTheme('system')}
                                             className={`flex-1 py-2 text-sm font-bold rounded-lg flex items-center justify-center gap-1 transition-colors ${theme === 'system' ? 'bg-primary text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
                                         >
                                             <span className="material-symbols-outlined text-[18px]">devices</span>
-                                            系統預設
+                                            {t('theme_system')}
                                         </button>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2 pt-2">
-                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">字體大小</label>
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('font_size')}</label>
                                     <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                                         <button
                                             onClick={() => setFontSize('normal')}
                                             className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${fontSize === 'normal' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
                                         >
-                                            標準
+                                            {t('font_normal')}
                                         </button>
                                         <button
                                             onClick={() => setFontSize('large')}
                                             className={`flex-1 py-2 text-lg font-bold rounded-lg transition-colors ${fontSize === 'large' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
                                         >
-                                            加大
+                                            {t('font_large')}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Language Switcher */}
+                                <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-slate-700 mt-2">
+                                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">{t('language')}</label>
+                                    <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">
+                                        <button
+                                            onClick={() => { i18n.changeLanguage('zh'); localStorage.setItem('appLanguage', 'zh'); }}
+                                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${i18n.language === 'zh' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                        >
+                                            中文
+                                        </button>
+                                        <button
+                                            onClick={() => { i18n.changeLanguage('vi'); localStorage.setItem('appLanguage', 'vi'); }}
+                                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${i18n.language === 'vi' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                        >
+                                            Tiếng Việt
+                                        </button>
+                                        <button
+                                            onClick={() => { i18n.changeLanguage('id'); localStorage.setItem('appLanguage', 'id'); }}
+                                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${i18n.language === 'id' ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                        >
+                                            Bahasa
                                         </button>
                                     </div>
                                 </div>
@@ -696,14 +910,14 @@ export default function Home() {
                             <div className="space-y-4 pt-4 mt-2 border-t-2 border-dashed border-slate-200 dark:border-slate-700">
                                 <h3 className="text-sm font-bold text-red-500 flex items-center gap-1">
                                     <span className="material-symbols-outlined text-[16px]">warning</span>
-                                    危險區
+                                    {t('danger_zone')}
                                 </h3>
                                 <button
                                     onClick={handleLogoutAndClear}
                                     className="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-2 border-red-200 dark:border-red-800/30 font-bold py-3 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 active:scale-[0.98] transition-all"
                                 >
                                     <span className="material-symbols-outlined">delete_forever</span>
-                                    清除「我的最愛」紀錄並登出
+                                    {t('logout')}
                                 </button>
                                 <p className="text-xs text-center text-slate-400 dark:text-slate-500">
                                     如果您要更換崗位或是給其他人使用此裝置，請點擊上方按鈕。
