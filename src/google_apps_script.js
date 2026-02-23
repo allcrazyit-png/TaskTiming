@@ -1,14 +1,23 @@
 function doPost(e) {
+    // 啟用鎖定機制，防止多人同時上傳時發生寫入衝突
+    var lock = LockService.getScriptLock();
+
+    try {
+        // 最多等待 10 秒鐘取得鎖定
+        lock.waitLock(10000);
+    } catch (e) {
+        // 如果 10 秒內等不到，回傳系統忙碌錯誤
+        return ContentService.createTextOutput(JSON.stringify({
+            "result": "error",
+            "message": "系統目前有較多人在上傳資料，請稍後再試一次。"
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     try {
         // 1. 取得並解析傳入的 JSON 資料
         var data = JSON.parse(e.postData.contents);
 
         // 2. 定義欄位順序 (必須與前端傳送的 key 一致，或在此重組)
-        // 前端預計傳送: 
-        // operator, carModel, partNumber, carName, productName, 
-        // startTime, endTime, totalTime, 
-        // goodCount, missing, damage, appearance, others, 
-        // totalScrap, remarks
         var rowData = [
             data.operator || "",          // 1. 作業者
             data.carModel || "",          // 2. 車型
@@ -36,6 +45,9 @@ function doPost(e) {
         var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
         sheet.appendRow(rowData);
 
+        // 強制立即將資料更新到試算表上
+        SpreadsheetApp.flush();
+
         // 4. 回傳成功訊息
         return ContentService.createTextOutput(JSON.stringify({
             "result": "success",
@@ -48,5 +60,8 @@ function doPost(e) {
             "result": "error",
             "message": error.toString()
         })).setMimeType(ContentService.MimeType.JSON);
+    } finally {
+        // 6. 無論成功或失敗，最後一定要釋放鎖定，讓下一個人寫入
+        lock.releaseLock();
     }
 }
