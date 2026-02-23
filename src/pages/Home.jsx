@@ -533,7 +533,7 @@ export default function Home() {
             )}
 
             {/* Company Banner */}
-            <div className="bg-black text-white py-2 px-4 text-center font-black text-base shadow-md z-[50] relative tracking-widest">
+            <div className="bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-400 py-2 px-4 text-center font-black text-sm shadow-sm z-[50] relative tracking-widest">
                 {t('app_title')}
             </div>
             {/* Header Section */}

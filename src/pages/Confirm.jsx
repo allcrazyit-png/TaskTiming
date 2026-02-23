@@ -336,7 +336,7 @@ export default function Confirm() {
             )}
 
             {/* Company Banner */}
-            <div className="bg-black text-white py-2 px-4 text-center font-black text-base shadow-md z-[60] relative tracking-widest">
+            <div className="bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-400 py-2 px-4 text-center font-black text-sm shadow-sm z-[60] relative tracking-widest">
                 瑞全企業股份有限公司
             </div>
             <div className="sticky top-0 z-10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
