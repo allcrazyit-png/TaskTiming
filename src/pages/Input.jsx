@@ -450,6 +450,7 @@ export default function Input() {
                                                     <button onClick={() => handleScrapChangeR('missing', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
+                                                    <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_r')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
@@ -460,6 +461,7 @@ export default function Input() {
                                                     <button onClick={() => handleScrapChangeL('missing', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
+                                                    <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_l')}</span>
                                                 </div>
                                             </div>
                                         ) : (
@@ -492,6 +494,7 @@ export default function Input() {
                                                     <button onClick={() => handleScrapChangeR('damage', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
+                                                    <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_r')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
@@ -502,6 +505,7 @@ export default function Input() {
                                                     <button onClick={() => handleScrapChangeL('damage', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
+                                                    <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_l')}</span>
                                                 </div>
                                             </div>
                                         ) : (
@@ -534,6 +538,7 @@ export default function Input() {
                                                     <button onClick={() => handleScrapChangeR('appearance', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
+                                                    <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_r')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
@@ -544,6 +549,7 @@ export default function Input() {
                                                     <button onClick={() => handleScrapChangeL('appearance', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
+                                                    <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_l')}</span>
                                                 </div>
                                             </div>
                                         ) : (
@@ -576,6 +582,7 @@ export default function Input() {
                                                     <button onClick={() => handleScrapChangeR('others', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
+                                                    <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_r')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
@@ -586,6 +593,7 @@ export default function Input() {
                                                     <button onClick={() => handleScrapChangeL('others', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
+                                                    <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_l')}</span>
                                                 </div>
                                             </div>
                                         ) : (
