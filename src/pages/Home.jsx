@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    console.log("VERSION 1.5 LOADED - i18n");
+    console.log("VERSION 1.6 LOADED - i18n");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -264,7 +264,7 @@ export default function Home() {
                 productName: product['品名'],
                 partNumber: product['品番'],
                 carModel: product['車型'],
-                standardTime: product['標準組裝秒數'] || 0, // Pass Standard Time
+                standardTime: product['CT時間(秒)'] || 0, // Pass Standard Time (updated header)
                 operator: selectedOperator, // Pass Operator
                 productImage: product['產品圖片'] // Pass Product Image
             }
@@ -533,8 +533,8 @@ export default function Home() {
             )}
 
             {/* Company Banner */}
-            <div className="bg-black text-white py-2 px-4 text-center font-black text-base shadow-md z-[50] relative tracking-widest">
-                {t('app_title')}
+            <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-2 px-4 text-center font-bold text-[11px] border-b border-slate-200 dark:border-slate-800 z-[60] relative tracking-[0.3em] uppercase">
+                瑞全企業股份有限公司
             </div>
             {/* Header Section */}
             <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm relative z-40">

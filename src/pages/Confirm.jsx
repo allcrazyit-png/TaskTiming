@@ -173,6 +173,11 @@ export default function Confirm() {
             }
         };
 
+        const formatDate = () => {
+            const now = new Date();
+            return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+        };
+
         if (isDual) {
             // Logic A: Use actual R/L scraps if available, otherwise fallback to proportion (for backwards compatibility/safety)
             const timeParts = totalTime.match(/(\d{2}):(\d{2}):(\d{2})/);
@@ -236,7 +241,7 @@ export default function Confirm() {
                 partNumber: partR,
                 carName: carModel,
                 productName: `${productName} (R邊)`,
-                date: new Date().toLocaleDateString('zh-TW'),
+                date: formatDate(),
                 startTime: startTime,
                 endTime: endTime,
                 totalTime: formatTimeHelper(secondsR),
@@ -260,7 +265,7 @@ export default function Confirm() {
                 partNumber: partL,
                 carName: carModel,
                 productName: `${productName} (L邊)`,
-                date: new Date().toLocaleDateString('zh-TW'),
+                date: formatDate(),
                 startTime: startTime,
                 endTime: endTime,
                 totalTime: formatTimeHelper(secondsL),
@@ -287,7 +292,7 @@ export default function Confirm() {
                 partNumber: partNumber,
                 carName: carModel, // Chinese Name mapped to Car Model
                 productName: productName,
-                date: new Date().toLocaleDateString('zh-TW'),
+                date: formatDate(),
                 startTime: startTime,
                 endTime: endTime,
                 totalTime: totalTime,
@@ -336,7 +341,7 @@ export default function Confirm() {
             )}
 
             {/* Company Banner */}
-            <div className="bg-black text-white py-2 px-4 text-center font-black text-base shadow-md z-[60] relative tracking-widest">
+            <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-2 px-4 text-center font-bold text-[11px] border-b border-slate-200 dark:border-slate-800 z-[60] relative tracking-[0.3em] uppercase">
                 瑞全企業股份有限公司
             </div>
             <div className="sticky top-0 z-10 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">

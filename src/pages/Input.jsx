@@ -171,7 +171,7 @@ export default function Input() {
     return (
         <div className="bg-background-light dark:bg-background-dark text-[#1e293b] dark:text-white min-h-screen flex flex-col pb-40">
             {/* Company Banner */}
-            <div className="bg-black text-white py-2 px-4 text-center font-black text-base shadow-md z-[60] relative tracking-widest">
+            <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-2 px-4 text-center font-bold text-[11px] border-b border-slate-200 dark:border-slate-800 z-[60] relative tracking-[0.3em] uppercase">
                 瑞全企業股份有限公司
             </div>
             <div className="bg-white dark:bg-slate-900 border-b-2 border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between z-20">
