@@ -500,12 +500,20 @@ export default function Home() {
                                 </div>
                             ) : (
                                 operatorHistory.map((record, index) => {
-                                    const timeStr = new Date(record.submitTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+                                    const startStr = record.startTime || '--:--';
+                                    const endStr = record.endTime || new Date(record.submitTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
                                     return (
                                         <div key={index} className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl shadow-sm flex items-start gap-3">
-                                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 flex flex-col items-center justify-center min-w-[60px] border border-blue-100 dark:border-blue-800/30">
-                                                <span className="text-[10px] font-black text-blue-500 uppercase tracking-tight">Done</span>
-                                                <span className="text-sm font-black text-slate-700 dark:text-slate-200 tracking-tight">{timeStr}</span>
+                                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 flex flex-col items-center justify-center min-w-[72px] border border-blue-100 dark:border-blue-800/30 gap-0.5">
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase">開始</span>
+                                                    <span className="text-xs font-black text-blue-600 dark:text-blue-400 tracking-tight">{startStr}</span>
+                                                </div>
+                                                <span className="material-symbols-outlined text-[12px] text-slate-300">arrow_downward</span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase">結束</span>
+                                                    <span className="text-xs font-black text-slate-700 dark:text-slate-200 tracking-tight">{endStr}</span>
+                                                </div>
                                             </div>
                                             <div className="flex-1">
                                                 <p className="text-sm font-black text-slate-800 dark:text-slate-100 leading-tight mb-1">{record.productName}</p>
