@@ -81,13 +81,7 @@ export default function Input() {
     const [endTime, setEndTime] = useState("");
     const [remarks, setRemarks] = useState("");
 
-    // Initialize start time on mount
-    useEffect(() => {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); // HH:mm
-        setStartTime(timeString);
-        setEndTime(timeString); // Default end time to now as well
-    }, []);
+    // Time fields start empty; user must fill them in manually
 
     const getCurrentTime = () => {
         return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
@@ -130,6 +124,11 @@ export default function Input() {
     const handleConfirm = () => {
         if (originalIsDual && !activeMode) {
             alert("請先選擇作業模式！\nPlease select a work mode first.");
+            return;
+        }
+
+        if (!startTime || !endTime) {
+            alert("請填入開始時間與結束時間後再上傳！");
             return;
         }
 
@@ -269,38 +268,26 @@ export default function Input() {
                             </div>
                             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-primary space-y-4">
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-black text-slate-500">{t('start_time')}</label>
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            className="time-input"
-                                            type="time"
-                                            value={startTime}
-                                            onChange={(e) => setStartTime(e.target.value)}
-                                        />
-                                        <button
-                                            onClick={() => setStartTime(getCurrentTime())}
-                                            className="flex-shrink-0 bg-primary text-white h-full px-4 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform border-b-2 border-blue-800 shadow-sm"
-                                        >
-                                            {t('fill_now')}
-                                        </button>
-                                    </div>
+                                    <label className="block text-sm font-black text-slate-500">
+                                        {t('start_time')} <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        className="time-input"
+                                        type="time"
+                                        value={startTime}
+                                        onChange={(e) => setStartTime(e.target.value)}
+                                    />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="block text-sm font-black text-slate-500">{t('end_time')}</label>
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            className="time-input"
-                                            type="time"
-                                            value={endTime}
-                                            onChange={(e) => setEndTime(e.target.value)}
-                                        />
-                                        <button
-                                            onClick={() => setEndTime(getCurrentTime())}
-                                            className="flex-shrink-0 bg-primary text-white h-full px-4 py-2 rounded-xl font-bold text-sm active:scale-95 transition-transform border-b-2 border-blue-800 shadow-sm"
-                                        >
-                                            {t('fill_now')}
-                                        </button>
-                                    </div>
+                                    <label className="block text-sm font-black text-slate-500">
+                                        {t('end_time')} <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        className="time-input"
+                                        type="time"
+                                        value={endTime}
+                                        onChange={(e) => setEndTime(e.target.value)}
+                                    />
                                 </div>
                             </div>
                         </section>
