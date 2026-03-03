@@ -266,7 +266,7 @@ export default function Input() {
                                     {getTodayDateString()}
                                 </span>
                             </div>
-                            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-primary space-y-4">
+                            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-primary space-y-3">
                                 <div className="space-y-2">
                                     <label className="block text-sm font-black text-slate-500">
                                         {t('start_time')} <span className="text-red-500">*</span>

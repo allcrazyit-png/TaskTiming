@@ -70,7 +70,9 @@ body {
 }
 
 .time-input {
-  @apply bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-2xl font-black text-center w-full focus:ring-4 focus:ring-primary/20 transition-all outline-none;
+  @apply bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-1 py-2 text-xl font-black text-center w-full focus:ring-4 focus:ring-primary/20 transition-all outline-none;
+  box-sizing: border-box;
+  max-width: 100%;
 }
 
 /* Hide spin buttons for number inputs */

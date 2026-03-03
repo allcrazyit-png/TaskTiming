@@ -1,3 +1,41 @@
+function doGet(e) {
+    var ssId = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ';
+    var sheetName = e.parameter.sheet;
+    var sheetIndex = e.parameter.index; // 支援透過 index 抓取 (0 開始)
+    var ss = SpreadsheetApp.openById(ssId);
+    var sheet;
+
+    if (sheetName) {
+        sheet = ss.getSheetByName(sheetName);
+    } else if (sheetIndex !== undefined) {
+        sheet = ss.getSheets()[parseInt(sheetIndex)];
+    } else {
+        sheet = ss.getSheets()[1]; // 預設抓第二個分頁 (員工資料)
+    }
+
+    if (!sheet) {
+        return ContentService.createTextOutput(JSON.stringify({
+            "result": "error",
+            "message": "找不到工作表"
+        })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var data = sheet.getDataRange().getValues();
+    var headers = data[0];
+    var jsonArray = [];
+
+    for (var i = 1; i < data.length; i++) {
+        var obj = {};
+        for (var j = 0; j < headers.length; j++) {
+            obj[headers[j]] = data[i][j];
+        }
+        jsonArray.push(obj);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify(jsonArray))
+        .setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
     // 啟用鎖定機制，防止多人同時上傳時發生寫入衝突
     var lock = LockService.getScriptLock();
@@ -41,8 +79,9 @@ function doPost(e) {
             data.efficiency || ""         // 20. 效率值
         ];
 
-        // 3. 寫入 Google Sheet
-        var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+        // 3. 寫入 Google Sheet (維持原本設定)
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
+        var sheet = ss.getSheetByName("紀錄") || ss.getSheets()[0];
         sheet.appendRow(rowData);
 
         // 強制立即將資料更新到試算表上
@@ -65,3 +104,4 @@ function doPost(e) {
         lock.releaseLock();
     }
 }
+

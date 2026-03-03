@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import { useTranslation } from 'react-i18next';
 
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
+
 export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
@@ -86,20 +88,16 @@ export default function Home() {
                     error: (err) => console.error('Product CSV Error:', err)
                 });
 
-                // Fetch Employees
-                const employeeRes = await fetch(import.meta.env.BASE_URL + '員工代號及姓名.csv');
-                const employeeText = await employeeRes.text();
+                // Fetch Employees from Google Sheet (分頁名稱: 員工資料)
+                const employeeRes = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=員工資料`);
+                const employeeData = await employeeRes.json();
 
-                Papa.parse(employeeText, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (results) => {
-                        // Assuming columns: 作業者編號, 作業者名稱, 密碼
-                        const validEmployees = results.data.filter(item => item['作業者名稱']);
-                        setEmployees(validEmployees);
-                    },
-                    error: (err) => console.error('Employee CSV Error:', err)
-                });
+                if (Array.isArray(employeeData)) {
+                    const validEmployees = employeeData.filter(item => item['作業者名稱']);
+                    setEmployees(validEmployees);
+                } else {
+                    console.error('Employee data is not an array:', employeeData);
+                }
 
             } catch (error) {
                 console.error('Error fetching data:', error);
