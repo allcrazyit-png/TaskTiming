@@ -8,7 +8,7 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLe
 export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    console.log("VERSION 1.6 LOADED - i18n");
+    console.log("VERSION 1.7 LOADED - Google Sheets Sync");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -148,13 +148,14 @@ export default function Home() {
             console.log("Restoring session, saved ID:", savedOperatorId);
 
             if (savedOperatorId) {
-                const foundEmp = employees.find(emp => emp['作業者編號'] === savedOperatorId);
+                // Use String() to compare because GAS returns numbers, localStorage saves strings
+                const foundEmp = employees.find(emp => String(emp['作業者編號']) === String(savedOperatorId));
                 if (foundEmp) {
                     const operatorStr = `[${foundEmp['作業者編號']}] ${foundEmp['作業者名稱']}`;
                     console.log("Found employee, restoring:", operatorStr);
                     setSelectedOperator(operatorStr);
-                    loadOperatorHistory(foundEmp['作業者編號']); // Load history on startup
-                    loadOperatorFavorites(foundEmp['作業者編號']); // Load favorites on startup
+                    loadOperatorHistory(foundEmp['作業者編號']);
+                    loadOperatorFavorites(foundEmp['作業者編號']);
                 } else {
                     console.log("Saved ID not found in employee list");
                 }
@@ -166,9 +167,9 @@ export default function Home() {
         const value = e.target.value;
         if (!value) {
             setSelectedOperator('');
-            setOperatorHistory([]); // Clear history displayed
-            setFavoriteProducts([]); // Clear favorites displayed
-            localStorage.removeItem('savedOperatorId'); // Clear saved session
+            setOperatorHistory([]);
+            setFavoriteProducts([]);
+            localStorage.removeItem('savedOperatorId');
             return;
         }
 
@@ -176,7 +177,8 @@ export default function Home() {
         const match = value.match(/\[(.*?)\]/);
         if (match) {
             const id = match[1];
-            const emp = employees.find(e => e['作業者編號'] === id);
+            // Use String() to compare because GAS returns numbers, localStorage saves strings
+            const emp = employees.find(e => String(e['作業者編號']) === String(id));
             if (emp) {
                 setTempOperator(emp);
                 setPasswordInput('');
@@ -779,7 +781,7 @@ export default function Home() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
                             <span className="material-symbols-outlined text-2xl">home</span>
                         </div>
-                        <span className="text-xs font-bold text-red-500">{t('home_tab')} v1.5</span>
+                        <span className="text-xs font-bold text-red-500">{t('home_tab')} v1.7</span>
                     </a>
                     <button
                         onClick={() => {
