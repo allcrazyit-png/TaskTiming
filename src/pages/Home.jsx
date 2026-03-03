@@ -89,14 +89,31 @@ export default function Home() {
                 });
 
                 // Fetch Employees from Google Sheet (分頁名稱: 員工資料)
-                const employeeRes = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=員工資料`);
-                const employeeData = await employeeRes.json();
+                try {
+                    const sheetParam = encodeURIComponent('員工資料');
+                    const employeeRes = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=${sheetParam}`);
+                    const employeeData = await employeeRes.json();
 
-                if (Array.isArray(employeeData)) {
-                    const validEmployees = employeeData.filter(item => item['作業者名稱']);
-                    setEmployees(validEmployees);
-                } else {
-                    console.error('Employee data is not an array:', employeeData);
+                    if (Array.isArray(employeeData) && employeeData.length > 0) {
+                        const validEmployees = employeeData.filter(item => item['作業者名稱']);
+                        setEmployees(validEmployees);
+                    } else {
+                        throw new Error('Invalid employee data from Google Sheets');
+                    }
+                } catch (empError) {
+                    console.warn('Google Sheets fetch failed, falling back to local CSV:', empError);
+                    // Fallback: local CSV
+                    const employeeRes = await fetch(import.meta.env.BASE_URL + '員工代號及姓名.csv');
+                    const employeeText = await employeeRes.text();
+                    Papa.parse(employeeText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: (results) => {
+                            const validEmployees = results.data.filter(item => item['作業者名稱']);
+                            setEmployees(validEmployees);
+                        },
+                        error: (err) => console.error('Employee CSV Fallback Error:', err)
+                    });
                 }
 
             } catch (error) {
