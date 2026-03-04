@@ -63,13 +63,33 @@ export default function BattleReport() {
         const load = async () => {
             try {
                 setLoading(true);
-                const res = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=紀錄`);
+                // Try fetching by sheet name (with proper URL encoding)
+                const sheetParam = encodeURIComponent('紀錄');
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=${sheetParam}`);
                 if (!res.ok) throw new Error('HTTP error ' + res.status);
-                const data = await res.json();
+                let data = await res.json();
+                console.log('[BattleReport] Raw data from 紀錄:', data);
+
+                // If sheet name didn't work (returned error or non-array), fallback to index=2
+                if (!Array.isArray(data)) {
+                    console.warn('[BattleReport] Falling back to index=2...');
+                    const res2 = await fetch(`${GOOGLE_SCRIPT_URL}?index=2`);
+                    data = await res2.json();
+                    console.log('[BattleReport] Fallback data (index=2):', data);
+                }
+
+                // Try index=0 as last resort (first sheet)
+                if (!Array.isArray(data)) {
+                    console.warn('[BattleReport] Trying index=0...');
+                    const res3 = await fetch(`${GOOGLE_SCRIPT_URL}?index=0`);
+                    data = await res3.json();
+                    console.log('[BattleReport] Last resort data (index=0):', data);
+                }
+
                 if (Array.isArray(data)) {
                     setRecords(data);
                 } else {
-                    setError('無法讀取資料，請稍後再試');
+                    setError('無法讀取資料，請確認資料表設定');
                 }
             } catch (e) {
                 setError('資料讀取失敗：' + e.message);
@@ -213,10 +233,10 @@ export default function BattleReport() {
                                 return (
                                     <div key={m}
                                         className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-black border transition-all ${done
-                                                ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 text-yellow-600 dark:text-yellow-400'
-                                                : isCurrent
-                                                    ? 'bg-primary/10 border-primary/30 text-primary'
-                                                    : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
+                                            ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 text-yellow-600 dark:text-yellow-400'
+                                            : isCurrent
+                                                ? 'bg-primary/10 border-primary/30 text-primary'
+                                                : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
                                             }`}>
                                         {done
                                             ? <span className="material-symbols-outlined text-[13px]">check_circle</span>
