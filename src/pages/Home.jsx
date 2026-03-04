@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Papa from 'papaparse';
 import { useTranslation } from 'react-i18next';
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
@@ -74,19 +73,43 @@ export default function Home() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch Products
-                const productRes = await fetch(import.meta.env.BASE_URL + 'products.csv');
-                const productText = await productRes.text();
+                // Fetch Products from Google Sheet '瑞全資料中心' (第一個分頁, index=0)
+                try {
+                    const productRes = await fetch(`${GOOGLE_SCRIPT_URL}?index=0`);
+                    const rawProductData = await productRes.json();
 
-                Papa.parse(productText, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (results) => {
-                        const validData = results.data.filter(item => item['車型'] && item['品番']);
-                        setProducts(validData);
-                    },
-                    error: (err) => console.error('Product CSV Error:', err)
-                });
+                    if (Array.isArray(rawProductData)) {
+                        // 輔助函式：移除欄位名稱中的標籤，例如 [巡檢][組裝記錄表]
+                        const stripTags = (name) => name.replace(/\[.*?\]/g, '').trim();
+                        // 只取有 [組裝記錄表] 標籤的欄位
+                        const isAssemblyCol = (name) => name.includes('[組裝記錄表]');
+
+                        const filteredProducts = rawProductData
+                            .filter(item => {
+                                // 找出 類別 欄位（不論標籤）並確認是「組裝」
+                                const categoryKey = Object.keys(item).find(k => k.startsWith('類別'));
+                                const category = categoryKey ? String(item[categoryKey]).trim() : '';
+                                return category === '組裝';
+                            })
+                            .map(item => {
+                                // 只保留 [組裝記錄表] 欄位，並去除標籤
+                                const newItem = {};
+                                Object.keys(item).forEach(key => {
+                                    if (isAssemblyCol(key)) {
+                                        newItem[stripTags(key)] = item[key];
+                                    }
+                                });
+                                return newItem;
+                            })
+                            .filter(item => item['車型'] && item['品番']);
+
+                        setProducts(filteredProducts);
+                    } else {
+                        console.error('Product data is not an array:', rawProductData);
+                    }
+                } catch (productError) {
+                    console.error('Fetch Products Error:', productError);
+                }
 
                 // Fetch Employees from Google Sheet (分頁名稱: 員工資料)
                 try {
