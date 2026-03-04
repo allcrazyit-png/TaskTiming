@@ -243,7 +243,7 @@ export default function Home() {
         if (!tempOperator) return;
 
         // Default to ID if no password set, otherwise compare
-        const correctPassword = tempOperator['密碼'] || tempOperator['作業者編號'];
+        const correctPassword = String(tempOperator['密碼'] || tempOperator['作業者編號'] || '');
 
         if (passwordInput === correctPassword) {
             const operatorStr = `[${tempOperator['作業者編號']}] ${tempOperator['作業者名稱']}`;
