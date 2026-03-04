@@ -8,7 +8,7 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLe
 export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
-    console.log("VERSION 1.7 LOADED - Google Sheets Sync");
+    console.log("VERSION 1.8 LOADED - Google Sheets Sync & Date Picker");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -781,7 +781,7 @@ export default function Home() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
                             <span className="material-symbols-outlined text-2xl">home</span>
                         </div>
-                        <span className="text-xs font-bold text-red-500">{t('home_tab')} v1.7</span>
+                        <span className="text-xs font-bold text-red-500">{t('home_tab')} v1.8</span>
                     </a>
                     <button
                         onClick={() => {
