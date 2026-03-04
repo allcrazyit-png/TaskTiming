@@ -201,19 +201,19 @@ export default function Input() {
                 <div className="flex items-center gap-3 flex-1">
                     <div className="relative">
                         {displayProductImage ? (
-                            <img alt="Product Image" className="w-[60px] h-[60px] rounded-xl border-2 border-primary object-cover shadow-sm bg-white"
+                            <img alt="Product Image" className="w-24 h-24 rounded-xl border-2 border-primary object-cover shadow-md bg-white"
                                 src={displayProductImage}
                                 onError={(e) => {
                                     e.target.onerror = null;
-                                    e.target.src = 'https://placehold.co/100x100?text=No+Photo';
+                                    e.target.src = 'https://placehold.co/150x150?text=No+Photo';
                                 }}
                             />
                         ) : (
-                            <div className="w-[60px] h-[60px] rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-                                <span className="material-symbols-outlined text-2xl">image_not_supported</span>
+                            <div className="w-24 h-24 rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                                <span className="material-symbols-outlined text-3xl">image_not_supported</span>
                             </div>
                         )}
-                        <div className="absolute -bottom-1 -right-1 bg-primary text-white text-[10px] px-1.5 py-0.5 rounded-md font-bold">產品照</div>
+                        <div className="absolute -bottom-1 -right-1 bg-primary text-white text-[11px] px-2 py-0.5 rounded-md font-bold shadow-sm">產品照</div>
                     </div>
                     <div className="flex flex-col">
                         <h1 className="text-lg font-black leading-tight">{t('work_report')}</h1>
