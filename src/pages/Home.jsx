@@ -804,7 +804,7 @@ export default function Home() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
                             <span className="material-symbols-outlined text-2xl">home</span>
                         </div>
-                        <span className="text-xs font-bold text-red-500">{t('home_tab')} v1.8</span>
+                        <span className="text-xs font-bold text-red-500">{t('home_tab')} v1.9</span>
                     </a>
                     <button
                         onClick={() => {
@@ -820,6 +820,16 @@ export default function Home() {
                             <span className="material-symbols-outlined text-2xl">history</span>
                         </div>
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{t('history_tab')}</span>
+                    </button>
+                    <button
+                        onClick={() => navigate('/battle')}
+                        className="flex flex-col items-center gap-1 group active:scale-95 transition-transform"
+                    >
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl text-white border border-emerald-500"
+                            style={{ background: 'linear-gradient(135deg, #059669, #0d9488)', boxShadow: '0 0 10px rgba(16, 185, 129, 0.3)' }}>
+                            <span className="material-symbols-outlined text-2xl">bar_chart</span>
+                        </div>
+                        <span className="text-xs font-black text-emerald-500">戰報</span>
                     </button>
                     <button
                         onClick={() => {
