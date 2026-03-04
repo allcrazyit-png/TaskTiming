@@ -1,16 +1,23 @@
 function doGet(e) {
     var ssId = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ';
     var sheetName = e.parameter.sheet;
-    var sheetIndex = e.parameter.index; // 支援透過 index 抓取 (0 開始)
-    var ss = SpreadsheetApp.openById(ssId);
-    var sheet;
+    var sheetIndex = e.parameter.index;
+    var useActive = e.parameter.useActive === 'true'; // 新增參數
 
+    var ss;
+    if (useActive) {
+        ss = SpreadsheetApp.getActiveSpreadsheet(); // 讀取當前連結的試算表 (紀錄區)
+    } else {
+        ss = SpreadsheetApp.openById(ssId); // 讀取產品/員工資料區
+    }
+
+    var sheet;
     if (sheetName) {
         sheet = ss.getSheetByName(sheetName);
     } else if (sheetIndex !== undefined) {
         sheet = ss.getSheets()[parseInt(sheetIndex)];
     } else {
-        sheet = ss.getSheets()[1]; // 預設抓第二個分頁 (員工資料)
+        sheet = ss.getSheets()[0];
     }
 
     if (!sheet) {

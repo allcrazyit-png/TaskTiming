@@ -63,33 +63,26 @@ export default function BattleReport() {
         const load = async () => {
             try {
                 setLoading(true);
-                // Try fetching by sheet name (with proper URL encoding)
+                // 使用 useActive=true 來讀取「上傳目的地」的試算表 (紀錄區)
+                // 並指定讀取名稱為「紀錄」的分頁
                 const sheetParam = encodeURIComponent('紀錄');
-                const res = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=${sheetParam}`);
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?useActive=true&sheet=${sheetParam}`);
+
                 if (!res.ok) throw new Error('HTTP error ' + res.status);
                 let data = await res.json();
-                console.log('[BattleReport] Raw data from 紀錄:', data);
+                console.log('[BattleReport] Raw data from UseActive Records:', data);
 
-                // If sheet name didn't work (returned error or non-array), fallback to index=2
+                // 如果用名稱找不到，嘗試抓該試算表的第一個分頁 (index=0)
                 if (!Array.isArray(data)) {
-                    console.warn('[BattleReport] Falling back to index=2...');
-                    const res2 = await fetch(`${GOOGLE_SCRIPT_URL}?index=2`);
+                    console.warn('[BattleReport] Sheet name failed, trying active index=0...');
+                    const res2 = await fetch(`${GOOGLE_SCRIPT_URL}?useActive=true&index=0`);
                     data = await res2.json();
-                    console.log('[BattleReport] Fallback data (index=2):', data);
-                }
-
-                // Try index=0 as last resort (first sheet)
-                if (!Array.isArray(data)) {
-                    console.warn('[BattleReport] Trying index=0...');
-                    const res3 = await fetch(`${GOOGLE_SCRIPT_URL}?index=0`);
-                    data = await res3.json();
-                    console.log('[BattleReport] Last resort data (index=0):', data);
                 }
 
                 if (Array.isArray(data)) {
                     setRecords(data);
                 } else {
-                    setError('無法讀取資料，請確認資料表設定');
+                    setError('無法讀取紀錄，請確認您的組裝紀錄表中有「紀錄」分頁');
                 }
             } catch (e) {
                 setError('資料讀取失敗：' + e.message);
