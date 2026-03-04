@@ -87,9 +87,15 @@ export default function Input() {
         return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
     };
 
-    const getTodayDateString = () => {
+    // Date state
+    const [workDate, setWorkDate] = useState(() => {
         const now = new Date();
-        return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    });
+
+    const getFormattedWorkDate = () => {
+        // Convert YYYY-MM-DD back to YYYY/MM/DD for backend compatibility
+        return workDate.replace(/-/g, '/');
     };
 
     // Calculate total scrap
@@ -158,6 +164,7 @@ export default function Input() {
                 scraps: combinedScraps,
                 scrapsR: isDual ? scrapsR : null,
                 scrapsL: isDual ? scrapsL : null,
+                workDate: getFormattedWorkDate(),
                 startTime,
                 endTime,
                 totalTime,
@@ -262,9 +269,12 @@ export default function Input() {
                                     <span className="material-symbols-outlined text-2xl">schedule</span>
                                     {t('work_time')}
                                 </h2>
-                                <span className="text-sm font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-                                    {getTodayDateString()}
-                                </span>
+                                <input
+                                    type="date"
+                                    value={workDate}
+                                    onChange={(e) => setWorkDate(e.target.value)}
+                                    className="text-sm font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer"
+                                />
                             </div>
                             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-primary space-y-3">
                                 <div className="space-y-2">

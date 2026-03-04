@@ -28,7 +28,8 @@ export default function Confirm() {
         startTime,
         endTime,
         totalTime,
-        remarks
+        remarks,
+        workDate
     } = location.state || {
         productName: "零件 A",
         partNumber: "SAMPLE",
@@ -44,7 +45,8 @@ export default function Confirm() {
         startTime: "08:00",
         endTime: "10:00",
         totalTime: "02:00:00",
-        remarks: "無"
+        remarks: "無",
+        workDate: new Date().toLocaleDateString('en-ZA').replace(/-/g, '/') // Default fallback YYYY/MM/DD
     };
 
     const getScrapLabel = (key) => {
@@ -173,7 +175,8 @@ export default function Confirm() {
             }
         };
 
-        const formatDate = () => {
+        const getSubmitDate = () => {
+            if (workDate) return workDate;
             const now = new Date();
             return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
         };
@@ -241,7 +244,7 @@ export default function Confirm() {
                 partNumber: partR,
                 carName: carModel,
                 productName: `${productName} (R邊)`,
-                date: formatDate(),
+                date: getSubmitDate(),
                 startTime: startTime,
                 endTime: endTime,
                 totalTime: formatTimeHelper(secondsR),
@@ -265,7 +268,7 @@ export default function Confirm() {
                 partNumber: partL,
                 carName: carModel,
                 productName: `${productName} (L邊)`,
-                date: formatDate(),
+                date: getSubmitDate(),
                 startTime: startTime,
                 endTime: endTime,
                 totalTime: formatTimeHelper(secondsL),
@@ -292,7 +295,7 @@ export default function Confirm() {
                 partNumber: partNumber,
                 carName: carModel, // Chinese Name mapped to Car Model
                 productName: productName,
-                date: formatDate(),
+                date: getSubmitDate(),
                 startTime: startTime,
                 endTime: endTime,
                 totalTime: totalTime,
