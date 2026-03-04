@@ -184,7 +184,7 @@ export default function Input() {
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-3xl text-primary">account_circle</span>
                     <div className="text-sm font-extrabold text-slate-800 dark:text-white">
-                        作業者: <span className="text-primary">{operator}</span>
+                        員工: <span className="text-primary">{operator}</span>
                     </div>
                 </div>
                 <div className="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-sm font-bold text-slate-500">

@@ -77,22 +77,21 @@ export default function Home() {
                 try {
                     const productRes = await fetch(`${GOOGLE_SCRIPT_URL}?index=0`);
                     const rawProductData = await productRes.json();
+                    console.log("Raw Product Data from Sheet:", rawProductData?.[0]); // Log the first item to check keys
 
                     if (Array.isArray(rawProductData)) {
-                        // 輔助函式：移除欄位名稱中的標籤，例如 [巡檢][組裝記錄表]
                         const stripTags = (name) => name.replace(/\[.*?\]/g, '').trim();
-                        // 只取有 [組裝記錄表] 標籤的欄位
                         const isAssemblyCol = (name) => name.includes('[組裝記錄表]');
 
                         const filteredProducts = rawProductData
                             .filter(item => {
-                                // 找出 類別 欄位（不論標籤）並確認是「組裝」
-                                const categoryKey = Object.keys(item).find(k => k.startsWith('類別'));
-                                const category = categoryKey ? String(item[categoryKey]).trim() : '';
-                                return category === '組裝';
+                                // 尋找名稱包含「類別」的欄位
+                                const categoryKey = Object.keys(item).find(k => k.includes('類別'));
+                                const categoryValue = categoryKey ? String(item[categoryKey]).trim() : '';
+                                // 使用 includes 防止隱形字元造成比對失敗
+                                return categoryValue.includes('組裝');
                             })
                             .map(item => {
-                                // 只保留 [組裝記錄表] 欄位，並去除標籤
                                 const newItem = {};
                                 Object.keys(item).forEach(key => {
                                     if (isAssemblyCol(key)) {
@@ -103,6 +102,7 @@ export default function Home() {
                             })
                             .filter(item => item['車型'] && item['品番']);
 
+                        console.log("Filtered Products:", filteredProducts.length);
                         setProducts(filteredProducts);
                     } else {
                         console.error('Product data is not an array:', rawProductData);
@@ -118,7 +118,7 @@ export default function Home() {
                     const employeeData = await employeeRes.json();
 
                     if (Array.isArray(employeeData) && employeeData.length > 0) {
-                        const validEmployees = employeeData.filter(item => item['作業者名稱']);
+                        const validEmployees = employeeData.filter(item => item['姓名']);
                         setEmployees(validEmployees);
                     } else {
                         console.error('Invalid employee data from Google Sheets');
@@ -172,13 +172,13 @@ export default function Home() {
 
             if (savedOperatorId) {
                 // Use String() to compare because GAS returns numbers, localStorage saves strings
-                const foundEmp = employees.find(emp => String(emp['作業者編號']) === String(savedOperatorId));
+                const foundEmp = employees.find(emp => String(emp['員工編號']) === String(savedOperatorId));
                 if (foundEmp) {
-                    const operatorStr = `[${foundEmp['作業者編號']}] ${foundEmp['作業者名稱']}`;
+                    const operatorStr = `[${foundEmp['員工編號']}] ${foundEmp['姓名']}`;
                     console.log("Found employee, restoring:", operatorStr);
                     setSelectedOperator(operatorStr);
-                    loadOperatorHistory(foundEmp['作業者編號']);
-                    loadOperatorFavorites(foundEmp['作業者編號']);
+                    loadOperatorHistory(foundEmp['員工編號']);
+                    loadOperatorFavorites(foundEmp['員工編號']);
                 } else {
                     console.log("Saved ID not found in employee list");
                 }
@@ -201,7 +201,7 @@ export default function Home() {
         if (match) {
             const id = match[1];
             // Use String() to compare because GAS returns numbers, localStorage saves strings
-            const emp = employees.find(e => String(e['作業者編號']) === String(id));
+            const emp = employees.find(e => String(e['員工編號']) === String(id));
             if (emp) {
                 setTempOperator(emp);
                 setPasswordInput('');
@@ -266,14 +266,14 @@ export default function Home() {
         if (!tempOperator) return;
 
         // Default to ID if no password set, otherwise compare
-        const correctPassword = String(tempOperator['密碼'] || tempOperator['作業者編號'] || '');
+        const correctPassword = String(tempOperator['密碼'] || tempOperator['員工編號'] || '');
 
         if (passwordInput === correctPassword) {
-            const operatorStr = `[${tempOperator['作業者編號']}] ${tempOperator['作業者名稱']}`;
+            const operatorStr = `[${tempOperator['員工編號']}] ${tempOperator['姓名']}`;
             setSelectedOperator(operatorStr);
-            localStorage.setItem('savedOperatorId', tempOperator['作業者編號']); // Save just the ID
-            loadOperatorHistory(tempOperator['作業者編號']); // Load history
-            loadOperatorFavorites(tempOperator['作業者編號']); // Load favorites
+            localStorage.setItem('savedOperatorId', tempOperator['員工編號']); // Save just the ID
+            loadOperatorHistory(tempOperator['員工編號']); // Load history
+            loadOperatorFavorites(tempOperator['員工編號']); // Load favorites
             setShowPasswordModal(false);
             setTempOperator(null);
         } else {
@@ -455,7 +455,7 @@ export default function Home() {
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('enter_password_title')}</h3>
                             <p className="text-sm text-slate-500 mt-1">
-                                {t('operator_label')} <span className="font-bold text-primary">{tempOperator?.['作業者名稱']}</span>
+                                {t('operator_label')} <span className="font-bold text-primary">{tempOperator?.['姓名']}</span>
                             </p>
                         </div>
 
@@ -618,8 +618,8 @@ export default function Home() {
                                 >
                                     <option value="">{t('select_operator')}</option>
                                     {employees.map((emp, idx) => (
-                                        <option key={idx} value={`[${emp['作業者編號']}] ${emp['作業者名稱']}`}>
-                                            [{emp['作業者編號']}] {emp['作業者名稱']}
+                                        <option key={idx} value={`[${emp['員工編號']}] ${emp['姓名']}`}>
+                                            [{emp['員工編號']}] {emp['姓名']}
                                         </option>
                                     ))}
                                 </select>

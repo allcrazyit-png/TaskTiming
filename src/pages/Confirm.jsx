@@ -72,10 +72,15 @@ export default function Confirm() {
         }
 
         // Avoid division by zero
-        if (totalSeconds === 0) return { avgTime: 0, efficiency: 0, scrapRate: 0 };
+        if (totalSeconds === 0) return {
+            avgTime: "0.0",
+            efficiency: "0.0",
+            scrapRate: "0.0",
+            yieldRate: "0.0"
+        };
 
         // 1. Avg Assembly Time = Actual Total Time / Good Count
-        const avgTime = goodCount > 0 ? (totalSeconds / goodCount).toFixed(1) : 0;
+        const avgTime = goodCount > 0 ? (totalSeconds / goodCount).toFixed(1) : "0.0";
 
         // 2. Efficiency = (Standard Time * Good Count) / Actual Total Time
         // Standard Time is in seconds
@@ -83,8 +88,8 @@ export default function Confirm() {
 
         // 3. Scrap Rate & Yield Rate
         const totalOutput = goodCount + totalScrap;
-        const scrapRate = totalOutput > 0 ? ((totalScrap / totalOutput) * 100).toFixed(1) : 0;
-        const yieldRate = totalOutput > 0 ? ((goodCount / totalOutput) * 100).toFixed(1) : 0;
+        const scrapRate = totalOutput > 0 ? ((totalScrap / totalOutput) * 100).toFixed(1) : "0.0";
+        const yieldRate = totalOutput > 0 ? ((goodCount / totalOutput) * 100).toFixed(1) : "0.0";
 
         return { avgTime, efficiency, scrapRate, yieldRate };
     };
@@ -227,11 +232,11 @@ export default function Confirm() {
             const scrapL = Object.values(finalScrapsL).reduce((a, b) => a + b, 0);
 
             const calcMetrics = (seconds, gCount, tScrap) => {
-                const avg = gCount > 0 ? (seconds / gCount).toFixed(1) : 0;
-                const eff = seconds > 0 ? ((standardTime * gCount) / seconds * 100).toFixed(1) : 0;
+                const avg = gCount > 0 ? (seconds / gCount).toFixed(1) : "0.0";
+                const eff = seconds > 0 ? ((standardTime * gCount) / seconds * 100).toFixed(1) : "0.0";
                 const out = gCount + tScrap;
-                const sr = out > 0 ? ((tScrap / out) * 100).toFixed(1) : 0;
-                const yr = out > 0 ? ((gCount / out) * 100).toFixed(1) : 0;
+                const sr = out > 0 ? ((tScrap / out) * 100).toFixed(1) : "0.0";
+                const yr = out > 0 ? ((gCount / out) * 100).toFixed(1) : "0.0";
                 return { avgTime: avg, efficiency: eff, scrapRate: sr, yieldRate: yr };
             };
 
@@ -365,7 +370,7 @@ export default function Confirm() {
                 <div className="flex justify-center">
                     <div className="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full border-2 border-slate-300 dark:border-slate-700 flex items-center gap-2">
                         <span className="material-symbols-outlined text-lg text-slate-600 dark:text-slate-400">account_circle</span>
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">作業者: <span className="text-blue-600 dark:text-blue-400">{operator}</span></span>
+                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">員工: <span className="text-blue-600 dark:text-blue-400">{operator}</span></span>
                     </div>
                 </div>
                 <header className="text-center">
