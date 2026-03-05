@@ -298,11 +298,42 @@ export default function BattleReport() {
                             最新捷報
                         </h2>
 
-                        <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                            <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-2 block">pending</span>
-                            <p className="text-slate-400 font-bold">敬請期待</p>
-                            <p className="text-[10px] text-slate-400/60 mt-1 font-medium">功能調整中，稍後開放</p>
-                        </div>
+                        {liveFeed.length === 0 ? (
+                            <div className="text-center py-10 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                                <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-2 block">pending</span>
+                                <p className="text-slate-400 font-bold">目前尚無紀錄</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {liveFeed.map((r, i) => {
+                                    const gc = parseInt(r['良品數量'] ?? 0) || 0;
+                                    const opRaw = String(r['作業者'] ?? '');
+                                    const opName = opRaw.replace(/\[.*?\]/g, "").trim();
+                                    const isToday = todayRecords.some(tr => tr === r);
+
+                                    return (
+                                        <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-xs ${avatarColors[i % avatarColors.length]}`}>
+                                                {opName.charAt(0)}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-black text-slate-800 dark:text-white truncate">{opName}</p>
+                                                    {isToday && (
+                                                        <span className="text-[9px] bg-emerald-500 text-white px-1.5 py-0.5 rounded-md font-black">今日</span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] text-slate-400 font-medium truncate">{r['品番']} / {r['產品中文名稱']}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-black text-primary">+{gc.toLocaleString()}</p>
+                                                <p className="text-[10px] text-slate-400 font-bold">良品</p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </section>
                 </main>
             )}
