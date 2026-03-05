@@ -116,16 +116,20 @@ export default function BattleReport() {
 
     const todayGoodCount = todayRecords.reduce((s, r) => s + (parseInt(r['良品數量'] ?? 0) || 0), 0);
 
-    // Efficiency calculation for today
-    let totalEarned = 0, totalActual = 0;
+    // 效率計算：用試算表已計算好的「效率值」欄位 (ratio, e.g. 1.188 = 118.8%)
+    // 加權平均：依良品數量×標準秒加權，避免短工單過度影響結果
+    let earnedTotal = 0, actualTotal = 0;
     todayRecords.forEach(r => {
         const gc = parseInt(r['良品數量'] ?? 0) || 0;
         const st = parseFloat(r['標準組裝秒數'] ?? 0) || 0;
-        const ts = parseTotalSeconds(String(r['總時間'] ?? ''));
-        totalEarned += gc * st;
-        totalActual += ts;
+        const eff = parseFloat(r['效率值'] ?? 0) || 0;
+        // 只計入有設定標準秒數、且效率值有效的紀錄
+        if (st > 0 && eff > 0 && gc > 0) {
+            earnedTotal += gc * st;           // 標準應花秒數
+            actualTotal += (gc * st) / eff;  // 實際花秒數 = 應花 / 效率
+        }
     });
-    const avgEfficiency = totalActual > 0 ? (totalEarned / totalActual) * 100 : 0;
+    const avgEfficiency = actualTotal > 0 ? (earnedTotal / actualTotal) * 100 : 0;
 
     const todayOperators = new Set(todayRecords.map(r => r['作業者'] ?? '')).size;
 
