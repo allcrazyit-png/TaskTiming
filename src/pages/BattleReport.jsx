@@ -158,7 +158,7 @@ export default function BattleReport() {
         <div className="bg-background-light dark:bg-background-dark text-[#1e293b] dark:text-white min-h-screen flex flex-col pb-36">
             {/* Company Banner */}
             <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-2 px-4 text-center font-bold text-[11px] border-b border-slate-200 dark:border-slate-800 z-[60] relative tracking-[0.3em] uppercase">
-                瑞全企業股份有限公司
+                {t('app_title')}
             </div>
 
             {/* Header */}
@@ -166,20 +166,20 @@ export default function BattleReport() {
                 <div className="flex items-center gap-2 flex-1">
                     <span className="material-symbols-outlined text-3xl text-primary">bar_chart</span>
                     <div>
-                        <h1 className="text-lg font-black leading-tight">今日戰報</h1>
+                        <h1 className="text-lg font-black leading-tight">{t('br_title')}</h1>
                         <p className="text-xs text-slate-400 font-medium">{todayStr.replace(/\//g, ' / ')}</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-full">
                     <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">即時</span>
+                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{t('br_live_indicator')}</span>
                 </div>
             </header>
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center flex-1 py-20 gap-4">
                     <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-slate-500 text-sm font-bold">正在載入戰報資料⋯</p>
+                    <p className="text-slate-500 text-sm font-bold">{t('br_loading')}</p>
                 </div>
             ) : error ? (
                 <div className="m-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-2xl p-6 text-center">
@@ -189,7 +189,7 @@ export default function BattleReport() {
                         onClick={() => window.location.reload()}
                         className="mt-4 px-4 py-2 bg-primary text-white rounded-xl font-bold text-sm active:scale-95 transition-transform"
                     >
-                        重新載入
+                        {t('br_reload')}
                     </button>
                 </div>
             ) : (
@@ -201,9 +201,9 @@ export default function BattleReport() {
                             <div>
                                 <h2 className="text-base font-black flex items-center gap-2 text-slate-800 dark:text-white">
                                     <span className="material-symbols-outlined text-xl text-primary">emoji_events</span>
-                                    全廠累計成就
+                                    {t('br_total_achievement')}
                                 </h2>
-                                <p className="text-xs text-slate-400 font-medium mt-0.5">共同達成里程碑</p>
+                                <p className="text-xs text-slate-400 font-medium mt-0.5">{t('br_milestone_sub')}</p>
                             </div>
                             <div className="bg-primary/10 border border-primary/30 px-3 py-1 rounded-full">
                                 <span className="text-primary font-black text-sm">{progressPct.toFixed(1)}%</span>
@@ -215,8 +215,8 @@ export default function BattleReport() {
                             <span className="text-4xl font-black text-primary leading-none">
                                 {cumulativeTotal.toLocaleString()}
                             </span>
-                            <span className="text-base font-bold text-slate-400">件</span>
-                            <span className="text-xs text-slate-400 ml-auto font-medium">↗ 目標 {nextMilestone.toLocaleString()} 件</span>
+                            <span className="text-base font-bold text-slate-400">{t('br_unit_pcs')}</span>
+                            <span className="text-xs text-slate-400 ml-auto font-medium">↗ {t('br_target_label')} {nextMilestone.toLocaleString()} {t('br_unit_pcs')}</span>
                         </div>
 
                         {/* Progress bar */}
@@ -257,7 +257,7 @@ export default function BattleReport() {
                     <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-t-4 border-blue-500 p-4 space-y-3">
                         <h2 className="text-base font-black flex items-center gap-2 text-slate-800 dark:text-white">
                             <span className="material-symbols-outlined text-xl text-blue-500">speed</span>
-                            今日平均效率
+                            {t('br_avg_efficiency')}
                         </h2>
 
                         <EfficiencyGauge value={avgEfficiency} />
@@ -267,7 +267,7 @@ export default function BattleReport() {
                                 {todayRecords.length > 0 ? avgEfficiency.toFixed(1) : '--'}%
                             </span>
                             {todayRecords.length === 0 && (
-                                <p className="text-xs text-slate-400 font-medium mt-1">今日尚無上傳紀錄</p>
+                                <p className="text-xs text-slate-400 font-medium mt-1">{t('br_no_records')}</p>
                             )}
                         </div>
 
@@ -276,17 +276,17 @@ export default function BattleReport() {
                             <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-center">
                                 <span className="material-symbols-outlined text-xl text-blue-500 block">groups</span>
                                 <span className="text-sm font-black text-slate-800 dark:text-white">{todayOperators}人</span>
-                                <span className="text-[10px] text-slate-400 block font-medium">今日在線</span>
+                                <span className="text-[10px] text-slate-400 block font-medium">{t('br_online_count')}</span>
                             </div>
                             <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-center">
                                 <span className="material-symbols-outlined text-xl text-success block">inventory_2</span>
-                                <span className="text-sm font-black text-slate-800 dark:text-white">{todayGoodCount.toLocaleString()}件</span>
-                                <span className="text-[10px] text-slate-400 block font-medium">今日產出</span>
+                                <span className="text-sm font-black text-slate-800 dark:text-white">{todayGoodCount.toLocaleString()}{t('br_unit_pcs')}</span>
+                                <span className="text-[10px] text-slate-400 block font-medium">{t('br_total_output')}</span>
                             </div>
                             <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-center">
                                 <span className="material-symbols-outlined text-xl text-amber-500 block">fact_check</span>
                                 <span className="text-sm font-black text-slate-800 dark:text-white">{todayRecords.length}筆</span>
-                                <span className="text-[10px] text-slate-400 block font-medium">上傳紀錄</span>
+                                <span className="text-[10px] text-slate-400 block font-medium">{t('br_upload_count')}</span>
                             </div>
                         </div>
                     </section>
@@ -295,13 +295,13 @@ export default function BattleReport() {
                     <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-t-4 border-amber-500 p-4 space-y-3">
                         <h2 className="text-base font-black flex items-center gap-2 text-slate-800 dark:text-white">
                             <span className="material-symbols-outlined text-xl text-amber-500">bolt</span>
-                            最新捷報
+                            {t('br_live_feed')}
                         </h2>
 
                         <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                             <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-2 block">pending</span>
-                            <p className="text-slate-400 font-bold">敬請期待</p>
-                            <p className="text-[10px] text-slate-400/60 mt-1 font-medium">功能調整中，稍後開放</p>
+                            <p className="text-slate-400 font-bold">{t('br_live_feed_coming_soon')}</p>
+                            <p className="text-[10px] text-slate-400/60 mt-1 font-medium">{t('br_live_feed_sub')}</p>
                         </div>
 
                     </section>

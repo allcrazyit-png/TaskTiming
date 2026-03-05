@@ -110,7 +110,23 @@ const resources = {
             "upload_success_msg": "上傳成功！",
             "back_edit": "返回修改",
             "back_home": "返回首頁",
-            "total": "總計"
+            "total": "總計",
+            "br_title": "今日戰報",
+            "br_live_indicator": "即時",
+            "br_loading": "正在載入戰報資料⋯",
+            "br_reload": "重新載入",
+            "br_total_achievement": "全廠累計成就",
+            "br_milestone_sub": "共同達成里程碑",
+            "br_unit_pcs": "件",
+            "br_target_label": "目標",
+            "br_avg_efficiency": "今日平均效率",
+            "br_no_records": "今日尚無上傳紀錄",
+            "br_online_count": "今日在線",
+            "br_total_output": "今日產出",
+            "br_upload_count": "上傳紀錄",
+            "br_live_feed": "最新捷報",
+            "br_live_feed_coming_soon": "敬請期待",
+            "br_live_feed_sub": "功能調整中，稍後開放"
         }
     },
     vi: {
@@ -220,7 +236,23 @@ const resources = {
             "upload_success_msg": "Tải lên thành công!",
             "back_edit": "Quay lại sửa",
             "back_home": "Về trang chủ",
-            "total": "Tổng"
+            "total": "Tổng",
+            "br_title": "Báo cáo hôm nay",
+            "br_live_indicator": "Trực tiếp",
+            "br_loading": "Đang tải dữ liệu báo cáo...",
+            "br_reload": "Tải lại",
+            "br_total_achievement": "Thành tích toàn nhà máy",
+            "br_milestone_sub": "Cùng nhau đạt cột mốc",
+            "br_unit_pcs": "chiếc",
+            "br_target_label": "Mục tiêu",
+            "br_avg_efficiency": "Hiệu suất trung bình hôm nay",
+            "br_no_records": "Chưa có bản ghi nào được tải lên hôm nay",
+            "br_online_count": "Đang trực tuyến hôm nay",
+            "br_total_output": "Tổng sản lượng hôm nay",
+            "br_upload_count": "Bản ghi tải lên",
+            "br_live_feed": "Thông tin mới nhất",
+            "br_live_feed_coming_soon": "Sắp ra mắt",
+            "br_live_feed_sub": "Chức năng đang được điều chỉnh, sẽ sớm mở lại"
         }
     },
     id: {
@@ -330,7 +362,23 @@ const resources = {
             "upload_success_msg": "Upload Berhasil!",
             "back_edit": "Kembali Edit",
             "back_home": "Kembali ke Beranda",
-            "total": "Total"
+            "total": "Total",
+            "br_title": "Laporan Hari Ini",
+            "br_live_indicator": "Langsung",
+            "br_loading": "Memuat data laporan...",
+            "br_reload": "Muat ulang",
+            "br_total_achievement": "Pencapaian Seluruh Pabrik",
+            "br_milestone_sub": "Bekerja sama mencapai target",
+            "br_unit_pcs": "pcs",
+            "br_target_label": "Target",
+            "br_avg_efficiency": "Rata-rata Efisiensi Hari Ini",
+            "br_no_records": "Belum ada catatan diunggah hari ini",
+            "br_online_count": "Online Hari Ini",
+            "br_total_output": "Total Output Hari Ini",
+            "br_upload_count": "Catatan Unggahan",
+            "br_live_feed": "Berita Terbaru",
+            "br_live_feed_coming_soon": "Segera Hadir",
+            "br_live_feed_sub": "Penyesuaian fungsi sedang berlangsung, akan segera dibuka"
         }
     }
 };
