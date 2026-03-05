@@ -96,15 +96,22 @@ export default function BattleReport() {
         return sum + (parseInt(r['良品數量'] ?? 0) || 0);
     }, 0);
 
-    // Today's date
+    // Today's date in TWN timezone (UTC+8)
+    // GAS stores dates as ISO UTC, e.g. "2026-03-05T16:00:00.000Z" = 2026-03-06 00:00 TWN
+    // We compare by parsing the date from sheet and converting to local date
     const todayStr = (() => {
         const now = new Date();
-        return `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}`;
+        // Use local date string in YYYY-MM-DD format for comparison
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     })();
 
     const todayRecords = records.filter(r => {
-        const d = String(r['日期'] ?? '');
-        return d.startsWith(todayStr);
+        const raw = String(r['日期'] ?? '');
+        if (!raw) return false;
+        // Parse the date from sheet (ISO or any format) and compare as local date
+        const d = new Date(raw);
+        const localStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        return localStr === todayStr;
     });
 
     const todayGoodCount = todayRecords.reduce((s, r) => s + (parseInt(r['良品數量'] ?? 0) || 0), 0);
