@@ -71,76 +71,62 @@ export default function Home() {
 
     // Fetch and parse CSV data
     useEffect(() => {
-        const fetchData = async () => {
+        const loadAllData = async () => {
             try {
-                // Fetch Products from Google Sheet '瑞全資料中心' (第一個分頁, index=0)
-                try {
-                    const productRes = await fetch(`${GOOGLE_SCRIPT_URL}?index=0`);
-                    const rawProductData = await productRes.json();
-                    console.log("Raw Product Data from Sheet:", rawProductData?.[0]); // Log the first item to check keys
+                setLoading(true);
 
-                    if (Array.isArray(rawProductData)) {
-                        const stripTags = (name) => name.replace(/\[.*?\]/g, '').trim();
-                        const isAssemblyCol = (name) => name.includes('[組裝記錄表]');
+                // Start all fetches in parallel
+                const productUrl = `${GOOGLE_SCRIPT_URL}?index=0`;
+                const employeeUrl = `${GOOGLE_SCRIPT_URL}?sheet=${encodeURIComponent('員工資料')}`;
+                const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=23.9972&longitude=120.4638&current=temperature_2m,weather_code&timezone=Asia%2FTaipei';
 
-                        const filteredProducts = rawProductData
-                            .filter(item => {
-                                // 尋找名稱包含「類別」的欄位
-                                const categoryKey = Object.keys(item).find(k => k.includes('類別'));
-                                const categoryValue = categoryKey ? String(item[categoryKey]).trim() : '';
-                                // 使用 includes 防止隱形字元造成比對失敗
-                                return categoryValue.includes('組裝');
-                            })
-                            .map(item => {
-                                const newItem = {};
-                                Object.keys(item).forEach(key => {
-                                    if (isAssemblyCol(key)) {
-                                        newItem[stripTags(key)] = item[key];
-                                    }
-                                });
-                                return newItem;
-                            })
-                            .filter(item => item['車型'] && item['品番']);
+                const [pRes, eRes, wRes] = await Promise.all([
+                    fetch(productUrl).catch(err => { console.error('Product Fetch Error:', err); return { ok: false }; }),
+                    fetch(employeeUrl).catch(err => { console.error('Employee Fetch Error:', err); return { ok: false }; }),
+                    fetch(weatherUrl).catch(err => { console.error('Weather Fetch Error:', err); return { ok: false }; })
+                ]);
 
-                        console.log("Filtered Products:", filteredProducts.length);
-                        setProducts(filteredProducts);
-                    } else {
-                        console.error('Product data is not an array:', rawProductData);
-                    }
-                } catch (productError) {
-                    console.error('Fetch Products Error:', productError);
+                // Parse JSON in parallel
+                const [productData, employeeData, weatherData] = await Promise.all([
+                    (pRes && pRes.ok) ? pRes.json().catch(() => null) : Promise.resolve(null),
+                    (eRes && eRes.ok) ? eRes.json().catch(() => null) : Promise.resolve(null),
+                    (wRes && wRes.ok) ? wRes.json().catch(() => null) : Promise.resolve(null)
+                ]);
+
+                // 1. Process Products
+                if (Array.isArray(productData)) {
+                    const stripTags = (name) => name.replace(/\[.*?\]/g, '').trim();
+                    const isAssemblyCol = (name) => name.includes('[組裝記錄表]');
+
+                    const filteredProducts = productData
+                        .filter(item => {
+                            const categoryKey = Object.keys(item).find(k => k.includes('類別'));
+                            const categoryValue = categoryKey ? String(item[categoryKey]).trim() : '';
+                            return categoryValue.includes('組裝');
+                        })
+                        .map(item => {
+                            const newItem = {};
+                            Object.keys(item).forEach(key => {
+                                if (isAssemblyCol(key)) {
+                                    newItem[stripTags(key)] = item[key];
+                                }
+                            });
+                            return newItem;
+                        })
+                        .filter(item => item['車型'] && item['品番']);
+
+                    setProducts(filteredProducts);
                 }
 
-                // Fetch Employees from Google Sheet (分頁名稱: 員工資料)
-                try {
-                    const sheetParam = encodeURIComponent('員工資料');
-                    const employeeRes = await fetch(`${GOOGLE_SCRIPT_URL}?sheet=${sheetParam}`);
-                    const employeeData = await employeeRes.json();
-
-                    if (Array.isArray(employeeData) && employeeData.length > 0) {
-                        const validEmployees = employeeData.filter(item => item['姓名']);
-                        setEmployees(validEmployees);
-                    } else {
-                        console.error('Invalid employee data from Google Sheets');
-                    }
-                } catch (empError) {
-                    console.error('Fetch Employees Error:', empError);
+                // 2. Process Employees
+                if (Array.isArray(employeeData) && employeeData.length > 0) {
+                    const validEmployees = employeeData.filter(item => item['姓名']);
+                    setEmployees(validEmployees);
                 }
 
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const fetchWeather = async () => {
-            try {
-                // Open-Meteo free API for Puyan, Changhua
-                const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=23.9972&longitude=120.4638&current=temperature_2m,weather_code&timezone=Asia%2FTaipei');
-                const data = await res.json();
-                if (data && data.current) {
-                    const code = data.current.weather_code;
+                // 3. Process Weather
+                if (weatherData && weatherData.current) {
+                    const code = weatherData.current.weather_code;
                     let icon = '☁️';
                     let desc = '多雲';
                     if (code === 0) { icon = '☀️'; desc = '晴天'; }
@@ -150,18 +136,20 @@ export default function Home() {
                     else if (code >= 95) { icon = '⚡️'; desc = '雷雨'; }
 
                     setWeather({
-                        temp: Math.round(data.current.temperature_2m),
+                        temp: Math.round(weatherData.current.temperature_2m),
                         icon,
                         desc
                     });
                 }
-            } catch (e) {
-                console.error('Weather fetch error:', e);
+
+            } catch (error) {
+                console.error('Error loading homepage data:', error);
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchData();
-        fetchWeather();
+        loadAllData();
     }, []);
 
     // Restore session when employees are loaded
