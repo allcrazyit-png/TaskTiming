@@ -792,54 +792,36 @@ export default function Home() {
                 </section>
 
                 {/* Product Grid */}
-                {(() => {
-                    // 智慧圖片顯示：選擇特定品番或結果 <= 15 時才顯示圖片
-                    const autoShowImages = filters.partNumber || filteredProducts.length <= 15;
-                    const showImages = autoShowImages || showAllImages;
+                <div className="grid grid-cols-1 gap-6">
+                    <h2 className="text-lg font-bold border-l-4 border-primary pl-3 text-slate-800 dark:text-slate-100">{t('all_products')}</h2>
 
-                    return (
-                        <div className="grid grid-cols-1 gap-3">
-                            <div className="flex items-center justify-between">
-                                <h2 className="text-lg font-bold border-l-4 border-primary pl-3 text-slate-800 dark:text-slate-100">{t('all_products')}</h2>
-                                {/* 手動顯示/隱藏照片按鈕 (只在有大量結果時顯示) */}
-                                {filters.carModel && filteredProducts.length > 0 && !autoShowImages && (
-                                    <button
-                                        onClick={() => setShowAllImages(v => !v)}
-                                        className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors ${showAllImages
-                                            ? 'bg-primary/10 text-primary border-primary/30'
-                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
-                                            }`}
-                                    >
-                                        <span className="material-symbols-outlined text-[16px]">{showAllImages ? 'hide_image' : 'photo_library'}</span>
-                                        {showAllImages ? '隱藏照片' : '顯示照片'}
-                                    </button>
-                                )}
-                            </div>
-
-                            {loading ? (
-                                <div className="text-center py-12 text-slate-500">
-                                    <span className="material-symbols-outlined text-4xl animate-spin mb-2">progress_activity</span>
-                                    <p>{t('loading_data')}</p>
-                                </div>
-                            ) : !filters.carModel ? (
-                                <div className="text-center py-12 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                                    <span className="material-symbols-outlined text-5xl mb-3 opacity-30">directions_car</span>
-                                    <p className="font-bold">{t('select_car_model_placeholder')}</p>
-                                </div>
-                            ) : filteredProducts.length === 0 ? (
-                                <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                                    <span className="material-symbols-outlined text-4xl mb-2 flex justify-center opacity-50">search_off</span>
-                                    <p className="font-bold">{t('no_products_found')}</p>
-                                    <p className="text-xs mt-1">{t('clear_filters_hint')}</p>
-                                </div>
-                            ) : (
-                                <div className={showImages ? 'grid grid-cols-1 gap-6' : 'flex flex-col gap-2'}>
-                                    {filteredProducts.map((product, index) => renderProductCard(product, index, false, showImages))}
-                                </div>
-                            )}
+                    {loading ? (
+                        <div className="text-center py-12 text-slate-500">
+                            <span className="material-symbols-outlined text-4xl animate-spin mb-2">progress_activity</span>
+                            <p>{t('loading_data')}</p>
                         </div>
-                    );
-                })()}
+                    ) : !filters.carModel ? (
+                        <div className="text-center py-12 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                            <span className="material-symbols-outlined text-5xl mb-3 opacity-30">directions_car</span>
+                            <p className="font-bold">{t('select_car_model_placeholder')}</p>
+                        </div>
+                    ) : !filters.partNumber ? (
+                        <div className="text-center py-12 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                            <span className="material-symbols-outlined text-5xl mb-3 opacity-30">inventory_2</span>
+                            <p className="font-bold">請選擇品番以顯示產品</p>
+                            <p className="text-xs mt-1 text-slate-400">{filteredProducts.length} 個品番可供選擇</p>
+                        </div>
+                    ) : filteredProducts.length === 0 ? (
+                        <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                            <span className="material-symbols-outlined text-4xl mb-2 flex justify-center opacity-50">search_off</span>
+                            <p className="font-bold">{t('no_products_found')}</p>
+                            <p className="text-xs mt-1">{t('clear_filters_hint')}</p>
+                        </div>
+                    ) : (
+                        filteredProducts.map((product, index) => renderProductCard(product, index, false, true))
+                    )}
+                </div>
+
             </main>
 
             {/* Bottom Navigation Bar */}
