@@ -2,13 +2,20 @@ function doGet(e) {
     var ssId = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ';
     var sheetName = e.parameter.sheet;
     var sheetIndex = e.parameter.index;
-    var useActive = e.parameter.useActive === 'true'; // 新增參數
+    var useActive = e.parameter.useActive === 'true';
+
+    // === 新增優化參數 ===
+    var includeCol = e.parameter.includeCol; // 必須包含的關鍵字 (用於行篩選，例如 "類別")
+    var filterVal = e.parameter.filterVal;   // 篩選的值 (例如 "組裝")
+    var prune = e.parameter.prune;           // 只保留標題包含此字串的欄位 (例如 "[組裝記錄表]")
+    var strip = e.parameter.strip;           // 標題中要刪除的字串 (例如 "[組裝記錄表]")
+    // ================
 
     var ss;
     if (useActive) {
-        ss = SpreadsheetApp.getActiveSpreadsheet(); // 讀取當前連結的試算表 (紀錄區)
+        ss = SpreadsheetApp.getActiveSpreadsheet();
     } else {
-        ss = SpreadsheetApp.openById(ssId); // 讀取產品/員工資料區
+        ss = SpreadsheetApp.openById(ssId);
     }
 
     var sheet;
@@ -21,22 +28,52 @@ function doGet(e) {
     }
 
     if (!sheet) {
-        return ContentService.createTextOutput(JSON.stringify({
-            "result": "error",
-            "message": "找不到工作表"
-        })).setMimeType(ContentService.MimeType.JSON);
+        return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "找不到工作表" })).setMimeType(ContentService.MimeType.JSON);
     }
 
     var data = sheet.getDataRange().getValues();
     var headers = data[0];
     var jsonArray = [];
 
-    for (var i = 1; i < data.length; i++) {
-        var obj = {};
-        for (var j = 0; j < headers.length; j++) {
-            obj[headers[j]] = data[i][j];
+    // 找出篩選欄位的索引
+    var filterIdx = -1;
+    if (includeCol) {
+        for (var h = 0; h < headers.length; h++) {
+            if (headers[h].indexOf(includeCol) !== -1) {
+                filterIdx = h;
+                break;
+            }
         }
-        jsonArray.push(obj);
+    }
+
+    for (var i = 1; i < data.length; i++) {
+        // 1. 行篩選 logic (伺服器端過濾掉不相關的資料)
+        if (filterIdx !== -1 && filterVal) {
+            if (String(data[i][filterIdx]).indexOf(filterVal) === -1) continue;
+        }
+
+        var obj = {};
+        var hasContent = false;
+        for (var j = 0; j < headers.length; j++) {
+            var originalHeader = headers[j];
+
+            // 2. 欄位裁剪 (Pruning) - 只回傳 App 需要的欄位
+            if (prune && originalHeader.indexOf(prune) === -1) continue;
+
+            var finalHeader = originalHeader;
+            if (strip) finalHeader = originalHeader.replace(strip, "").trim();
+
+            obj[finalHeader] = data[i][j];
+            hasContent = true;
+        }
+
+        // 額外的安全性檢查 (針對此 App)：必須有品番和車型才回傳
+        if (hasContent && obj['品番'] && obj['車型']) {
+            jsonArray.push(obj);
+        } else if (hasContent && !prune) {
+            // 如果沒有開啟 pruning，則照舊回傳
+            jsonArray.push(obj);
+        }
     }
 
     return ContentService.createTextOutput(JSON.stringify(jsonArray))

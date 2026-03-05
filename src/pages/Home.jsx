@@ -77,7 +77,8 @@ export default function Home() {
                 setLoading(true);
 
                 // Start all fetches in parallel
-                const productUrl = `${GOOGLE_SCRIPT_URL}?index=0`;
+                // 優化：加上伺服器端過濾參數，只抓取「組裝」類別，且只抓取「[組裝記錄表]」相關欄位
+                const productUrl = `${GOOGLE_SCRIPT_URL}?index=0&includeCol=${encodeURIComponent('類別')}&filterVal=${encodeURIComponent('組裝')}&prune=${encodeURIComponent('[組裝記錄表]')}&strip=${encodeURIComponent('[組裝記錄表]')}`;
                 const employeeUrl = `${GOOGLE_SCRIPT_URL}?sheet=${encodeURIComponent('員工資料')}`;
                 const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=23.9972&longitude=120.4638&current=temperature_2m,weather_code&timezone=Asia%2FTaipei';
 
@@ -94,29 +95,12 @@ export default function Home() {
                     (wRes && wRes.ok) ? wRes.json().catch(() => null) : Promise.resolve(null)
                 ]);
 
-                // 1. Process Products
+                // 1. Process Products (由於伺服器端已經剪裁與過濾，這裡邏輯變輕了)
                 if (Array.isArray(productData)) {
-                    const stripTags = (name) => name.replace(/\[.*?\]/g, '').trim();
-                    const isAssemblyCol = (name) => name.includes('[組裝記錄表]');
-
-                    const filteredProducts = productData
-                        .filter(item => {
-                            const categoryKey = Object.keys(item).find(k => k.includes('類別'));
-                            const categoryValue = categoryKey ? String(item[categoryKey]).trim() : '';
-                            return categoryValue.includes('組裝');
-                        })
-                        .map(item => {
-                            const newItem = {};
-                            Object.keys(item).forEach(key => {
-                                if (isAssemblyCol(key)) {
-                                    newItem[stripTags(key)] = item[key];
-                                }
-                            });
-                            return newItem;
-                        })
-                        .filter(item => item['車型'] && item['品番']);
-
-                    setProducts(filteredProducts);
+                    // data should already be filtered and pruned by GAS
+                    const validProducts = productData.filter(item => item['車型'] && item['品番']);
+                    setProducts(validProducts);
+                    console.log("Extreme Optimized Products Loaded:", validProducts.length);
                 }
 
                 // 2. Process Employees
