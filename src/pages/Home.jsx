@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
@@ -7,6 +7,7 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLe
 export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
+    const location = useLocation();
     console.log("VERSION 1.8 LOADED - Google Sheets Sync & Date Picker");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -173,6 +174,19 @@ export default function Home() {
             }
         }
     }, [employees]);
+
+    // Handle navigation state (e.g., from Battle Report)
+    useEffect(() => {
+        if (location.state?.openHistory && selectedOperator) {
+            setShowHistoryPopup(true);
+            // Clear state to avoid reopening on refresh
+            window.history.replaceState({}, document.title);
+        }
+        if (location.state?.openSettings && selectedOperator) {
+            setShowSettingsPopup(true);
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state, selectedOperator]);
 
     const handleOperatorChange = (e) => {
         const value = e.target.value;
@@ -788,12 +802,15 @@ export default function Home() {
             {/* Bottom Navigation Bar */}
             <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-6 pt-2 px-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
                 <div className="flex items-center justify-around max-w-lg mx-auto">
-                    <a href="#" className="flex flex-col items-center gap-1 group">
+                    <button
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        className="flex flex-col items-center gap-1 group active:scale-95 transition-transform"
+                    >
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
                             <span className="material-symbols-outlined text-2xl">home</span>
                         </div>
-                        <span className="text-xs font-bold text-red-500">{t('home_tab')} v1.9</span>
-                    </a>
+                        <span className="text-xs font-bold text-primary">{t('home_tab')}</span>
+                    </button>
                     <button
                         onClick={() => {
                             if (!selectedOperator) {
@@ -816,7 +833,7 @@ export default function Home() {
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                             <span className="material-symbols-outlined text-2xl">bar_chart</span>
                         </div>
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">戰報</span>
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{t('battle_report_tab')}</span>
                     </button>
                     <button
                         onClick={() => {
