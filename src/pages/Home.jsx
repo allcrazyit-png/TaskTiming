@@ -805,12 +805,6 @@ export default function Home() {
                             <span className="material-symbols-outlined text-5xl mb-3 opacity-30">directions_car</span>
                             <p className="font-bold">{t('select_car_model_placeholder')}</p>
                         </div>
-                    ) : !filters.partNumber ? (
-                        <div className="text-center py-12 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                            <span className="material-symbols-outlined text-5xl mb-3 opacity-30">inventory_2</span>
-                            <p className="font-bold">請選擇品番以顯示產品</p>
-                            <p className="text-xs mt-1 text-slate-400">{filteredProducts.length} 個品番可供選擇</p>
-                        </div>
                     ) : filteredProducts.length === 0 ? (
                         <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
                             <span className="material-symbols-outlined text-4xl mb-2 flex justify-center opacity-50">search_off</span>
