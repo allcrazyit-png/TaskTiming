@@ -63,26 +63,26 @@ export default function BattleReport() {
         const load = async () => {
             try {
                 setLoading(true);
-                // 使用 useActive=true 來讀取「上傳目的地」的試算表 (紀錄區)
-                // 並指定讀取名稱為「紀錄」的分頁
+                // 直接指定組裝紀錄試算表 ID，避免 useActive 在 Web App 失效的問題
+                const RECORDS_SS_ID = '1xo4YhDuxh-wpstg7tmAqW4orB9aBheF1CUFzM1TDWKw';
                 const sheetParam = encodeURIComponent('紀錄');
-                const res = await fetch(`${GOOGLE_SCRIPT_URL}?useActive=true&sheet=${sheetParam}`);
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?ssId=${RECORDS_SS_ID}&sheet=${sheetParam}`);
 
                 if (!res.ok) throw new Error('HTTP error ' + res.status);
                 let data = await res.json();
-                console.log('[BattleReport] Raw data from UseActive Records:', data);
+                console.log('[BattleReport] Raw data from Records sheet:', data);
 
-                // 如果用名稱找不到，嘗試抓該試算表的第一個分頁 (index=0)
+                // 如果用名稱找不到「紀錄」，嘗試抓第一個分頁 (index=0)
                 if (!Array.isArray(data)) {
-                    console.warn('[BattleReport] Sheet name failed, trying active index=0...');
-                    const res2 = await fetch(`${GOOGLE_SCRIPT_URL}?useActive=true&index=0`);
+                    console.warn('[BattleReport] Sheet name "紀錄" not found, trying index=0...');
+                    const res2 = await fetch(`${GOOGLE_SCRIPT_URL}?ssId=${RECORDS_SS_ID}&index=0`);
                     data = await res2.json();
                 }
 
                 if (Array.isArray(data)) {
                     setRecords(data);
                 } else {
-                    setError('無法讀取紀錄，請確認您的組裝紀錄表中有「紀錄」分頁');
+                    setError('無法讀取紀錄，請確認組裝紀錄表中有「紀錄」分頁');
                 }
             } catch (e) {
                 setError('資料讀取失敗：' + e.message);

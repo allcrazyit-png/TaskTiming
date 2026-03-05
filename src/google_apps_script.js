@@ -1,19 +1,14 @@
 function doGet(e) {
-    var ssId = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ';
+    var defaultSsId = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ'; // 瑞全資料表
+    var ssId = e.parameter.ssId || defaultSsId; // 允許前端指定不同試算表
     var sheetName = e.parameter.sheet;
     var sheetIndex = e.parameter.index;
-    var useActive = e.parameter.useActive === 'true';
 
-    var includeCol = e.parameter.includeCol; // e.g., "類別"
-    var filterVal = e.parameter.filterVal;   // e.g., "組裝"
-    var prune = e.parameter.prune;           // e.g., "組裝記錄表|組裝紀錄表"
+    var includeCol = e.parameter.includeCol;
+    var filterVal = e.parameter.filterVal;
+    var prune = e.parameter.prune;
 
-    var ss;
-    if (useActive) {
-        ss = SpreadsheetApp.getActiveSpreadsheet();
-    } else {
-        ss = SpreadsheetApp.openById(ssId);
-    }
+    var ss = SpreadsheetApp.openById(ssId);
 
     var sheet;
     if (sheetName) {
