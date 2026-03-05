@@ -63,19 +63,17 @@ export default function BattleReport() {
         const load = async () => {
             try {
                 setLoading(true);
-                // 直接指定組裝紀錄試算表 ID，避免 useActive 在 Web App 失效的問題
-                const RECORDS_SS_ID = '1xo4YhDuxh-wpstg7tmAqW4orB9aBheF1CUFzM1TDWKw';
+                // 戰報讀「組裝紀錄表」，GAS 內部知道要去哪裡讀，前端不需要知道 ID
                 const sheetParam = encodeURIComponent('紀錄');
-                const res = await fetch(`${GOOGLE_SCRIPT_URL}?ssId=${RECORDS_SS_ID}&sheet=${sheetParam}`);
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=records&sheet=${sheetParam}`);
 
                 if (!res.ok) throw new Error('HTTP error ' + res.status);
                 let data = await res.json();
                 console.log('[BattleReport] Raw data from Records sheet:', data);
 
-                // 如果用名稱找不到「紀錄」，嘗試抓第一個分頁 (index=0)
                 if (!Array.isArray(data)) {
                     console.warn('[BattleReport] Sheet name "紀錄" not found, trying index=0...');
-                    const res2 = await fetch(`${GOOGLE_SCRIPT_URL}?ssId=${RECORDS_SS_ID}&index=0`);
+                    const res2 = await fetch(`${GOOGLE_SCRIPT_URL}?action=records&index=0`);
                     data = await res2.json();
                 }
 

@@ -1,9 +1,14 @@
 function doGet(e) {
-    var defaultSsId = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ'; // 瑞全資料表
-    var ssId = e.parameter.ssId || defaultSsId; // 允許前端指定不同試算表
+    // === 兩張表的 ID 都鎖在 GAS 內部，前端不需知道 ===
+    var PRODUCTS_SS_ID = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ'; // 產品資料表 (讀)
+    var RECORDS_SS_ID = '1xo4YhDuxh-wpstg7tmAqW4orB9aBheF1CUFzM1TDWKw';  // 組裝紀錄表 (寫)
+    // ==============================================
+
+    // action=records → 讀紀錄表；其他 → 讀產品資料表
+    var ssId = (e.parameter.action === 'records') ? RECORDS_SS_ID : PRODUCTS_SS_ID;
+
     var sheetName = e.parameter.sheet;
     var sheetIndex = e.parameter.index;
-
     var includeCol = e.parameter.includeCol;
     var filterVal = e.parameter.filterVal;
     var prune = e.parameter.prune;
