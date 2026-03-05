@@ -289,39 +289,11 @@ export default function BattleReport() {
                             最新捷報
                         </h2>
 
-                        {liveFeed.length === 0 ? (
-                            <div className="text-center py-8 text-slate-400">
-                                <span className="material-symbols-outlined text-4xl block mb-2 opacity-40">inbox</span>
-                                <p className="text-sm font-bold">今日尚無生產紀錄</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {liveFeed.map((r, i) => {
-                                    const name = String(r['作業者'] ?? '');
-                                    const product = String(r['產品中文名稱'] ?? r['品番'] ?? '未知產品');
-                                    const count = parseInt(r['良品數量'] ?? 0) || 0;
-                                    const dateStr = String(r['日期'] ?? '');
-                                    const initial = (name.match(/[\u4e00-\u9fa5]/) ?? [name[0] ?? '?'])[0];
-                                    const colorClass = avatarColors[name.charCodeAt(0) % avatarColors.length];
-                                    return (
-                                        <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-100 dark:border-slate-700">
-                                            <div className={`w-10 h-10 rounded-full ${colorClass} flex items-center justify-center text-white font-black text-sm flex-shrink-0`}>
-                                                {initial}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                                                    <span className="font-black">{name}</span>
-                                                    <span className="text-slate-400 font-normal"> 完成了 </span>
-                                                    <span className="text-success font-black">{count} 件</span>
-                                                </p>
-                                                <p className="text-xs text-slate-400 font-medium truncate">{product}</p>
-                                            </div>
-                                            <div className="text-[10px] text-slate-400 flex-shrink-0">{dateStr.slice(5)}</div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                        <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                            <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-2 block">pending</span>
+                            <p className="text-slate-400 font-bold">敬請期待</p>
+                            <p className="text-[10px] text-slate-400/60 mt-1 font-medium">功能調整中，稍後開放</p>
+                        </div>
                     </section>
                 </main>
             )}
