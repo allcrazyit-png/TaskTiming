@@ -7,10 +7,6 @@ const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLe
 
 const MILESTONES = [10000, 50000, 100000, 500000, 1000000];
 
-function formatNumber(n) {
-    if (n >= 10000) return `${(n / 10000).toFixed(1)}萬`;
-    return n.toLocaleString();
-}
 
 function parseTotalSeconds(timeStr) {
     if (!timeStr || typeof timeStr !== 'string') return 0;
@@ -52,7 +48,7 @@ function EfficiencyGauge({ value }) {
 }
 
 export default function BattleReport() {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [records, setRecords] = useState([]);
@@ -132,6 +128,19 @@ export default function BattleReport() {
     const avgEfficiency = actualTotal > 0 ? (earnedTotal / actualTotal) * 100 : 0;
 
     const todayOperators = new Set(todayRecords.map(r => r['作業者'] ?? '')).size;
+
+    // Language-aware number formatter
+    const formatSmallNumber = (n) => {
+        const lang = i18n.language;
+        if (lang === 'zh') {
+            if (n >= 10000) return `${(n / 10000).toFixed(1)}萬`;
+            return n.toLocaleString();
+        } else {
+            if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+            if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
+            return n.toLocaleString();
+        }
+    };
 
     // Milestone logic
     const nextMilestone = MILESTONES.find(m => m > cumulativeTotal) ?? MILESTONES[MILESTONES.length - 1];
@@ -246,7 +255,7 @@ export default function BattleReport() {
                                                 ? <span className="material-symbols-outlined text-[13px] animate-pulse">radio_button_unchecked</span>
                                                 : <span className="material-symbols-outlined text-[13px]">lock</span>
                                         }
-                                        {formatNumber(m)}
+                                        {formatSmallNumber(m)}
                                     </div>
                                 );
                             })}
