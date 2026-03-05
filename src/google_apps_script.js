@@ -57,11 +57,32 @@ function doGet(e) {
         for (var j = 0; j < headers.length; j++) {
             var originalHeader = headers[j];
 
-            // 2. 欄位裁剪 (Pruning) - 只回傳 App 需要的欄位
-            if (prune && originalHeader.indexOf(prune) === -1) continue;
-
+            // 2. 欄位裁剪 (Pruning) - 改為支援多種模式或模糊比對
+            var isMatch = false;
             var finalHeader = originalHeader;
-            if (strip) finalHeader = originalHeader.replace(strip, "").trim();
+
+            if (prune) {
+                // 支援用 | 分隔多個模式，例如 "記錄|紀錄"
+                var patterns = prune.split('|');
+                for (var p = 0; p < patterns.length; p++) {
+                    if (originalHeader.indexOf(patterns[p]) !== -1) {
+                        isMatch = true;
+                        // 如果有 strip，則一併清除所有匹配的模式
+                        if (strip) {
+                            var stripPatterns = strip.split('|');
+                            for (var s = 0; s < stripPatterns.length; s++) {
+                                finalHeader = finalHeader.replace(stripPatterns[s], "");
+                            }
+                            finalHeader = finalHeader.trim();
+                        }
+                        break;
+                    }
+                }
+            } else {
+                isMatch = true; // 沒有指定 prune 則全拿
+            }
+
+            if (!isMatch) continue;
 
             obj[finalHeader] = data[i][j];
             hasContent = true;

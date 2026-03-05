@@ -77,8 +77,9 @@ export default function Home() {
                 setLoading(true);
 
                 // Start all fetches in parallel
-                // 優化：加上伺服器端過濾參數，只抓取「組裝」類別，且只抓取「[組裝記錄表]」相關欄位
-                const productUrl = `${GOOGLE_SCRIPT_URL}?index=0&includeCol=${encodeURIComponent('類別')}&filterVal=${encodeURIComponent('組裝')}&prune=${encodeURIComponent('[組裝記錄表]')}&strip=${encodeURIComponent('[組裝記錄表]')}`;
+                // 優化：加上伺服器端過濾參數，並相容「記錄」與「紀錄」兩種寫法
+                const prunePattern = '組裝記錄表|組裝紀錄表';
+                const productUrl = `${GOOGLE_SCRIPT_URL}?index=0&includeCol=${encodeURIComponent('類別')}&filterVal=${encodeURIComponent('組裝')}&prune=${encodeURIComponent(prunePattern)}&strip=${encodeURIComponent(prunePattern)}`;
                 const employeeUrl = `${GOOGLE_SCRIPT_URL}?sheet=${encodeURIComponent('員工資料')}`;
                 const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=23.9972&longitude=120.4638&current=temperature_2m,weather_code&timezone=Asia%2FTaipei';
 
