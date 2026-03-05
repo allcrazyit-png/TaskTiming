@@ -41,6 +41,9 @@ export default function Home() {
     const [theme, setTheme] = useState(() => localStorage.getItem('appTheme') || 'system'); // 'system', 'light', 'dark'
     const [fontSize, setFontSize] = useState(() => localStorage.getItem('appFontSize') || 'normal'); // 'normal', 'large'
 
+    // Image Display State: 手動開啟全部照片 (當自動判斷不顯示時)
+    const [showAllImages, setShowAllImages] = useState(false);
+
     // Apply Theme
     useEffect(() => {
         const root = document.documentElement;
@@ -383,8 +386,37 @@ export default function Home() {
         }
     };
 
-    const renderProductCard = (product, index, isFavoriteList = false) => {
+    const renderProductCard = (product, index, isFavoriteList = false, showImage = true) => {
         const isFav = favoriteProducts.includes(product['品番']);
+
+        // 緊湊清單模式 (無圖片)：節省頻寬，適合大量結果
+        if (!showImage) {
+            return (
+                <div key={`product-${product['品番']}-${index}`}
+                    className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 shadow-sm active:scale-[0.99] transition-transform"
+                >
+                    <button
+                        onClick={(e) => toggleFavorite(e, product['品番'])}
+                        className="shrink-0 text-primary"
+                    >
+                        <span className={`material-symbols-outlined text-[22px] ${isFav ? 'font-variation-fill text-red-500' : 'text-slate-300'}`}>favorite</span>
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-extrabold text-slate-800 dark:text-slate-100 truncate">{product['品名']}</p>
+                        <p className="text-xs font-bold text-slate-400 dark:text-slate-500">{product['品番']}</p>
+                    </div>
+                    <button
+                        onClick={() => handleStartWork(product)}
+                        className="shrink-0 flex items-center gap-1 bg-primary text-white text-xs font-black px-3 py-2 rounded-lg shadow active:scale-95 transition-transform"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">play_circle</span>
+                        {t('start_work')}
+                    </button>
+                </div>
+            );
+        }
+
+        // 完整卡片模式 (含圖片)
         return (
             <div key={`product-${product['品番']}-${index}`} className="overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg transition-transform active:scale-[0.98]">
                 <div className="aspect-video w-full bg-slate-200 relative overflow-hidden">
@@ -392,6 +424,7 @@ export default function Home() {
                         <img
                             alt={product['品名']}
                             className="h-full w-full object-cover"
+                            loading="lazy"
                             src={getImageUrl(product['產品圖片'])}
                             onError={(e) => {
                                 e.target.onerror = null;
@@ -759,29 +792,54 @@ export default function Home() {
                 </section>
 
                 {/* Product Grid */}
-                <div className="grid grid-cols-1 gap-6">
-                    <h2 className="text-lg font-bold border-l-4 border-primary pl-3 text-slate-800 dark:text-slate-100">{t('all_products')}</h2>
+                {(() => {
+                    // 智慧圖片顯示：選擇特定品番或結果 <= 15 時才顯示圖片
+                    const autoShowImages = filters.partNumber || filteredProducts.length <= 15;
+                    const showImages = autoShowImages || showAllImages;
 
-                    {loading ? (
-                        <div className="text-center py-12 text-slate-500">
-                            <span className="material-symbols-outlined text-4xl animate-spin mb-2">progress_activity</span>
-                            <p>{t('loading_data')}</p>
+                    return (
+                        <div className="grid grid-cols-1 gap-3">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-lg font-bold border-l-4 border-primary pl-3 text-slate-800 dark:text-slate-100">{t('all_products')}</h2>
+                                {/* 手動顯示/隱藏照片按鈕 (只在有大量結果時顯示) */}
+                                {filters.carModel && filteredProducts.length > 0 && !autoShowImages && (
+                                    <button
+                                        onClick={() => setShowAllImages(v => !v)}
+                                        className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors ${showAllImages
+                                            ? 'bg-primary/10 text-primary border-primary/30'
+                                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                                            }`}
+                                    >
+                                        <span className="material-symbols-outlined text-[16px]">{showAllImages ? 'hide_image' : 'photo_library'}</span>
+                                        {showAllImages ? '隱藏照片' : '顯示照片'}
+                                    </button>
+                                )}
+                            </div>
+
+                            {loading ? (
+                                <div className="text-center py-12 text-slate-500">
+                                    <span className="material-symbols-outlined text-4xl animate-spin mb-2">progress_activity</span>
+                                    <p>{t('loading_data')}</p>
+                                </div>
+                            ) : !filters.carModel ? (
+                                <div className="text-center py-12 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                                    <span className="material-symbols-outlined text-5xl mb-3 opacity-30">directions_car</span>
+                                    <p className="font-bold">{t('select_car_model_placeholder')}</p>
+                                </div>
+                            ) : filteredProducts.length === 0 ? (
+                                <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                                    <span className="material-symbols-outlined text-4xl mb-2 flex justify-center opacity-50">search_off</span>
+                                    <p className="font-bold">{t('no_products_found')}</p>
+                                    <p className="text-xs mt-1">{t('clear_filters_hint')}</p>
+                                </div>
+                            ) : (
+                                <div className={showImages ? 'grid grid-cols-1 gap-6' : 'flex flex-col gap-2'}>
+                                    {filteredProducts.map((product, index) => renderProductCard(product, index, false, showImages))}
+                                </div>
+                            )}
                         </div>
-                    ) : !filters.carModel ? (
-                        <div className="text-center py-12 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                            <span className="material-symbols-outlined text-5xl mb-3 opacity-30">directions_car</span>
-                            <p className="font-bold">{t('select_car_model_placeholder')}</p>
-                        </div>
-                    ) : filteredProducts.length === 0 ? (
-                        <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                            <span className="material-symbols-outlined text-4xl mb-2 flex justify-center opacity-50">search_off</span>
-                            <p className="font-bold">{t('no_products_found')}</p>
-                            <p className="text-xs mt-1">{t('clear_filters_hint')}</p>
-                        </div>
-                    ) : (
-                        filteredProducts.map((product, index) => renderProductCard(product, index))
-                    )}
-                </div>
+                    );
+                })()}
             </main>
 
             {/* Bottom Navigation Bar */}
