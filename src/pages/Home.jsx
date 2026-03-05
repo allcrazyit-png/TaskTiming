@@ -825,11 +825,10 @@ export default function Home() {
                         onClick={() => navigate('/battle')}
                         className="flex flex-col items-center gap-1 group active:scale-95 transition-transform"
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl text-white border border-emerald-500"
-                            style={{ background: 'linear-gradient(135deg, #059669, #0d9488)', boxShadow: '0 0 10px rgba(16, 185, 129, 0.3)' }}>
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                             <span className="material-symbols-outlined text-2xl">bar_chart</span>
                         </div>
-                        <span className="text-xs font-black text-emerald-500">戰報</span>
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">戰報</span>
                     </button>
                     <button
                         onClick={() => {
