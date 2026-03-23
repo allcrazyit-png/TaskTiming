@@ -110,6 +110,7 @@ const resources = {
             "upload_success_msg": "上傳成功！",
             "back_edit": "返回修改",
             "back_home": "返回首頁",
+            "quality_satisfaction_label": "本次作業品質滿意度 (選填)",
             "total": "總計",
             "br_title": "今日戰報",
             "br_live_indicator": "即時",
@@ -126,7 +127,15 @@ const resources = {
             "br_upload_count": "上傳紀錄",
             "br_live_feed": "最新捷報",
             "br_live_feed_coming_soon": "敬請期待",
-            "br_live_feed_sub": "功能調整中，稍後開放"
+            "br_live_feed_sub": "功能調整中，稍後開放",
+            "missing_days_title": "累計 {{days}} 個工作日無上傳紀錄",
+            "missing_days_sub": "請記得補上作業紀錄！",
+            // 類別翻譯
+            "cat_組裝": "組裝",
+            "cat_研磨": "研磨",
+            "cat_檢查": "檢查",
+            "cat_噴漆": "噴漆",
+            "cat_包裝": "包裝"
         }
     },
     vi: {
@@ -236,6 +245,7 @@ const resources = {
             "upload_success_msg": "Tải lên thành công!",
             "back_edit": "Quay lại sửa",
             "back_home": "Về trang chủ",
+            "quality_satisfaction_label": "Mức độ hài lòng (Tùy chọn)",
             "total": "Tổng",
             "br_title": "Báo cáo hôm nay",
             "br_live_indicator": "Trực tiếp",
@@ -252,7 +262,15 @@ const resources = {
             "br_upload_count": "Bản ghi tải lên",
             "br_live_feed": "Thông tin mới nhất",
             "br_live_feed_coming_soon": "Sắp ra mắt",
-            "br_live_feed_sub": "Chức năng đang được điều chỉnh, sẽ sớm mở lại"
+            "br_live_feed_sub": "Chức năng đang được điều chỉnh, sẽ sớm mở lại",
+            "missing_days_title": "Đã {{days}} ngày làm việc chưa tải lên hồ sơ",
+            "missing_days_sub": "Hãy nhớ bổ sung hồ sơ công việc!",
+            // 類別翻譯 (Category Translations)
+            "cat_組裝": "Lắp ráp",
+            "cat_研磨": "Mài",
+            "cat_檢查": "Kiểm tra",
+            "cat_噴漆": "Sơn",
+            "cat_包裝": "Đóng gói"
         }
     },
     id: {
@@ -362,6 +380,7 @@ const resources = {
             "upload_success_msg": "Upload Berhasil!",
             "back_edit": "Kembali Edit",
             "back_home": "Kembali ke Beranda",
+            "quality_satisfaction_label": "Kepuasan Kualitas (Opsional)",
             "total": "Total",
             "br_title": "Laporan Hari Ini",
             "br_live_indicator": "Langsung",
@@ -378,7 +397,15 @@ const resources = {
             "br_upload_count": "Catatan Unggahan",
             "br_live_feed": "Berita Terbaru",
             "br_live_feed_coming_soon": "Segera Hadir",
-            "br_live_feed_sub": "Penyesuaian fungsi sedang berlangsung, akan segera dibuka"
+            "br_live_feed_sub": "Penyesuaian fungsi sedang berlangsung, akan segera dibuka",
+            "missing_days_title": "{{days}} hari kerja tanpa catatan unggahan",
+            "missing_days_sub": "Harap lengkapi catatan kerja Anda!",
+            // 類別翻譯 (Category Translations)
+            "cat_組裝": "Perakitan",
+            "cat_研磨": "Penggerindaan",
+            "cat_檢查": "Inspeksi",
+            "cat_噴漆": "Pengecatan",
+            "cat_包裝": "Pengemasan"
         }
     }
 };

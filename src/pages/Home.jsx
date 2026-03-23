@@ -8,7 +8,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.8 LOADED - Google Sheets Sync & Date Picker");
+    console.log("VERSION 1.9.1 LOADED - Missing Upload Days Reminder Fix");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -43,6 +43,70 @@ export default function Home() {
 
     // Image Display State: 手動開啟全部照片 (當自動判斷不顯示時)
     const [showAllImages, setShowAllImages] = useState(false);
+
+    // Missing upload days state: null=未載入, 0=正常, N=累計N個工作日未傳
+    const [missingWorkDays, setMissingWorkDays] = useState(null);
+
+    // 計算從昨天往回連續幾個工作日沒上傳
+    const calcConsecutiveMissingDays = (records, operatorId) => {
+        const uploadedDates = new Set();
+        records.forEach(r => {
+            if (String(r['作業者'] ?? '').startsWith(`[${operatorId}]`)) {
+                const raw = String(r['日期'] ?? '');
+                if (raw) {
+                    const d = new Date(raw);
+                    uploadedDates.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+                }
+            }
+        });
+        let count = 0;
+        const d = new Date();
+        d.setDate(d.getDate() - 1); // 從昨天開始
+        for (let i = 0; i < 60; i++) {
+            const dow = d.getDay();
+            if (dow !== 0 && dow !== 6) { // 工作日才算
+                const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                if (!uploadedDates.has(str)) {
+                    count++;
+                } else {
+                    break;
+                }
+            }
+            d.setDate(d.getDate() - 1);
+        }
+        return count;
+    };
+
+    // 當登入者改變時抓取紀錄並計算漏傳天數
+    useEffect(() => {
+        if (!selectedOperator) {
+            setMissingWorkDays(null);
+            return;
+        }
+        const match = selectedOperator.match(/\[(\S+)\]/);
+        if (!match) return;
+        const operatorId = match[1];
+        setMissingWorkDays(null); // 重置為載入中
+        const recordsUrl = `${GOOGLE_SCRIPT_URL}?action=records&sheet=${encodeURIComponent('紀錄')}`;
+        fetch(recordsUrl)
+            .then(res => res.json())
+            .then(data => {
+                if (!Array.isArray(data)) {
+                    return fetch(`${GOOGLE_SCRIPT_URL}?action=records&index=0`).then(r => r.json());
+                }
+                return data;
+            })
+            .then(data => {
+                if (Array.isArray(data)) {
+                    const missing = calcConsecutiveMissingDays(data, operatorId);
+                    console.log(`[MissingDays] operatorId=${operatorId}, totalRecords=${data.length}, missingDays=${missing}`);
+                    setMissingWorkDays(missing);
+                } else {
+                    setMissingWorkDays(0);
+                }
+            })
+            .catch(() => setMissingWorkDays(0));
+    }, [selectedOperator]);
 
     // Apply Theme
     useEffect(() => {
@@ -82,7 +146,7 @@ export default function Home() {
                 // Start all fetches in parallel
                 // 優化：加上伺服器端過濾參數，並相容「記錄」與「紀錄」兩種寫法
                 const prunePattern = '組裝記錄表|組裝紀錄表';
-                const productUrl = `${GOOGLE_SCRIPT_URL}?index=0&includeCol=${encodeURIComponent('類別')}&filterVal=${encodeURIComponent('組裝')}&prune=${encodeURIComponent(prunePattern)}&strip=${encodeURIComponent(prunePattern)}`;
+                const productUrl = `${GOOGLE_SCRIPT_URL}?index=0&includeCol=${encodeURIComponent('類別')}&excludeVal=${encodeURIComponent('射出')}&prune=${encodeURIComponent(prunePattern)}&strip=${encodeURIComponent(prunePattern)}`;
                 const employeeUrl = `${GOOGLE_SCRIPT_URL}?sheet=${encodeURIComponent('員工資料')}`;
                 const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=23.9972&longitude=120.4638&current=temperature_2m,weather_code&timezone=Asia%2FTaipei';
 
@@ -284,7 +348,8 @@ export default function Home() {
                 carModel: product['車型'],
                 standardTime: product['CT時間(秒)'] || 0, // Pass Standard Time (updated header)
                 operator: selectedOperator, // Pass Operator
-                productImage: product['產品圖片'] // Pass Product Image
+                productImage: product['產品圖片'], // Pass Product Image
+                category: product['類別'] // Pass Category
             }
         });
     };
@@ -434,6 +499,14 @@ export default function Home() {
                     ) : (
                         <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400">
                             <span className="material-symbols-outlined text-4xl">image_not_supported</span>
+                        </div>
+                    )}
+                    {/* Category Badge - Added at top left */}
+                    {product['類別'] && (
+                        <div className="absolute top-3 left-3">
+                            <span className="bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-full text-[12px] font-black border border-white/20 shadow-sm">
+                                {t(`cat_${product['類別']}`, product['類別'])}
+                            </span>
                         </div>
                     )}
                     <div className="absolute top-3 right-3 flex items-center gap-2">
@@ -622,7 +695,11 @@ export default function Home() {
                                     return (
                                         <>
                                             <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-0.5 tracking-wide">{greetingTitle}</h2>
-                                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{greetingSub}</p>
+                                            {missingWorkDays > 0 ? (
+                                                <p className="text-sm font-bold text-amber-500 dark:text-amber-400">⚠️ {t('missing_days_title', { days: missingWorkDays })}　{t('missing_days_sub')}</p>
+                                            ) : (
+                                                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{greetingSub}</p>
+                                            )}
                                         </>
                                     );
                                 })()}
@@ -995,6 +1072,16 @@ export default function Home() {
                                 </button>
                                 <p className="text-xs text-center text-slate-400 dark:text-slate-500">
                                     如果您要更換崗位或是給其他人使用此裝置，請點擊上方按鈕。
+                                </p>
+                            </div>
+
+                            {/* Version Info */}
+                            <div className="mt-4 pb-2 text-center">
+                                <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
+                                    Version 1.9.1
+                                </p>
+                                <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
+                                    Built by Antigravity
                                 </p>
                             </div>
 

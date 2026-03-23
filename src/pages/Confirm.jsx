@@ -12,6 +12,7 @@ export default function Confirm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [isUploaded, setIsUploaded] = useState(false);
+    const [satisfaction, setSatisfaction] = useState(0);
 
     const {
         productName,
@@ -29,7 +30,8 @@ export default function Confirm() {
         endTime,
         totalTime,
         remarks,
-        workDate
+        workDate,
+        category
     } = location.state || {
         productName: "零件 A",
         partNumber: "SAMPLE",
@@ -46,7 +48,8 @@ export default function Confirm() {
         endTime: "10:00",
         totalTime: "02:00:00",
         remarks: "無",
-        workDate: new Date().toLocaleDateString('en-ZA').replace(/-/g, '/') // Default fallback YYYY/MM/DD
+        workDate: new Date().toLocaleDateString('en-ZA').replace(/-/g, '/'), // Default fallback YYYY/MM/DD
+        category: ""
     };
 
     const getScrapLabel = (key) => {
@@ -246,6 +249,7 @@ export default function Confirm() {
             const payloadR = {
                 operator: operator,
                 carModel: carModel,
+                category: category || "", // 新增類別
                 partNumber: partR,
                 carName: carModel,
                 productName: `${productName} (R邊)`,
@@ -262,6 +266,7 @@ export default function Confirm() {
                 others: finalScrapsR.others,
                 totalScrap: scrapR,
                 remarks: remarks,
+                satisfaction: satisfaction,
                 scrapRate: metricsR.scrapRate + "%",
                 yieldRate: metricsR.yieldRate + "%",
                 efficiency: metricsR.efficiency + "%"
@@ -270,6 +275,7 @@ export default function Confirm() {
             const payloadL = {
                 operator: operator,
                 carModel: carModel,
+                category: category || "", // 新增類別
                 partNumber: partL,
                 carName: carModel,
                 productName: `${productName} (L邊)`,
@@ -286,6 +292,7 @@ export default function Confirm() {
                 others: finalScrapsL.others,
                 totalScrap: scrapL,
                 remarks: remarks,
+                satisfaction: satisfaction,
                 scrapRate: metricsL.scrapRate + "%",
                 yieldRate: metricsL.yieldRate + "%",
                 efficiency: metricsL.efficiency + "%"
@@ -297,6 +304,7 @@ export default function Confirm() {
             const payload = {
                 operator: operator,
                 carModel: carModel,
+                category: category || "", // 新增類別
                 partNumber: partNumber,
                 carName: carModel, // Chinese Name mapped to Car Model
                 productName: productName,
@@ -313,6 +321,7 @@ export default function Confirm() {
                 others: scraps?.others || 0,
                 totalScrap: totalScrap,
                 remarks: remarks,
+                satisfaction: satisfaction,
                 scrapRate: metrics.scrapRate + "%",
                 yieldRate: metrics.yieldRate + "%",
                 efficiency: metrics.efficiency + "%"
@@ -395,7 +404,14 @@ export default function Confirm() {
                         </div>
                         <div>
                             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('product_name_label')}</p>
-                            <p className="text-xl font-bold">{productName}</p>
+                            <p className="text-xl font-bold">
+                                {productName}
+                                {category && (
+                                    <span className="ml-2 bg-success/10 text-success text-[10px] px-2 py-0.5 rounded-full font-black border border-success/20 align-middle">
+                                        {t(`cat_${category}`, category)}
+                                    </span>
+                                )}
+                            </p>
                             <p className="text-sm font-medium text-slate-500">{carModel} / {partNumber}</p>
                         </div>
                     </div>
@@ -457,6 +473,29 @@ export default function Confirm() {
                         <p className="text-base font-bold text-slate-800 dark:text-slate-100 leading-relaxed min-h-[1.5em]">
                             {remarks || t('remarks_none')}
                         </p>
+                    </div>
+
+                    {/* Quality Satisfaction Survey - Integrated inside the main card */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/50 mt-2">
+                        <div className="flex items-center justify-between gap-4">
+                            <p className="text-xs font-black text-slate-500 dark:text-slate-400 tracking-tight flex-shrink-0">
+                                {t('quality_satisfaction_label')}
+                            </p>
+                            <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                    <button
+                                        key={star}
+                                        onClick={() => setSatisfaction(satisfaction === star ? star - 1 : star)}
+                                        disabled={isUploaded}
+                                        className="focus:outline-none transition-transform active:scale-95"
+                                    >
+                                        <span className={`material-symbols-outlined text-3xl transition-colors ${star <= satisfaction ? 'text-yellow-400 fill-1' : 'text-slate-300 dark:text-slate-700/50 fill-0'}`}>
+                                            star
+                                        </span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div className="text-center mb-2">

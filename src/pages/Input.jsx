@@ -7,13 +7,14 @@ export default function Input() {
     const navigate = useNavigate();
     const location = useLocation();
     // Default values for testing
-    const { productName, partNumber, carModel, standardTime, operator, productImage } = location.state || {
+    const { productName, partNumber, carModel, standardTime, operator, productImage, category } = location.state || {
         productName: "鋁合金散熱片 A-204",
         partNumber: "SAMPLE-001",
         carModel: "SAMPLE-CAR",
         standardTime: 0,
         operator: "[001] 王大明",
-        productImage: null
+        productImage: null,
+        category: "組裝"
     };
 
     // Helper to format image URL from GitHub Pages or use default
@@ -168,7 +169,8 @@ export default function Input() {
                 startTime,
                 endTime,
                 totalTime,
-                remarks
+                remarks,
+                category
             }
         });
     };
@@ -213,10 +215,25 @@ export default function Input() {
                                 <span className="material-symbols-outlined text-3xl">image_not_supported</span>
                             </div>
                         )}
+                        {/* Category Badge - Added at top left */}
+                        {category && (
+                            <div className="absolute top-1 left-1">
+                                <span className="bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-md text-[10px] font-black border border-white/20 shadow-sm">
+                                    {t(`cat_${category}`, category)}
+                                </span>
+                            </div>
+                        )}
                         <div className="absolute -bottom-1 -right-1 bg-primary text-white text-[11px] px-2 py-0.5 rounded-md font-bold shadow-sm">產品照</div>
                     </div>
                     <div className="flex flex-col">
-                        <h1 className="text-lg font-black leading-tight">{t('work_report')}</h1>
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-lg font-black leading-tight">{t('work_report')}</h1>
+                            {category && (
+                                <span className="bg-success/10 text-success text-[10px] px-2 py-0.5 rounded-full font-black border border-success/20">
+                                    {t(`cat_${category}`, category)}
+                                </span>
+                            )}
+                        </div>
                         <div className="mt-1">
                             <span className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-0.5">
                                 {t('car_model_label')} <span className="text-primary">{carModel}</span>

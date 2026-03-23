@@ -11,6 +11,7 @@ function doGet(e) {
     var sheetIndex = e.parameter.index;
     var includeCol = e.parameter.includeCol;
     var filterVal = e.parameter.filterVal;
+    var excludeVal = e.parameter.excludeVal;
     var prune = e.parameter.prune;
 
     var ss = SpreadsheetApp.openById(ssId);
@@ -46,8 +47,14 @@ function doGet(e) {
 
     for (var i = 1; i < data.length; i++) {
         // 2. 篩選
-        if (filterIdx !== -1 && filterVal) {
-            if (String(data[i][filterIdx]).indexOf(filterVal) === -1) continue;
+        if (filterIdx !== -1) {
+            var cellValue = String(data[i][filterIdx]);
+            // 包含邏輯
+            if (filterVal && cellValue.indexOf(filterVal) === -1) continue;
+            // 排除邏輯
+            if (excludeVal && cellValue.indexOf(excludeVal) !== -1) continue;
+            // 如果欄位完全是空的 (非作業性內容)，也排除 (可選)
+            if (!cellValue.trim()) continue;
         }
 
         var obj = {};
@@ -105,11 +112,28 @@ function doPost(e) {
         lock.waitLock(10000);
         var data = JSON.parse(e.postData.contents);
         var rowData = [
-            data.operator || "", data.carModel || "", data.partNumber || "", data.productName || "",
-            data.date || "", data.startTime || "", data.endTime || "", data.totalTime || "",
-            data.avgTime || "", data.standardTime || 0, data.goodCount || 0, data.missing || 0,
-            data.damage || 0, data.appearance || 0, data.others || 0, data.totalScrap || 0,
-            data.remarks || "", data.scrapRate || "", data.yieldRate || "", data.efficiency || ""
+            data.operator || "", 
+            data.carModel || "", 
+            data.category || "",      // 新增類別欄位
+            data.partNumber || "", 
+            data.productName || "",
+            data.date || "", 
+            data.startTime || "", 
+            data.endTime || "", 
+            data.totalTime || "",
+            data.avgTime || "", 
+            data.standardTime || 0, 
+            data.goodCount || 0, 
+            data.missing || 0,
+            data.damage || 0, 
+            data.appearance || 0, 
+            data.others || 0, 
+            data.totalScrap || 0,
+            data.remarks || "", 
+            data.scrapRate || "", 
+            data.yieldRate || "", 
+            data.efficiency || "",
+            data.satisfaction || 0    // 滿意度
         ];
         var ss = SpreadsheetApp.getActiveSpreadsheet();
         var sheet = ss.getSheetByName("紀錄") || ss.getSheets()[0];
