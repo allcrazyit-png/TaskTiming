@@ -287,7 +287,7 @@ export default function Home() {
         }
     };
 
-    const toggleFavorite = (e, partNumber) => {
+    const toggleFavorite = (e, partNumber, category) => {
         e.stopPropagation(); // Prevent product card click if overlapping
         if (!selectedOperator) {
             alert(t('login_required_fav') + "\nPlease log in first to use favorites.");
@@ -299,15 +299,16 @@ export default function Home() {
         if (!match) return;
         const operatorId = match[1];
         const favoritesKey = `favoriteProducts_${operatorId}`;
+        const favKey = `${partNumber}|${category || ''}`;
 
         setFavoriteProducts(prev => {
             let newFavorites;
-            if (prev.includes(partNumber)) {
+            if (prev.includes(favKey)) {
                 // Remove
-                newFavorites = prev.filter(pn => pn !== partNumber);
+                newFavorites = prev.filter(pn => pn !== favKey);
             } else {
                 // Add
-                newFavorites = [...prev, partNumber];
+                newFavorites = [...prev, favKey];
             }
 
             // Save immediately to local storage
@@ -452,7 +453,8 @@ export default function Home() {
     };
 
     const renderProductCard = (product, index, isFavoriteList = false, showImage = true) => {
-        const isFav = favoriteProducts.includes(product['品番']);
+        const favKey = `${product['品番']}|${product['類別'] || ''}`;
+        const isFav = favoriteProducts.includes(favKey);
 
         // 緊湊清單模式 (無圖片)：節省頻寬，適合大量結果
         if (!showImage) {
@@ -461,7 +463,7 @@ export default function Home() {
                     className="flex items-center gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 shadow-sm active:scale-[0.99] transition-transform"
                 >
                     <button
-                        onClick={(e) => toggleFavorite(e, product['品番'])}
+                        onClick={(e) => toggleFavorite(e, product['品番'], product['類別'])}
                         className="shrink-0 text-primary"
                     >
                         <span className={`material-symbols-outlined text-[22px] ${isFav ? 'font-variation-fill text-red-500' : 'text-slate-300'}`}>favorite</span>
@@ -511,7 +513,7 @@ export default function Home() {
                     )}
                     <div className="absolute top-3 right-3 flex items-center gap-2">
                         <button
-                            onClick={(e) => toggleFavorite(e, product['品番'])}
+                            onClick={(e) => toggleFavorite(e, product['品番'], product['類別'])}
                             className="bg-white/90 dark:bg-slate-900/90 backdrop-blur text-primary p-1.5 rounded-full shadow-md hover:scale-110 active:scale-95 transition-transform"
                         >
                             <span className={`material-symbols-outlined text-[20px] ${isFav ? 'font-variation-fill text-red-500' : 'text-slate-400'}`}>favorite</span>
@@ -760,7 +762,7 @@ export default function Home() {
                             {t('favorites')}
                         </h2>
                         {products
-                            .filter(p => favoriteProducts.includes(p['品番']))
+                            .filter(p => favoriteProducts.includes(`${p['品番']}|${p['類別'] || ''}`))
                             .map((product, index) => renderProductCard(product, index, true))}
                     </div>
                 )}
