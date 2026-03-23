@@ -59,13 +59,28 @@ export default function Home() {
                 }
             }
         });
+        // 若完全沒有紀錄，直接回傳 0
+        if (uploadedDates.size === 0) return 0;
+
+        // 找出最早上傳日期
+        const firstUploadDate = Array.from(uploadedDates).sort()[0];
+
+        // 今天的日期字串
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+        // 新員工：第一次上傳就是今天，不顯示警告
+        if (firstUploadDate >= todayStr) return 0;
+
         let count = 0;
         const d = new Date();
         d.setDate(d.getDate() - 1); // 從昨天開始
         for (let i = 0; i < 60; i++) {
             const dow = d.getDay();
+            const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            // 不往回數到加入之前的日期
+            if (str < firstUploadDate) break;
             if (dow !== 0 && dow !== 6) { // 工作日才算
-                const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
                 if (!uploadedDates.has(str)) {
                     count++;
                 } else {
