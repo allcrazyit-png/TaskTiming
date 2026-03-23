@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>作業計時系統 — QR Code</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @page { size: A4; margin: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Noto Sans TC', 'Noto Sans', sans-serif;
+      background: #eef1f7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 10px 50px rgba(0,0,0,0.13);
+      width: 560px;
+      overflow: hidden;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #1a56db 0%, #0b2fa0 100%);
+      padding: 40px 40px 36px;
+      color: #fff;
+      text-align: center;
+      position: relative;
+    }
+    .header::after {
+      content: '';
+      display: block;
+      position: absolute;
+      bottom: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0; height: 0;
+      border-left: 30px solid transparent;
+      border-right: 30px solid transparent;
+      border-top: 22px solid #0b2fa0;
+    }
+    .header-icon {
+      font-size: 52px;
+      display: block;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+    }
+    .header-title {
+      font-size: 30px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+    }
+    /* 三語標題列 */
+    .lang-row {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      opacity: 0.85;
+    }
+    .lang-tag {
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      background: rgba(255,255,255,0.18);
+      border-radius: 20px;
+      padding: 3px 12px;
+    }
+
+    /* ── Body ── */
+    .body {
+      padding: 52px 48px 40px;
+      text-align: center;
+    }
+
+    /* ── Instruction block (3 langs) ── */
+    .instruction-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 32px;
+    }
+    .lang-line {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      justify-content: center;
+    }
+    .lang-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      background: #1a56db;
+      border-radius: 4px;
+      padding: 1px 6px;
+      flex-shrink: 0;
+      letter-spacing: 0.5px;
+    }
+    .lang-badge.id  { background: #d91f26; }
+    .lang-badge.vi  { background: #da251d; }
+    .lang-text {
+      font-size: 16px;
+      color: #374151;
+      font-weight: 600;
+      line-height: 1.5;
+    }
+    .lang-text span {
+      color: #1a56db;
+    }
+
+    /* ── QR Wrapper ── */
+    .qr-wrapper {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      border: 4px solid #1a56db;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 6px 28px rgba(26,86,219,0.2);
+      margin-bottom: 28px;
+    }
+    #qrcode canvas, #qrcode img {
+      display: block;
+      border-radius: 6px;
+    }
+
+    /* ── URL ── */
+    .url-box {
+      background: #f0f4ff;
+      border: 1.5px solid #b8ccf8;
+      border-radius: 12px;
+      padding: 12px 20px;
+      margin-bottom: 32px;
+    }
+    .url-label {
+      font-size: 11px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 4px;
+    }
+    .url-text {
+      font-size: 14px;
+      color: #1a56db;
+      word-break: break-all;
+      font-weight: 700;
+    }
+
+    /* ── Steps ── */
+    .steps {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 30px;
+      gap: 0;
+    }
+    .step {
+      flex: 1;
+      text-align: center;
+      position: relative;
+    }
+    .step:not(:last-child)::after {
+      content: '›';
+      position: absolute;
+      right: 0; top: 14px;
+      font-size: 22px;
+      color: #d1d5db;
+      transform: translateY(-50%);
+    }
+    .step-icon {
+      font-size: 28px;
+      display: block;
+      margin-bottom: 8px;
+    }
+    /* 每個步驟也顯示三語 */
+    .step-texts { display: flex; flex-direction: column; gap: 2px; }
+    .step-texts .s { font-size: 12px; color: #6b7280; line-height: 1.4; }
+    .step-texts .s.zh { font-size: 13px; color: #374151; font-weight: 600; }
+
+    /* ── Divider ── */
+    .divider {
+      border: none;
+      border-top: 1.5px dashed #e5e7eb;
+      margin: 0 0 24px;
+    }
+
+    /* ── Note (3 langs) ── */
+    .note-block { display: flex; flex-direction: column; gap: 4px; }
+    .note-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: center;
+    }
+    .note-dot { font-size: 14px; color: #9ca3af; }
+    .note-text { font-size: 13px; color: #6b7280; line-height: 1.5; }
+    .note-text.zh { font-size: 14px; font-weight: 600; color: #374151; }
+
+    /* ── Footer ── */
+    .footer {
+      background: #f3f4f6;
+      border-top: 1px solid #e5e7eb;
+      padding: 18px 40px;
+      text-align: center;
+    }
+    .footer-lines { display: flex; flex-direction: column; gap: 4px; }
+    .footer-line { font-size: 12px; color: #9ca3af; }
+    .footer-line.zh { font-size: 13px; color: #6b7280; font-weight: 600; }
+
+    /* ── Print button ── */
+    .print-btn {
+      margin-top: 28px;
+      padding: 14px 48px;
+      background: #1a56db;
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 1px;
+      box-shadow: 0 4px 16px rgba(26,86,219,0.32);
+      transition: background 0.2s, transform 0.1s;
+    }
+    .print-btn:hover { background: #1446b8; transform: translateY(-2px); }
+
+    @media print {
+      body { background: #fff; padding: 0; }
+      .card {
+        box-shadow: none;
+        border: 1px solid #e5e7eb;
+        width: 100%;
+        border-radius: 0;
+      }
+      .print-btn { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Header -->
+  <div class="header">
+    <span class="header-icon">⏱️</span>
+    <div class="header-title">作業計時系統</div>
+    <div class="lang-row">
+      <span class="lang-tag">🇹🇼 中文</span>
+      <span class="lang-tag">🇮🇩 Indonesia</span>
+      <span class="lang-tag">🇻🇳 Tiếng Việt</span>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="body">
+
+    <!-- Instruction 3 langs -->
+    <div class="instruction-block">
+      <div class="lang-line">
+        <span class="lang-badge">中文</span>
+        <span class="lang-text">掃描下方 QR Code，<span>立即開始記錄作業時間</span></span>
+      </div>
+      <div class="lang-line">
+        <span class="lang-badge id">ID</span>
+        <span class="lang-text">Scan QR Code di bawah untuk <span>mulai mencatat waktu kerja</span></span>
+      </div>
+      <div class="lang-line">
+        <span class="lang-badge vi">VI</span>
+        <span class="lang-text">Quét mã QR bên dưới để <span>bắt đầu ghi lại thời gian làm việc</span></span>
+      </div>
+    </div>
+
+    <!-- QR Code -->
+    <div class="qr-wrapper">
+      <div id="qrcode"></div>
+    </div>
+
+    <!-- URL -->
+    <div class="url-box">
+      <div class="url-label">網址 · URL · Địa chỉ web</div>
+      <div class="url-text">https://allcrazyit-png.github.io/TaskTiming/</div>
+    </div>
+
+    <!-- Steps -->
+    <div class="steps">
+      <div class="step">
+        <span class="step-icon">📱</span>
+        <div class="step-texts">
+          <div class="s zh">開啟相機</div>
+          <div class="s">Buka Kamera</div>
+          <div class="s">Mở Camera</div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-icon">🔍</span>
+        <div class="step-texts">
+          <div class="s zh">對準掃描</div>
+          <div class="s">Arahkan ke QR</div>
+          <div class="s">Hướng vào QR</div>
+        </div>
+      </div>
+      <div class="step">
+        <span class="step-icon">✅</span>
+        <div class="step-texts">
+          <div class="s zh">點擊連結</div>
+          <div class="s">Ketuk Tautan</div>
+          <div class="s">Nhấn vào liên kết</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Note 3 langs -->
+    <div class="note-block">
+      <div class="note-line">
+        <span class="note-dot">📌</span>
+        <span class="note-text zh">免安裝，直接使用 · 支援 iOS / Android</span>
+      </div>
+      <div class="note-line">
+        <span class="note-text">Tidak perlu instal, langsung gunakan · Mendukung iOS / Android</span>
+      </div>
+      <div class="note-line">
+        <span class="note-text">Không cần cài đặt, dùng ngay · Hỗ trợ iOS / Android</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-lines">
+      <div class="footer-line zh">如需協助請聯繫管理人員 · 請勿移除此告示</div>
+      <div class="footer-line">Hubungi supervisor jika butuh bantuan · Jangan lepas pengumuman ini</div>
+      <div class="footer-line">Liên hệ quản lý nếu cần hỗ trợ · Không được gỡ thông báo này</div>
+    </div>
+  </div>
+
+</div>
+
+<button class="print-btn" onclick="window.print()">🖨️ &nbsp;列印 / Print / In</button>
+
+<script>
+  new QRCode(document.getElementById('qrcode'), {
+    text: 'https://allcrazyit-png.github.io/TaskTiming/',
+    width: 240,
+    height: 240,
+    colorDark: '#0b2fa0',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+</script>
+
+</body>
+</html>
