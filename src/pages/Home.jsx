@@ -8,7 +8,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.9.2 LOADED - Separate favorites by category");
+    console.log("VERSION 1.9.3 LOADED - Retain up to 30 past records and show work date");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -284,9 +284,7 @@ export default function Home() {
         try {
             const historyKey = `uploadHistory_${id}`;
             const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
-            const todayStr = new Date().toLocaleDateString();
-            const todaysRecords = existingHistory.filter(record => record.submitDate === todayStr);
-            setOperatorHistory(todaysRecords);
+            setOperatorHistory(existingHistory);
         } catch (e) {
             console.error(e);
         }

@@ -170,12 +170,11 @@ export default function Confirm() {
                     submitTimestamp: new Date().getTime()
                 };
 
-                // Keep only today's records to save space and keep it relevant
-                const todayStr = new Date().toLocaleDateString();
+                // Keep only the latest 30 records to save space and keep it relevant
                 const updatedHistory = [
                     historyRecord,
-                    ...existingHistory.filter(record => record.submitDate === todayStr)
-                ].slice(0, 50); // Keep max 50 records per day
+                    ...existingHistory
+                ].slice(0, 30); // Keep max 30 records total
 
                 localStorage.setItem(historyKey, JSON.stringify(updatedHistory));
             } catch (e) {
@@ -394,7 +393,12 @@ export default function Confirm() {
                         </div>
                         <div>
                             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('work_time')}</p>
-                            <p className="text-xl font-bold">{startTime} - {endTime} <span className="text-sm text-slate-400 font-normal">({totalTime})</span></p>
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                                <span className="text-sm font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-800 self-start sm:self-auto mb-1 sm:mb-0">
+                                    {workDate}
+                                </span>
+                                <p className="text-xl font-bold">{startTime} - {endTime} <span className="text-sm text-slate-400 font-normal">({totalTime})</span></p>
+                            </div>
                         </div>
                     </div>
                     <hr className="border-slate-100 dark:border-slate-800" />
