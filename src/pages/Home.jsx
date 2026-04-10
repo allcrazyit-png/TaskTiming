@@ -652,7 +652,12 @@ export default function Home() {
                                                 </div>
                                             </div>
                                             <div className="flex-1">
-                                                <p className="text-sm font-black text-slate-800 dark:text-slate-100 leading-tight mb-1">{record.productName}</p>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <p className="text-sm font-black text-slate-800 dark:text-slate-100 leading-tight">{record.productName}</p>
+                                                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800/50 shrink-0">
+                                                        {record.date || record.submitDate}
+                                                    </span>
+                                                </div>
                                                 <p className="text-xs font-bold text-slate-500 mb-2 bg-slate-100 dark:bg-slate-900 inline-block px-2 py-0.5 rounded-md">{record.partNumber}</p>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-1 rounded-md flex items-center gap-1">
