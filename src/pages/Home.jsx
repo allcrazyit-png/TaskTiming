@@ -12,6 +12,7 @@ export default function Home() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
+        category: '',
         carModel: '',
         partNumber: ''
     });
@@ -424,9 +425,10 @@ export default function Home() {
     // Filter products based on selection
     const filteredProducts = useMemo(() => {
         return products.filter(item => {
+            const matchCat = !filters.category || item['類別'] === filters.category;
             const matchCar = !filters.carModel || item['車型'] === filters.carModel;
             const matchPart = !filters.partNumber || item['品番'] === filters.partNumber;
-            return matchCar && matchPart;
+            return matchCat && matchCar && matchPart;
         });
     }, [products, filters]);
 
@@ -450,8 +452,8 @@ export default function Home() {
     const handleLogoutAndClear = () => {
         if (!selectedOperator) return;
 
-        const confirmClear = window.confirm(t('confirm_logout'));
-        if (confirmClear) {
+        const confirmLogout = window.confirm(t('confirm_logout'));
+        if (confirmLogout) {
             const match = selectedOperator.match(/\[(.*?)\]/);
             if (match) {
                 const operatorId = match[1];
@@ -462,6 +464,27 @@ export default function Home() {
             setOperatorHistory([]);
             setFavoriteProducts([]);
             setShowSettingsPopup(false);
+        }
+    };
+
+    // Helper to get category-specific colors
+    const getCategoryStyles = (cat) => {
+        switch (cat) {
+            case '組裝': return 'bg-blue-600';
+            case '包裝': return 'bg-amber-500';
+            case '研磨': return 'bg-slate-600';
+            case '檢查': return 'bg-emerald-600';
+            case '噴漆': return 'bg-purple-600';
+            default: return 'bg-black/60';
+        }
+    };
+
+    const getCategoryBtnStyles = (cat) => {
+        switch (cat) {
+            case '包裝': return 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700 border-amber-700';
+            case '研磨': return 'bg-slate-600 hover:bg-slate-700 active:bg-slate-800 border-slate-900';
+            case '檢查': return 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 border-emerald-900';
+            default: return 'bg-primary hover:bg-primary/90 active:bg-primary/80 border-blue-800';
         }
     };
 
@@ -487,10 +510,10 @@ export default function Home() {
                     </div>
                     <button
                         onClick={() => handleStartWork(product)}
-                        className="shrink-0 flex items-center gap-1 bg-primary text-white text-xs font-black px-3 py-2 rounded-lg shadow active:scale-95 transition-transform"
+                        className={`shrink-0 flex items-center gap-1 text-white text-xs font-black px-3 py-2 rounded-lg shadow active:scale-95 transition-transform ${getCategoryBtnStyles(product['類別'])}`}
                     >
                         <span className="material-symbols-outlined text-[18px]">play_circle</span>
-                        {t('start_work')}
+                        {product['類別'] ? t('start_work_cat', { cat: t(`cat_${product['類別']}`) }) : t('start_work')}
                     </button>
                 </div>
             );
@@ -516,10 +539,10 @@ export default function Home() {
                             <span className="material-symbols-outlined text-4xl">image_not_supported</span>
                         </div>
                     )}
-                    {/* Category Badge - Added at top left */}
+                    {/* Category Badge - Color Coded */}
                     {product['類別'] && (
                         <div className="absolute top-3 left-3">
-                            <span className="bg-black/60 backdrop-blur-md text-white px-3 py-1 rounded-full text-[12px] font-black border border-white/20 shadow-sm">
+                            <span className={`${getCategoryStyles(product['類別'])} backdrop-blur-md text-white px-3 py-1 rounded-full text-[12px] font-black border border-white/20 shadow-md flex items-center gap-1`}>
                                 {t(`cat_${product['類別']}`, product['類別'])}
                             </span>
                         </div>
@@ -541,10 +564,10 @@ export default function Home() {
                     </p>
                     <button
                         onClick={() => handleStartWork(product)}
-                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-lg font-black text-white shadow-md hover:bg-primary/90 active:bg-primary/80 transition-colors"
+                        className={`flex w-full items-center justify-center gap-2 rounded-lg py-3 text-lg font-black text-white shadow-md transition-colors ${getCategoryBtnStyles(product['類別'])}`}
                     >
                         <span className="material-symbols-outlined text-2xl">play_circle</span>
-                        {t('start_work')}
+                        {product['類別'] ? t('start_work_cat', { cat: t(`cat_${product['類別']}`) }) : t('start_work')}
                     </button>
                 </div>
             </div>
@@ -787,7 +810,7 @@ export default function Home() {
 
                 {/* Filter Section */}
                 <section className="space-y-4 mb-6">
-                    <div>
+                    <div className="grid grid-cols-1 gap-4">
                         <div className="flex items-center justify-between mb-2">
                             <label className="block text-sm font-bold text-slate-800 dark:text-slate-200">
                                 {t('filter_car_model')}

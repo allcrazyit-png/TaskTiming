@@ -193,7 +193,11 @@ export default function Input() {
                     早班
                 </div>
             </div>
-            <header className="sticky top-0 z-20 bg-white/95 dark:bg-background-dark/95 backdrop-blur-sm border-b-2 border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center shadow-sm">
+            <header className={`sticky top-0 z-20 backdrop-blur-sm border-b-2 px-4 py-3 flex items-center shadow-sm transition-colors ${catColor === 'amber' ? 'bg-amber-50/95 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800' :
+                catColor === 'slate' ? 'bg-slate-50/95 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800' :
+                    catColor === 'emerald' ? 'bg-emerald-50/95 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800' :
+                        catColor === 'purple' ? 'bg-purple-50/95 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800' :
+                            'bg-white/95 dark:bg-background-dark/95 border-slate-200 dark:border-slate-800'}`}>
                 <button
                     onClick={() => navigate(-1)}
                     className="flex items-center justify-center p-2 rounded-xl active:bg-slate-200 dark:active:bg-slate-700 transition-colors mr-2"
@@ -203,7 +207,11 @@ export default function Input() {
                 <div className="flex items-center gap-3 flex-1">
                     <div className="relative">
                         {displayProductImage ? (
-                            <img alt="Product Image" className="w-24 h-24 rounded-xl border-2 border-primary object-cover shadow-md bg-white"
+                            <img alt="Product Image" className={`w-24 h-24 rounded-xl border-2 object-cover shadow-md bg-white ${catColor === 'amber' ? 'border-amber-500' :
+                                catColor === 'slate' ? 'border-slate-500' :
+                                    catColor === 'emerald' ? 'border-emerald-500' :
+                                        catColor === 'purple' ? 'border-purple-500' :
+                                            'border-primary'}`}
                                 src={displayProductImage}
                                 onError={(e) => {
                                     e.target.onerror = null;
@@ -215,33 +223,57 @@ export default function Input() {
                                 <span className="material-symbols-outlined text-3xl">image_not_supported</span>
                             </div>
                         )}
-                        {/* Category Badge - Added at top left */}
+                        {/* Category Badge - Color Coded */}
                         {category && (
                             <div className="absolute top-1 left-1">
-                                <span className="bg-black/60 backdrop-blur-md text-white px-2 py-0.5 rounded-md text-[10px] font-black border border-white/20 shadow-sm">
+                                <span className={`${catColor === 'amber' ? 'bg-amber-500' :
+                                    catColor === 'slate' ? 'bg-slate-600' :
+                                        catColor === 'emerald' ? 'bg-emerald-600' :
+                                            catColor === 'purple' ? 'bg-purple-600' :
+                                                'bg-black/60'} backdrop-blur-md text-white px-2 py-0.5 rounded-md text-[10px] font-black border border-white/20 shadow-sm`}>
                                     {t(`cat_${category}`, category)}
                                 </span>
                             </div>
                         )}
-                        <div className="absolute -bottom-1 -right-1 bg-primary text-white text-[11px] px-2 py-0.5 rounded-md font-bold shadow-sm">產品照</div>
+                        <div className={`absolute -bottom-1 -right-1 text-white text-[11px] px-2 py-0.5 rounded-md font-bold shadow-sm ${catColor === 'amber' ? 'bg-amber-600' :
+                            catColor === 'slate' ? 'bg-slate-700' :
+                                catColor === 'emerald' ? 'bg-emerald-700' :
+                                    catColor === 'purple' ? 'bg-purple-700' :
+                                        'bg-primary'}`}>{t('product_photo')}</div>
                     </div>
                     <div className="flex flex-col">
                         <div className="flex items-center gap-2">
                             <h1 className="text-lg font-black leading-tight">{t('work_report')}</h1>
                             {category && (
-                                <span className="bg-success/10 text-success text-[10px] px-2 py-0.5 rounded-full font-black border border-success/20">
+                                <span className={`${catColor === 'amber' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400' :
+                                    catColor === 'slate' ? 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/40 dark:text-slate-400' :
+                                        catColor === 'emerald' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400' :
+                                            catColor === 'purple' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-400' :
+                                                'bg-success/10 text-success border-success/20'} text-[10px] px-2 py-0.5 rounded-full font-black border`}>
                                     {t(`cat_${category}`, category)}
                                 </span>
                             )}
                         </div>
                         <div className="mt-1">
                             <span className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-0.5">
-                                {t('car_model_label')} <span className="text-primary">{carModel}</span>
+                                {t('car_model_label')} <span className={catColor === 'amber' ? 'text-amber-600' :
+                                    catColor === 'slate' ? 'text-slate-600' :
+                                        catColor === 'emerald' ? 'text-emerald-600' :
+                                            catColor === 'purple' ? 'text-purple-600' :
+                                                'text-primary'}>{carModel}</span>
                             </span>
                             <span className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-0.5">
-                                {t('part_number_input_label')} <span className="text-primary">{displayPartNumber}</span>
+                                {t('part_number_input_label')} <span className={catColor === 'amber' ? 'text-amber-600' :
+                                    catColor === 'slate' ? 'text-slate-600' :
+                                        catColor === 'emerald' ? 'text-emerald-600' :
+                                            catColor === 'purple' ? 'text-purple-600' :
+                                                'text-primary'}>{displayPartNumber}</span>
                             </span>
-                            <span className="product-name-badge mt-0.5 inline-block">
+                            <span className={`product-name-badge mt-0.5 inline-block ${catColor === 'amber' ? 'bg-amber-500' :
+                                catColor === 'slate' ? 'bg-slate-600' :
+                                    catColor === 'emerald' ? 'bg-emerald-600' :
+                                        catColor === 'purple' ? 'bg-purple-600' :
+                                            ''}`}>
                                 {displayProductName}
                             </span>
                         </div>
