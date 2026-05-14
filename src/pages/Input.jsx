@@ -175,6 +175,18 @@ export default function Input() {
         });
     };
 
+    // Helper to get category-specific colors
+    const getCategoryColor = (cat) => {
+        switch (cat) {
+            case '包裝': return 'amber';
+            case '研磨': return 'slate';
+            case '檢查': return 'emerald';
+            case '噴漆': return 'purple';
+            default: return 'blue'; // Assembly
+        }
+    };
+
+    const catColor = getCategoryColor(category);
 
     return (
         <div className="bg-background-light dark:bg-background-dark text-[#1e293b] dark:text-white min-h-screen flex flex-col pb-40">
