@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import confetti from 'canvas-confetti';
 
 // TODO: Replace with your actual Google Apps Script Web App URL
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
@@ -333,6 +334,7 @@ export default function Confirm() {
             setIsSubmitting(false);
             setShowSuccess(true);
             setIsUploaded(true);
+            confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 }, colors: ['#137fec', '#2e7d32', '#f59e0b', '#ec4899'] });
 
             // STAY on the page, just hide the success overlay after animation
             setTimeout(() => {
