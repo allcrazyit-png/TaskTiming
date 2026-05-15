@@ -132,6 +132,7 @@ const resources = {
             "br_live_feed_sub": "功能調整中，稍後開放",
             "missing_days_title": "累計 {{days}} 個工作日無上傳紀錄",
             "missing_days_sub": "請記得補上作業紀錄！",
+            "missing_days_soft": "最近有些紀錄還沒上傳，有空補一下喔",
             // 類別翻譯
             "cat_組裝": "組裝",
             "cat_研磨": "研磨",
@@ -269,6 +270,7 @@ const resources = {
             "br_live_feed_sub": "Chức năng đang được điều chỉnh, sẽ sớm mở lại",
             "missing_days_title": "Đã {{days}} ngày làm việc chưa tải lên hồ sơ",
             "missing_days_sub": "Hãy nhớ bổ sung hồ sơ công việc!",
+            "missing_days_soft": "Gần đây có một số hồ sơ chưa tải lên, rảnh thì bổ sung nhé",
             // 類別翻譯 (Category Translations)
             "cat_組裝": "Lắp ráp",
             "cat_研磨": "Mài",
@@ -406,6 +408,7 @@ const resources = {
             "br_live_feed_sub": "Penyesuaian fungsi sedang berlangsung, akan segera dibuka",
             "missing_days_title": "{{days}} hari kerja tanpa catatan unggahan",
             "missing_days_sub": "Harap lengkapi catatan kerja Anda!",
+            "missing_days_soft": "Beberapa catatan belum diunggah, isi kalau sempat ya",
             // 類別翻譯 (Category Translations)
             "cat_組裝": "Perakitan",
             "cat_研磨": "Penggerindaan",

@@ -738,8 +738,8 @@ export default function Home() {
                                     return (
                                         <>
                                             <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-0.5 tracking-wide">{greetingTitle}</h2>
-                                            {missingWorkDays > 0 ? (
-                                                <p className="text-sm font-bold text-amber-500 dark:text-amber-400">⚠️ {t('missing_days_title', { days: missingWorkDays })}　{t('missing_days_sub')}</p>
+                                            {missingWorkDays > 1 ? (
+                                                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">💬 {t('missing_days_soft')}</p>
                                             ) : (
                                                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{greetingSub}</p>
                                             )}
