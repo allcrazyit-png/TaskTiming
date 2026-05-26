@@ -1,9 +1,7 @@
-function doGet(e) {
-    // === 兩張表的 ID 都鎖在 GAS 內部，前端不需知道 ===
-    var PRODUCTS_SS_ID = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ'; // 產品資料表 (讀)
-    var RECORDS_SS_ID = '1xo4YhDuxh-wpstg7tmAqW4orB9aBheF1CUFzM1TDWKw';  // 組裝紀錄表 (寫)
-    // ==============================================
+const PRODUCTS_SS_ID = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ'; // 產品資料表 (讀)
+const RECORDS_SS_ID = '1xo4YhDuxh-wpstg7tmAqW4orB9aBheF1CUFzM1TDWKw';  // 組裝紀錄表 (寫)
 
+function doGet(e) {
     // action=records → 讀紀錄表；其他 → 讀產品資料表
     var ssId = (e.parameter.action === 'records') ? RECORDS_SS_ID : PRODUCTS_SS_ID;
 
@@ -242,13 +240,45 @@ function sendAdvancedSummaryEmail() {
   const missEmp = allEmp.filter(e => !Object.keys(statsByOperator).includes(e));
   
   // 計算異常空窗
+  const toMin = (t) => {
+    if (!t) return 0;
+    if (t instanceof Date) return t.getHours()*60 + t.getMinutes();
+    if (typeof t === 'number') return Math.round(t * 24 * 60);
+    const x = String(t).split(':').map(Number);
+    return x[0]*60 + x[1];
+  };
+
+  const WORK_START = 8 * 60;    // 08:00
+  const WORK_END   = 17 * 60;   // 17:00
+  const LUNCH_START = 12 * 60;  // 12:00
+  const LUNCH_END   = 13 * 60;  // 13:00
+
+  const fmt = (m) => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
+  const calcEffectiveGap = (start, end) => {
+    const cs = Math.max(start, WORK_START);
+    const ce = Math.min(end, WORK_END);
+    if (ce <= cs) return { gap: 0, cs, ce };
+    const lunch = Math.max(0, Math.min(ce, LUNCH_END) - Math.max(cs, LUNCH_START));
+    return { gap: (ce - cs) - lunch, cs, ce };
+  };
+
   let idles = [];
   Object.keys(statsByOperator).forEach(op => {
-    const recs = statsByOperator[op].recs.sort((a,b) => String(a.s).localeCompare(String(b.s)));
+    const recs = statsByOperator[op].recs.sort((a,b) => toMin(a.s) - toMin(b.s));
+
+    // 連續兩筆之間的空窗
     for (let i = 0; i < recs.length - 1; i++) {
         if (!recs[i].e || !recs[i+1].s) continue;
-        const gap = getTimeGapInMinutes(recs[i].e, recs[i+1].s);
-        if (gap > 60) idles.push(`${op} (${Math.floor(gap/60)}時${gap%60}分)`);
+        const { gap, cs, ce } = calcEffectiveGap(toMin(recs[i].e), toMin(recs[i+1].s));
+        if (gap > 60) idles.push(`${op} (${fmt(cs)} → ${fmt(ce)}，空窗 ${gap} 分鐘)`);
+    }
+
+    // 最後一筆到下班時間的空窗（偵測中途請假/早退）
+    // 只在最後一筆結束時間早於 17:00 時才檢查，避免與連續空窗重複計算
+    const last = recs[recs.length - 1];
+    if (last && last.e && toMin(last.e) < WORK_END) {
+        const { gap, cs, ce } = calcEffectiveGap(toMin(last.e), WORK_END);
+        if (gap > 60) idles.push(`${op} (${fmt(cs)} → ${fmt(ce)}，空窗 ${gap} 分鐘)`);
     }
   });
 
@@ -279,7 +309,7 @@ function sendAdvancedSummaryEmail() {
       <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 13.5px;">
         <h3 style="margin: 0 0 10px 0; color: #475569; font-size: 15px;">⚠️ 異常監控</h3>
         <p style="margin:6px 0"><b>❗ 未上傳：</b> <span style="color:#ef4444;">${missEmp.join('、') || '無'}</span></p>
-        <p style="margin:6px 0"><b>❗ 超過1小時空窗：</b> <span style="color:#f59e0b;">${idles.join('、') || '無'}</span></p>
+        <p style="margin:6px 0"><b>❗ 超過1小時空窗：</b> ${idles.length === 0 ? '<span style="color:#f59e0b;">無</span>' : idles.map(i => `<br>&nbsp;&nbsp;• <span style="color:#f59e0b;">${i}</span>`).join('')}</p>
         <p style="margin:6px 0"><b>❓ 未指定項目時數：</b> 共 <b style="color:#334155;">${formatSeconds(unspecWork.totalTime)}</b></p>
       </div>
       
@@ -302,7 +332,16 @@ function formatSeconds(s) {
   const h = Math.floor(s/3600), m = Math.floor((s%3600)/60); 
   return h > 0 ? `${h}小時 ${m}分` : `${m}分鐘`; 
 }
-function getTimeGapInMinutes(e, s) { 
+function formatTimeHM(t) {
+  if (!t) return '?';
+  if (t instanceof Date) return Utilities.formatDate(t, 'GMT+8', 'HH:mm');
+  if (typeof t === 'number') {
+    const totalMin = Math.round(t * 24 * 60);
+    return `${String(Math.floor(totalMin/60)).padStart(2,'0')}:${String(totalMin%60).padStart(2,'0')}`;
+  }
+  return String(t).substring(0, 5);
+}
+function getTimeGapInMinutes(e, s) {
   if(!e || !s) return 0; 
   if(e instanceof Date && s instanceof Date) return (s.getTime() - e.getTime()) / 60000;
   const p = (t) => { 
