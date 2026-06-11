@@ -145,115 +145,58 @@ function doPost(e) {
     }
 }
 
-/**
- * 終極修正版：直接對位避免表頭錯誤 + 可隨時測試版
- */
+// ─── 系統帳號白名單：永遠排除在 MISSING_UPLOADS 之外 ───────────────────────
+// 格式與員工資料表的「[編號] 姓名」一致；新增系統帳號時在此加入即可
+const SYSTEM_ACCOUNTS = ['[0] admin'];
+
 function sendAdvancedSummaryEmail() {
   const recordSS = SpreadsheetApp.openById(RECORDS_SS_ID);
   const employeeSS = SpreadsheetApp.openById(PRODUCTS_SS_ID);
-  
+
   const recordSheet = recordSS.getSheets()[0];
   const employeeSheet = employeeSS.getSheetByName("員工資料") || employeeSS.getSheets()[0];
-  
+
   const recordData = recordSheet.getDataRange().getValues();
   const employeeData = employeeSheet.getDataRange().getValues();
-  
-  // 決定要抓取的日期：未來每天早上抓取「昨天」的完整資料
+
   const targetDate = new Date();
-  targetDate.setDate(targetDate.getDate() - 1); 
-  const targetDateStr = Utilities.formatDate(targetDate, "GMT+8", "yyyy/MM/dd");
-  
-  // 根據你 doPost 的寫入順序，直接寫死對應的欄位索引 (完全不怕表頭名稱不符)
-  const idx = { 
-    op: 0,      // 作業者 (A欄)
-    car: 1,     // 車型   (B欄)
-    prod: 4,    // 品名   (E欄)
-    date: 5,    // 日期   (F欄)
-    start: 6,   // 開始時間 (G欄)
-    end: 7,     // 結束時間 (H欄)
-    tt: 8,      // 總工時 (I欄)
-    mis: 12,    // 缺料   (M欄)
-    eff: 20     // 效率   (U欄)
+  targetDate.setDate(targetDate.getDate() - 1);
+  const targetDateSlash = Utilities.formatDate(targetDate, "GMT+8", "yyyy/MM/dd");
+  const targetDateDash  = Utilities.formatDate(targetDate, "GMT+8", "yyyy-MM-dd");
+
+  // 欄位索引（對應 doPost 寫入順序，不依賴表頭名稱）
+  const idx = {
+    op: 0, car: 1, prod: 4,
+    date: 5, start: 6, end: 7, tt: 8,
+    mis: 12, dmg: 13, app: 14, oth: 15,
+    eff: 20
   };
 
-  // 篩選符合日期的紀錄 (略過第一行表頭)
-  const yesterdayRecords = recordData.slice(1).filter(row => {
-    const rowDate = row[idx.date] instanceof Date ? 
-      Utilities.formatDate(row[idx.date], "GMT+8", "yyyy/MM/dd") : row[idx.date];
-    return rowDate === targetDateStr;
-  });
+  const DEFECT_TYPES = [
+    { key: 'mis', label: '缺料' },
+    { key: 'dmg', label: '損傷' },
+    { key: 'app', label: '外觀' },
+    { key: 'oth', label: '其他' }
+  ];
 
-  if (yesterdayRecords.length === 0) {
-    GmailApp.sendEmail("allcrazy.it@gmail.com", `【數據日報】${targetDateStr} 無生產紀錄`, "", { 
-      htmlBody: `<p>${targetDateStr} 指定日期無任何上傳紀錄，所以都是 0 哦！</p>` 
-    });
-    return;
-  }
+  const WORK_START  = 8  * 60;
+  const WORK_END    = 17 * 60;
+  const LUNCH_START = 12 * 60;
+  const LUNCH_END   = 13 * 60;
+  // 異常偵測門檻（調整這兩個值即可，不需要動下面的邏輯）
+  const ANOMALY_TIME_DIFF = 30 * 60; // (end-start) 與 totalTime 差距超過 30 分鐘視為異常
+  const ANOMALY_MAX_MIN   = 4  * 60; // 單筆工單超過 4 小時視為過長
 
-  // --- 處理統計 ---
-  let statsByOperator = {}, prodEff = {}, mDef = {}, totalM = 0;
-  let unspecWork = { totalTime: 0, items: [] }; 
-  
-  // Google Sheet 如果看到 "80%"，會自動將其轉為數值 0.8
-  // 所以如果是數值，必須 x 100 轉回百分比；如果是字串 "80%" 則直接剝離 %
-  const parseE = (s) => {
-    if (typeof s === 'number') return s * 100;
-    return parseFloat(String(s).replace('%', '')) || 0;
-  };
-
-  yesterdayRecords.forEach(r => {
-    const op = r[idx.op], p = r[idx.prod], car = r[idx.car], eff = parseE(r[idx.eff]);
-    
-    // 防呆：如果作業者是空的不算
-    if (!op) return;
-
-    if (!statsByOperator[op]) statsByOperator[op] = { effs: [], recs: [] };
-    
-    const isUnspecified = (String(p).includes("未指定") || String(car).includes("未指定"));
-
-    // 只有非「未指定」的紀錄，才列入個人平均與產品最高/低效率排名
-    if (!isUnspecified) {
-        statsByOperator[op].effs.push(eff);
-        
-        if (!prodEff[p]) prodEff[p] = []; 
-        prodEff[p].push(eff);
-    }
-
-    // 將時間推送至陣列，這樣無論是不是未指定，都能用來追蹤有無偷閒 (空窗期)
-    statsByOperator[op].recs.push({ s: r[idx.start], e: r[idx.end] });
-    
-    const md = Number(r[idx.mis]) || 0; 
-    if (md > 0) { 
-        mDef[p] = (mDef[p] || 0) + md; 
-        totalM += md; 
-    }
-
-    if (isUnspecified) {
-      const sec = timeStringToSeconds(r[idx.tt]);
-      unspecWork.totalTime += sec;
-      unspecWork.items.push(`${p} (${r[idx.tt]})`);
-    }
-  });
-
-  // 計算未上傳人員
-  const allEmp = employeeData.slice(1).map(r => `[${r[0]}] ${r[1]}`);
-  const missEmp = allEmp.filter(e => !Object.keys(statsByOperator).includes(e));
-  
-  // 計算異常空窗
-  const toMin = (t) => {
+  const parseE = (s) => typeof s === 'number' ? s * 100 : parseFloat(String(s).replace('%', '')) || 0;
+  const toMin  = (t) => {
     if (!t) return 0;
-    if (t instanceof Date) return t.getHours()*60 + t.getMinutes();
+    if (t instanceof Date) return t.getHours() * 60 + t.getMinutes();
     if (typeof t === 'number') return Math.round(t * 24 * 60);
     const x = String(t).split(':').map(Number);
-    return x[0]*60 + x[1];
+    return x[0] * 60 + (x[1] || 0);
   };
+  const fmt = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 
-  const WORK_START = 8 * 60;    // 08:00
-  const WORK_END   = 17 * 60;   // 17:00
-  const LUNCH_START = 12 * 60;  // 12:00
-  const LUNCH_END   = 13 * 60;  // 13:00
-
-  const fmt = (m) => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
   const calcEffectiveGap = (start, end) => {
     const cs = Math.max(start, WORK_START);
     const ce = Math.min(end, WORK_END);
@@ -262,62 +205,236 @@ function sendAdvancedSummaryEmail() {
     return { gap: (ce - cs) - lunch, cs, ce };
   };
 
-  let idles = [];
-  Object.keys(statsByOperator).forEach(op => {
-    const recs = statsByOperator[op].recs.sort((a,b) => toMin(a.s) - toMin(b.s));
+  const yesterdayRecords = recordData.slice(1).filter(row => {
+    const rowDate = row[idx.date] instanceof Date
+      ? Utilities.formatDate(row[idx.date], "GMT+8", "yyyy/MM/dd")
+      : row[idx.date];
+    return rowDate === targetDateSlash;
+  });
 
-    // 連續兩筆之間的空窗
-    for (let i = 0; i < recs.length - 1; i++) {
-        if (!recs[i].e || !recs[i+1].s) continue;
-        const { gap, cs, ce } = calcEffectiveGap(toMin(recs[i].e), toMin(recs[i+1].s));
-        if (gap > 60) idles.push(`${op} (${fmt(cs)} → ${fmt(ce)}，空窗 ${gap} 分鐘)`);
+  // 無紀錄時仍輸出固定格式
+  const EMPTY_BODY = [
+    `【昨日數據日報測試】`,
+    `REPORT_DATE: ${targetDateDash}`,
+    ``,
+    `[效率排名]`,
+    `TOP_PRODUCT: 無`,
+    `BOTTOM_PRODUCT: 無`,
+    ``,
+    `[品質：成型不良統計]`,
+    `DEFECTS: 無`,
+    `DEFECT_SUMMARY: 今日無成型不良紀錄 👍`,
+    ``,
+    `[員工個人平均效率]`,
+    `WORKER_AVG: 無`,
+    ``,
+    `[異常監控]`,
+    `MISSING_UPLOADS: 無`,
+    `LONG_GAPS: 無`,
+    `UNSPECIFIED_TOTAL: 0 分鐘`,
+    `UNSPECIFIED_ITEMS: 無`,
+    `ANOMALIES: 無`,
+    `ANOMALY_SUMMARY: 共 0 筆異常時間紀錄`
+  ].join('\n');
+
+  if (yesterdayRecords.length === 0) {
+    GmailApp.sendEmail(
+      "allcrazy.it@gmail.com",
+      `【昨日數據日報測試】${targetDateSlash} 成型品質與效率分析`,
+      EMPTY_BODY
+    );
+    return;
+  }
+
+  // 雙穴分拆紀錄識別（品名以 (R邊)/(L邊) 結尾）
+  const isDualHole = (p) => /\([RL]邊\)$/.test(String(p));
+  const baseName   = (p) => String(p).replace(/\s*\([RL]邊\)$/, '').trim();
+
+  // --- 統計 ---
+  let statsByOperator = {}, prodEff = {}, defects = {};
+  let unspecWork = { totalSec: 0, items: [] };
+  let anomalies = [];
+
+  yesterdayRecords.forEach(r => {
+    const op = r[idx.op];
+    if (!op) return;
+    const prod = r[idx.prod];
+    const car  = r[idx.car];
+    const eff  = parseE(r[idx.eff]);
+    const isUnspecified = String(prod).includes("未指定") || String(car).includes("未指定");
+
+    if (!statsByOperator[op]) statsByOperator[op] = { effs: [], recs: [] };
+
+    if (!isUnspecified) {
+      statsByOperator[op].effs.push(eff);
+      if (!prodEff[prod]) prodEff[prod] = [];
+      prodEff[prod].push(eff);
     }
 
-    // 最後一筆到下班時間的空窗（偵測中途請假/早退）
-    // 只在最後一筆結束時間早於 17:00 時才檢查，避免與連續空窗重複計算
-    const last = recs[recs.length - 1];
-    if (last && last.e && toMin(last.e) < WORK_END) {
-        const { gap, cs, ce } = calcEffectiveGap(toMin(last.e), WORK_END);
-        if (gap > 60) idles.push(`${op} (${fmt(cs)} → ${fmt(ce)}，空窗 ${gap} 分鐘)`);
+    statsByOperator[op].recs.push({ s: r[idx.start], e: r[idx.end], prod });
+
+    // 不良統計（缺料/損傷/外觀/其他）
+    DEFECT_TYPES.forEach(dt => {
+      const cnt = Number(r[idx[dt.key]]) || 0;
+      if (cnt > 0) {
+        const key = `${prod}|${dt.label}`;
+        defects[key] = (defects[key] || 0) + cnt;
+      }
+    });
+
+    // 未指定工單
+    if (isUnspecified) {
+      const sec = timeStringToSeconds(r[idx.tt]);
+      unspecWork.totalSec += sec;
+      unspecWork.items.push(`${op}|${Math.floor(sec / 60)} 分鐘|${prod}`);
+    }
+
+    // 異常偵測（每筆工單）
+    const startMin = toMin(r[idx.start]);
+    const endMin   = toMin(r[idx.end]);
+    const ttSec    = timeStringToSeconds(r[idx.tt]);
+    const sStr     = formatTimeHM(r[idx.start]);
+    const eStr     = formatTimeHM(r[idx.end]);
+    const hasTime  = startMin > 0 && endMin > 0;
+
+    if (hasTime && endMin < startMin) {
+      // 1. 結束時間早於開始時間
+      anomalies.push(`${op}|${prod}|${sStr}-${eStr}|時間倒序`);
+    } else if (hasTime) {
+      const durSec = (endMin - startMin) * 60;
+      // 2. 有起訖時間但 totalTime = 0（雙穴也算異常）
+      if (ttSec === 0) {
+        anomalies.push(`${op}|${prod}|${sStr}-${eStr}|總時間為零`);
+      // 3. (end-start) 與 totalTime 差距超過門檻（雙穴分拆紀錄的比例分攤是預期行為，排除）
+      } else if (!isDualHole(prod) && Math.abs(durSec - ttSec) > ANOMALY_TIME_DIFF) {
+        anomalies.push(`${op}|${prod}|${sStr}-${eStr}|時間差異過大`);
+      }
+      // 5. 單筆工單超過門檻時長
+      if ((endMin - startMin) > ANOMALY_MAX_MIN) {
+        anomalies.push(`${op}|${prod}|${sStr}-${eStr}|單筆過長`);
+      }
     }
   });
 
-  // 排序效率
-  const avgEffs = Object.keys(prodEff).map(p => ({ 
-      n: p, 
-      v: prodEff[p].reduce((a,b)=>a+b,0)/prodEff[p].length 
-  })).sort((a,b)=>b.v-a.v);
+  // 4. 同一作業員的工單時間重疊
+  Object.keys(statsByOperator).forEach(op => {
+    const recs = statsByOperator[op].recs.filter(r => {
+      const s = toMin(r.s), e = toMin(r.e);
+      return s > 0 && e > 0 && e > s;
+    });
+    for (let i = 0; i < recs.length - 1; i++) {
+      for (let j = i + 1; j < recs.length; j++) {
+        const s1 = toMin(recs[i].s), e1 = toMin(recs[i].e);
+        const s2 = toMin(recs[j].s), e2 = toMin(recs[j].e);
+        if (s1 < e2 && s2 < e1) {
+          // 雙穴配對（同底名的 R邊↔L邊）重疊是設計行為，排除
+          if (isDualHole(recs[i].prod) && isDualHole(recs[j].prod) &&
+              baseName(recs[i].prod) === baseName(recs[j].prod)) continue;
+          const os = fmt(Math.max(s1, s2));
+          const oe = fmt(Math.min(e1, e2));
+          anomalies.push(`${op}|${recs[i].prod}↔${recs[j].prod}|${os}-${oe}|工單時間重疊`);
+        }
+      }
+    }
+  });
 
-  const htmlBody = `
-    <div style="font-family: 'Microsoft JhengHei', sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; padding: 20px;">
-      <h2 style="color: #2563eb; border-bottom: 3px solid #3b82f6;">⭐ 測試/今日數據日報 (${targetDateStr})</h2>
-      <p><b>✨ 最高效率產品：</b> ${avgEffs[0]?.n || '無'} <span style="color:#15803d; font-weight:bold;">(${avgEffs[0] ? avgEffs[0].v.toFixed(1) : 0}%)</span></p>
-      <p><b>⚠️ 最低效率產品：</b> ${avgEffs[avgEffs.length-1]?.n || '無'} <span style="color:#b91c1c; font-weight:bold;">(${avgEffs[avgEffs.length-1] ? avgEffs[avgEffs.length-1].v.toFixed(1) : 0}%)</span></p>
-      
-      <div style="background: #fff7ed; padding: 15px; border-radius: 8px; border: 1px solid #fdba74; margin: 15px 0;">
-        <h3 style="margin: 0 0 10px 0; color: #9a3412; font-size: 15px;">🔥 品質：成型不良統計</h3>
-        ${totalM > 0 ? Object.keys(mDef).map(p => `<p style="margin:4px 0">• <b>${p}</b>: <span style="color:#ea580c; font-weight:bold;">${mDef[p]} Pcs</span></p>`).join('') : '<p style="margin:0; color:#c2410c;">今日無成型不良紀錄 👍</p>'}
-      </div>
-      
-      <h3 style="font-size: 15px; border-left: 4px solid #3b82f6; padding-left: 8px;">👤 員工平均效率</h3>
-      ${Object.keys(statsByOperator).map(op => {
-        const effs = statsByOperator[op].effs;
-        const avgDisplay = effs.length > 0 ? (effs.reduce((a,b)=>a+b,0)/effs.length).toFixed(1) + '%' : '<span style="font-weight:normal;color:#94a3b8;font-size:13px;">無效率 (純未指定)</span>';
-        return `<p style="margin:4px 0">• ${op}: <b style="color:#1e293b;">${avgDisplay}</b></p>`;
-      }).join('')}
-      
-      <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-top: 20px; font-size: 13.5px;">
-        <h3 style="margin: 0 0 10px 0; color: #475569; font-size: 15px;">⚠️ 異常監控</h3>
-        <p style="margin:6px 0"><b>❗ 未上傳：</b> <span style="color:#ef4444;">${missEmp.join('、') || '無'}</span></p>
-        <p style="margin:6px 0"><b>❗ 超過1小時空窗：</b> ${idles.length === 0 ? '<span style="color:#f59e0b;">無</span>' : idles.map(i => `<br>&nbsp;&nbsp;• <span style="color:#f59e0b;">${i}</span>`).join('')}</p>
-        <p style="margin:6px 0"><b>❓ 未指定項目時數：</b> 共 <b style="color:#334155;">${formatSeconds(unspecWork.totalTime)}</b></p>
-      </div>
-      
-      <p style="font-size: 11px; color: #94a3b8; text-align: center; margin-top: 25px;">瑞全企業 - 作業計時管理系統自動發送</p>
-    </div>
-  `;
+  // 產品效率排名
+  const avgEffs = Object.keys(prodEff).map(p => ({
+    n: p,
+    v: prodEff[p].reduce((a, b) => a + b, 0) / prodEff[p].length
+  })).sort((a, b) => b.v - a.v);
 
-  GmailApp.sendEmail("allcrazy.it@gmail.com", `【數據日報測試】${targetDateStr} 成型品質與效率分析`, "", { htmlBody: htmlBody });
+  // 空窗偵測
+  // 規則：有上傳紀錄的人才進 LONG_GAPS（無紀錄者進 MISSING_UPLOADS，兩者互斥）
+  // 標籤：兩筆工單之間的空窗標為「中間斷工」；最後一筆到下班前標為「末段空窗」
+  let idles = [];
+  Object.keys(statsByOperator).forEach(op => {
+    const recs = statsByOperator[op].recs.sort((a, b) => toMin(a.s) - toMin(b.s));
+
+    for (let i = 0; i < recs.length - 1; i++) {
+      if (!recs[i].e || !recs[i + 1].s) continue;
+      const { gap, cs, ce } = calcEffectiveGap(toMin(recs[i].e), toMin(recs[i + 1].s));
+      if (gap > 60) idles.push(`${op}|${fmt(cs)}-${fmt(ce)}|${gap} 分鐘|中間斷工`);
+    }
+
+    const last = recs[recs.length - 1];
+    if (last && last.e && toMin(last.e) < WORK_END) {
+      const { gap, cs, ce } = calcEffectiveGap(toMin(last.e), WORK_END);
+      if (gap > 60) idles.push(`${op}|${fmt(cs)}-${fmt(ce)}|${gap} 分鐘|末段空窗`);
+    }
+  });
+
+  // 未上傳員工（排除系統帳號；有工單紀錄者不重複列入）
+  const uploadedOps = new Set(Object.keys(statsByOperator));
+  const allEmp  = employeeData.slice(1).map(r => `[${r[0]}] ${r[1]}`);
+  const missEmp = allEmp.filter(e =>
+    !uploadedOps.has(e) && !SYSTEM_ACCOUNTS.includes(e)
+  );
+
+  // --- 組裝固定格式正文 ---
+  const L = [];
+  const push = (...args) => args.forEach(s => L.push(s));
+
+  push(`【昨日數據日報測試】`, `REPORT_DATE: ${targetDateDash}`, ``);
+
+  // 效率排名
+  push(`[效率排名]`);
+  push(`TOP_PRODUCT: ${avgEffs.length > 0 ? `${avgEffs[0].n}|${avgEffs[0].v.toFixed(1)}%` : '無'}`);
+  push(`BOTTOM_PRODUCT: ${avgEffs.length > 0 ? `${avgEffs[avgEffs.length - 1].n}|${avgEffs[avgEffs.length - 1].v.toFixed(1)}%` : '無'}`);
+  push(``);
+
+  // 不良統計
+  push(`[品質：成型不良統計]`);
+  const defectKeys = Object.keys(defects);
+  if (defectKeys.length > 0) {
+    push(`DEFECTS:`);
+    defectKeys.forEach(k => push(`${k}|${defects[k]} pcs`));
+    const total = Object.values(defects).reduce((a, b) => a + b, 0);
+    push(`DEFECT_SUMMARY: 成型不良共 ${total} pcs`);
+  } else {
+    push(`DEFECTS: 無`, `DEFECT_SUMMARY: 今日無成型不良紀錄 👍`);
+  }
+  push(``);
+
+  // 員工效率
+  push(`[員工個人平均效率]`);
+  const workerKeys = Object.keys(statsByOperator);
+  if (workerKeys.length > 0) {
+    push(`WORKER_AVG:`);
+    workerKeys.forEach(op => {
+      const effs = statsByOperator[op].effs;
+      const avg  = effs.length > 0 ? `${(effs.reduce((a, b) => a + b, 0) / effs.length).toFixed(1)}%` : 'N/A';
+      push(`${op}|${avg}`);
+    });
+  } else {
+    push(`WORKER_AVG: 無`);
+  }
+  push(``);
+
+  // 異常監控
+  push(`[異常監控]`);
+  if (missEmp.length > 0) { push(`MISSING_UPLOADS:`); missEmp.forEach(e => push(e)); }
+  else                     { push(`MISSING_UPLOADS: 無`); }
+  push(``);
+
+  if (idles.length > 0) { push(`LONG_GAPS:`); idles.forEach(i => push(i)); }
+  else                  { push(`LONG_GAPS: 無`); }
+  push(``);
+
+  push(`UNSPECIFIED_TOTAL: ${Math.floor(unspecWork.totalSec / 60)} 分鐘`);
+  if (unspecWork.items.length > 0) { push(`UNSPECIFIED_ITEMS:`); unspecWork.items.forEach(i => push(i)); }
+  else                              { push(`UNSPECIFIED_ITEMS: 無`); }
+  push(``);
+
+  if (anomalies.length > 0) { push(`ANOMALIES:`); anomalies.forEach(a => push(a)); }
+  else                      { push(`ANOMALIES: 無`); }
+  push(`ANOMALY_SUMMARY: 共 ${anomalies.length} 筆異常時間紀錄`);
+
+  GmailApp.sendEmail(
+    "allcrazy.it@gmail.com",
+    `【昨日數據日報測試】${targetDateSlash} 成型品質與效率分析`,
+    L.join('\n')
+  );
 }
 
 // 輔助函式 (修正 Google Sheet 時間格式解析，解決 NaN 問題)

@@ -8,7 +8,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.9.4 LOADED - Retain up to 30 past records and show work date");
+    console.log("VERSION 1.9.5 LOADED - Retain up to 30 past records and show work date");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -484,6 +484,7 @@ export default function Home() {
             case '包裝': return 'bg-amber-500 hover:bg-amber-600 active:bg-amber-700 border-amber-700';
             case '研磨': return 'bg-slate-600 hover:bg-slate-700 active:bg-slate-800 border-slate-900';
             case '檢查': return 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 border-emerald-900';
+            case '噴漆': return 'bg-purple-600 hover:bg-purple-700 active:bg-purple-800 border-purple-900';
             default: return 'bg-primary hover:bg-primary/90 active:bg-primary/80 border-blue-800';
         }
     };
@@ -1121,7 +1122,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.9.4
+                                    Version 1.9.5
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
