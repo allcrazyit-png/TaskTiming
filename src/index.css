@@ -25,7 +25,7 @@ body {
 /* Custom utility classes from original HTML */
 /* Custom utility classes from original HTML */
 .huge-btn {
-  min-height: 56px;
+  min-height: 64px;
   font-size: 18px;
   font-weight: 700;
 }
@@ -81,6 +81,7 @@ body {
   @apply bg-slate-100 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-1 py-2 text-xl font-black text-center w-full focus:ring-4 focus:ring-primary/20 transition-all outline-none;
   box-sizing: border-box;
   max-width: 100%;
+  min-height: 56px;
 }
 
 /* Hide spin buttons for number inputs */
