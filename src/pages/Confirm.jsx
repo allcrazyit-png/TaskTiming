@@ -44,7 +44,7 @@ export default function Confirm() {
         goodCountL: 0,
         isDual: false,
         totalScrap: 5,
-        scraps: { missing: 2, damage: 3, appearance: 0, others: 0 },
+        scraps: { missing: 2, deform: 3, appearance: 0, others: 0 },
         startTime: "08:00",
         endTime: "10:00",
         totalTime: "02:00:00",
@@ -56,7 +56,7 @@ export default function Confirm() {
     const getScrapLabel = (key) => {
         const labels = {
             missing: t('scrap_missing'),
-            damage: t('scrap_damage'),
+            deform: t('scrap_deform'),
             appearance: t('scrap_appearance'),
             others: t('scrap_others')
         };
@@ -219,13 +219,13 @@ export default function Confirm() {
                 const getPropScrap = (val, ratio) => Math.round((val || 0) * ratio);
                 finalScrapsR = {
                     missing: getPropScrap(scraps?.missing, sRatioR),
-                    damage: getPropScrap(scraps?.damage, sRatioR),
+                    deform: getPropScrap(scraps?.deform, sRatioR),
                     appearance: getPropScrap(scraps?.appearance, sRatioR),
                     others: getPropScrap(scraps?.others, sRatioR)
                 };
                 finalScrapsL = {
                     missing: (scraps?.missing || 0) - finalScrapsR.missing,
-                    damage: (scraps?.damage || 0) - finalScrapsR.damage,
+                    deform: (scraps?.deform || 0) - finalScrapsR.deform,
                     appearance: (scraps?.appearance || 0) - finalScrapsR.appearance,
                     others: (scraps?.others || 0) - finalScrapsR.others
                 };
@@ -261,7 +261,7 @@ export default function Confirm() {
                 standardTime: standardTime,
                 goodCount: goodCountR,
                 missing: finalScrapsR.missing,
-                damage: finalScrapsR.damage,
+                deform: finalScrapsR.deform,
                 appearance: finalScrapsR.appearance,
                 others: finalScrapsR.others,
                 totalScrap: scrapR,
@@ -287,7 +287,7 @@ export default function Confirm() {
                 standardTime: standardTime,
                 goodCount: goodCountL,
                 missing: finalScrapsL.missing,
-                damage: finalScrapsL.damage,
+                deform: finalScrapsL.deform,
                 appearance: finalScrapsL.appearance,
                 others: finalScrapsL.others,
                 totalScrap: scrapL,
@@ -316,7 +316,7 @@ export default function Confirm() {
                 standardTime: standardTime,
                 goodCount: goodCount,
                 missing: scraps?.missing || 0,
-                damage: scraps?.damage || 0,
+                deform: scraps?.deform || 0,
                 appearance: scraps?.appearance || 0,
                 others: scraps?.others || 0,
                 totalScrap: totalScrap,

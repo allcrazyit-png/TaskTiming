@@ -123,7 +123,7 @@ function doPost(e) {
             data.standardTime || 0, 
             data.goodCount || 0, 
             data.missing || 0,
-            data.damage || 0, 
+            data.deform || 0,
             data.appearance || 0, 
             data.others || 0, 
             data.totalScrap || 0,
@@ -173,10 +173,10 @@ function sendAdvancedSummaryEmail() {
   };
 
   const DEFECT_TYPES = [
-    { key: 'mis', label: '缺料' },
-    { key: 'dmg', label: '損傷' },
-    { key: 'app', label: '外觀' },
-    { key: 'oth', label: '其他' }
+    { key: 'mis', label: '成型缺料' },
+    { key: 'dmg', label: '變形/縮水' },
+    { key: 'app', label: '外觀異常' },
+    { key: 'oth', label: '其他原因' }
   ];
 
   const WORK_START  = 8  * 60;

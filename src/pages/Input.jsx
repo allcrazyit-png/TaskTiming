@@ -68,13 +68,13 @@ export default function Input() {
     const [goodCountR, setGoodCountR] = useState(0);
     const [goodCountL, setGoodCountL] = useState(0);
     const [scraps, setScraps] = useState({
-        missing: 0, damage: 0, appearance: 0, others: 0
+        missing: 0, deform: 0, appearance: 0, others: 0
     });
     const [scrapsR, setScrapsR] = useState({
-        missing: 0, damage: 0, appearance: 0, others: 0
+        missing: 0, deform: 0, appearance: 0, others: 0
     });
     const [scrapsL, setScrapsL] = useState({
-        missing: 0, damage: 0, appearance: 0, others: 0
+        missing: 0, deform: 0, appearance: 0, others: 0
     });
 
     // Time state
@@ -145,7 +145,7 @@ export default function Input() {
         // but normally we'd separate them immediately in confirm page if isDual
         const combinedScraps = isDual ? {
             missing: scrapsR.missing + scrapsL.missing,
-            damage: scrapsR.damage + scrapsL.damage,
+            deform: scrapsR.deform + scrapsL.deform,
             appearance: scrapsR.appearance + scrapsL.appearance,
             others: scrapsR.others + scrapsL.others
         } : scraps;
@@ -484,9 +484,9 @@ export default function Input() {
                                 <div className="space-y-2">
                                     {/* 1. Missing Material */}
                                     <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                        <div className="flex-1">
+                                        <div className="flex-1 w-full text-center sm:text-left">
                                             <p className="text-base font-black text-slate-700 dark:text-slate-300">{t('scrap_missing')}</p>
-                                            <p className="text-xs font-bold text-slate-400">Missing Mat.</p>
+                                            <p className="text-xs font-bold text-slate-400">{t('scrap_missing_desc')}</p>
                                         </div>
                                         {isDual ? (
                                             <div className="flex flex-col items-center justify-center gap-3 w-full mt-2 sm:mt-0 xl:flex-row xl:justify-end">
@@ -526,32 +526,32 @@ export default function Input() {
                                         )}
                                     </div>
 
-                                    {/* 2. Dent/Scratch */}
+                                    {/* 2. Deform/Sink Mark */}
                                     <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                        <div className="flex-1">
-                                            <p className="text-base font-black text-slate-700 dark:text-slate-300">{t('scrap_damage')}</p>
-                                            <p className="text-xs font-bold text-slate-400">Dent / Scratch</p>
+                                        <div className="flex-1 w-full text-center sm:text-left">
+                                            <p className="text-base font-black text-slate-700 dark:text-slate-300">{t('scrap_deform')}</p>
+                                            <p className="text-xs font-bold text-slate-400">{t('scrap_deform_desc')}</p>
                                         </div>
                                         {isDual ? (
                                             <div className="flex flex-col items-center justify-center gap-3 w-full mt-2 sm:mt-0 xl:flex-row xl:justify-end">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
-                                                    <button onClick={() => handleScrapChangeR('damage', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                    <button onClick={() => handleScrapChangeR('deform', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                     </button>
-                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsR.damage} readOnly />
-                                                    <button onClick={() => handleScrapChangeR('damage', 1)} className="circle-btn bg-slate-500 text-white">
+                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsR.deform} readOnly />
+                                                    <button onClick={() => handleScrapChangeR('deform', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
                                                     <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_r')}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
-                                                    <button onClick={() => handleScrapChangeL('damage', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                    <button onClick={() => handleScrapChangeL('deform', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                         <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                     </button>
-                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsL.damage} readOnly />
-                                                    <button onClick={() => handleScrapChangeL('damage', 1)} className="circle-btn bg-slate-500 text-white">
+                                                    <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsL.deform} readOnly />
+                                                    <button onClick={() => handleScrapChangeL('deform', 1)} className="circle-btn bg-slate-500 text-white">
                                                         <span className="material-symbols-outlined text-xl font-black">add</span>
                                                     </button>
                                                     <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_l')}</span>
@@ -559,11 +559,11 @@ export default function Input() {
                                             </div>
                                         ) : (
                                             <div className="flex items-center gap-2">
-                                                <button onClick={() => handleScrapChange('damage', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                <button onClick={() => handleScrapChange('deform', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className={`reason-input ${scraps.damage > 0 ? 'text-danger' : 'text-slate-600 dark:text-slate-400'}`} inputMode="numeric" type="number" value={scraps.damage} readOnly />
-                                                <button onClick={() => handleScrapChange('damage', 1)} className="circle-btn bg-slate-500 text-white">
+                                                <input className={`reason-input ${scraps.deform > 0 ? 'text-danger' : 'text-slate-600 dark:text-slate-400'}`} inputMode="numeric" type="number" value={scraps.deform} readOnly />
+                                                <button onClick={() => handleScrapChange('deform', 1)} className="circle-btn bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
                                             </div>
@@ -572,7 +572,7 @@ export default function Input() {
 
                                     {/* 3. Appearance Defect */}
                                     <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                        <div className="flex-1">
+                                        <div className="flex-1 w-full text-center sm:text-left">
                                             <p className="text-base font-black text-slate-700 dark:text-slate-300">{t('scrap_appearance')}</p>
                                             <p className="text-xs font-bold text-slate-400">{t('scrap_appearance_desc')}</p>
                                         </div>
@@ -616,7 +616,7 @@ export default function Input() {
 
                                     {/* 4. Others */}
                                     <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                        <div className="flex-1">
+                                        <div className="flex-1 w-full text-center sm:text-left">
                                             <p className="text-base font-black text-slate-600 dark:text-slate-300">{t('scrap_others')}</p>
                                             <p className="text-xs font-bold text-slate-400">Others</p>
                                         </div>
