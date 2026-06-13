@@ -40,7 +40,7 @@ export default function Home() {
     // Settings Modal State
     const [showSettingsPopup, setShowSettingsPopup] = useState(false);
     const [theme, setTheme] = useState(() => localStorage.getItem('appTheme') || 'system'); // 'system', 'light', 'dark'
-    const [fontSize, setFontSize] = useState(() => localStorage.getItem('appFontSize') || 'normal'); // 'normal', 'large'
+    const [fontSize, setFontSize] = useState(() => localStorage.getItem('appFontSize') || 'large'); // 'normal', 'large'
 
     // Image Display State: 手動開啟全部照片 (當自動判斷不顯示時)
     const [showAllImages, setShowAllImages] = useState(false);
