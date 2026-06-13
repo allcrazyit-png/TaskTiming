@@ -325,7 +325,7 @@ export default function Input() {
                                     type="date"
                                     value={workDate}
                                     onChange={(e) => setWorkDate(e.target.value)}
-                                    className="text-sm font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer"
+                                    className="text-base font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-4 py-3 rounded-xl border-2 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer min-h-[48px]"
                                 />
                             </div>
                             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-primary space-y-3">
@@ -364,7 +364,7 @@ export default function Input() {
                                     <div className="flex items-center justify-between gap-3">
                                         <button
                                             onClick={() => setGoodCount(Math.max(0, (parseInt(goodCount) || 0) - 1))}
-                                            className="w-[50px] h-[50px] rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-transform border-2 border-slate-300 dark:border-slate-700"
+                                            className="w-16 h-16 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-transform border-2 border-slate-300 dark:border-slate-700"
                                         >
                                             <span className="material-symbols-outlined text-3xl font-black text-slate-600 dark:text-slate-300">remove</span>
                                         </button>
@@ -381,7 +381,7 @@ export default function Input() {
                                         </div>
                                         <button
                                             onClick={() => setGoodCount((parseInt(goodCount) || 0) + 1)}
-                                            className="w-[50px] h-[50px] rounded-xl bg-success text-white flex items-center justify-center active:scale-90 transition-transform border-2 border-emerald-600 shadow-md"
+                                            className="w-16 h-16 rounded-xl bg-success text-white flex items-center justify-center active:scale-90 transition-transform border-2 border-emerald-600 shadow-md"
                                         >
                                             <span className="material-symbols-outlined text-3xl font-black">add</span>
                                         </button>
@@ -685,14 +685,14 @@ export default function Input() {
                 <button
                     onClick={handleConfirm}
                     disabled={originalIsDual && !activeMode}
-                    className={`w-full h-14 rounded-xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform border-b-4 ${originalIsDual && !activeMode ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 border-slate-400 cursor-not-allowed' : 'bg-success text-white border-green-800'}`}
+                    className={`w-full h-[68px] rounded-xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform border-b-4 ${originalIsDual && !activeMode ? 'bg-slate-300 dark:bg-slate-700 text-slate-500 border-slate-400 cursor-not-allowed' : 'bg-success text-white border-green-800'}`}
                 >
-                    <span className="text-xl font-black">{t('finish_next')}</span>
+                    <span className="text-2xl font-black">{t('finish_next')}</span>
                     <span className="material-symbols-outlined text-3xl font-black">arrow_forward</span>
                 </button>
                 <button
                     onClick={() => navigate('/')}
-                    className="w-full h-12 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform border-2 border-slate-300 dark:border-slate-600"
+                    className="w-full h-14 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform border-2 border-slate-300 dark:border-slate-600"
                 >
                     <span className="material-symbols-outlined text-2xl font-black">check_circle</span>
                     <span className="text-lg font-bold">{t('finish_today')}</span>
