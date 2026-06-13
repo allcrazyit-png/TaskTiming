@@ -256,6 +256,13 @@ export default function Home() {
         }
     }, [location.state, selectedOperator]);
 
+    const selectEmployee = (emp) => {
+        setTempOperator(emp);
+        setPasswordInput('');
+        setPasswordError(false);
+        setShowPasswordModal(true);
+    };
+
     const handleOperatorChange = (e) => {
         const value = e.target.value;
         if (!value) {
@@ -273,10 +280,7 @@ export default function Home() {
             // Use String() to compare because GAS returns numbers, localStorage saves strings
             const emp = employees.find(e => String(e['員工編號']) === String(id));
             if (emp) {
-                setTempOperator(emp);
-                setPasswordInput('');
-                setPasswordError(false);
-                setShowPasswordModal(true);
+                selectEmployee(emp);
             }
         }
     };
