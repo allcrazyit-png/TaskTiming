@@ -44,6 +44,7 @@ export default function Home() {
 
     // Image Display State: 手動開啟全部照片 (當自動判斷不顯示時)
     const [showAllImages, setShowAllImages] = useState(false);
+    const [showFilter, setShowFilter] = useState(false);
 
     // Missing upload days state: null=未載入, 0=正常, N=累計N個工作日未傳
     const [missingWorkDays, setMissingWorkDays] = useState(null);
@@ -493,6 +494,48 @@ export default function Home() {
         }
     };
 
+    const renderFavoriteCard = (product, index) => {
+        return (
+            <div
+                key={`fav-${product['品番']}-${index}`}
+                className="flex items-center gap-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-3 shadow-md active:scale-[0.98] transition-transform"
+                onClick={() => handleStartWork(product)}
+            >
+                <div className="shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    {product['產品圖片'] ? (
+                        <img
+                            alt={product['品名']}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            src={getImageUrl(product['產品圖片'])}
+                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/80x80?text=?'; }}
+                        />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-400">
+                            <span className="material-symbols-outlined text-3xl">image_not_supported</span>
+                        </div>
+                    )}
+                </div>
+                <div className="flex-1 min-w-0">
+                    {product['類別'] && (
+                        <span className={`${getCategoryStyles(product['類別'])} text-white text-xs font-black px-2 py-0.5 rounded-full mb-1 inline-block`}>
+                            {t(`cat_${product['類別']}`, product['類別'])}
+                        </span>
+                    )}
+                    <p className="text-lg font-black text-slate-800 dark:text-slate-100 leading-tight line-clamp-2">{product['品名']}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{product['車型']}</p>
+                </div>
+                <button
+                    onClick={(e) => { e.stopPropagation(); handleStartWork(product); }}
+                    className={`shrink-0 w-16 h-16 flex flex-col items-center justify-center rounded-2xl text-white shadow-md active:scale-90 transition-transform ${getCategoryBtnStyles(product['類別'])}`}
+                >
+                    <span className="material-symbols-outlined text-3xl">play_circle</span>
+                    <span className="text-xs font-black mt-0.5">開始</span>
+                </button>
+            </div>
+        );
+    };
+
     const renderProductCard = (product, index, isFavoriteList = false, showImage = true) => {
         const favKey = `${product['品番']}|${product['類別'] || ''}`;
         const isFav = favoriteProducts.includes(favKey);
@@ -905,148 +948,165 @@ export default function Home() {
             </header>
 
             {/* Main Content Area */}
-            <main className="flex-1 p-4 pb-24">
-                {/* Favorite Products Grid (Moved to Top) */}
-                {favoriteProducts.length > 0 && selectedOperator && (
-                    <div className="grid grid-cols-1 gap-6 mb-8 mt-2">
+            <main className="flex-1 p-4 pb-24 space-y-6">
+
+                {/* 常用產品（主要入口） */}
+                {favoriteProducts.length > 0 ? (
+                    <section className="space-y-4">
                         <h2 className="text-lg font-bold border-l-4 border-red-500 pl-3 flex items-center gap-2 text-slate-800 dark:text-slate-100">
-                            <span className="material-symbols-outlined text-red-500 font-variation-fill">favorite</span>
+                            <span className="material-symbols-outlined text-red-500">favorite</span>
                             {t('favorites')}
                         </h2>
-                        {products
-                            .filter(p => favoriteProducts.includes(`${p['品番']}|${p['類別'] || ''}`))
-                            .map((product, index) => renderProductCard(product, index, true))}
+                        <div className="flex flex-col gap-4">
+                            {products
+                                .filter(p => favoriteProducts.includes(`${p['品番']}|${p['類別'] || ''}`))
+                                .map((product, index) => renderFavoriteCard(product, index))}
+                        </div>
+                    </section>
+                ) : (
+                    <div className="text-center py-8 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500">
+                        <span className="material-symbols-outlined text-4xl mb-2 opacity-50 block">favorite_border</span>
+                        <p className="font-bold text-base">尚未有常用產品</p>
+                        <p className="text-sm mt-1">點擊產品的 ♡ 可加入常用</p>
                     </div>
                 )}
 
-                {/* Filter Section */}
-                <section className="space-y-4 mb-6">
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="block text-sm font-bold text-slate-800 dark:text-slate-200">
-                                {t('filter_car_model')}
+                {/* 找其他產品（展開/收起篩選器） */}
+                <button
+                    onClick={() => setShowFilter(prev => !prev)}
+                    className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-600 text-slate-500 dark:text-slate-400 font-bold text-base active:bg-slate-50 dark:active:bg-slate-800/50 transition-colors"
+                >
+                    <span className="material-symbols-outlined text-xl">{showFilter ? 'expand_less' : 'search'}</span>
+                    {showFilter ? '收起搜尋' : '找其他產品'}
+                </button>
+
+                {/* 篩選器（展開時才顯示） */}
+                {showFilter && (
+                    <section className="space-y-4">
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-bold text-slate-800 dark:text-slate-200">
+                                    {t('filter_car_model')}
+                                </label>
+                                <button
+                                    onClick={toggleCustomProduct}
+                                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${isCustomProduct
+                                        ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:border-red-800'
+                                        : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50'
+                                        }`}
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">
+                                        {isCustomProduct ? 'close' : 'add'}
+                                    </span>
+                                    {isCustomProduct ? t('custom_btn_cancel') : t('custom_btn_add')}
+                                </button>
+                            </div>
+                            <div className="relative">
+                                <select
+                                    value={filters.carModel}
+                                    onChange={(e) => handleFilterChange('carModel', e.target.value)}
+                                    className="block w-full h-12 rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-base font-medium focus:border-primary focus:ring-primary appearance-none disabled:opacity-50"
+                                    disabled={loading}
+                                >
+                                    <option value="">{loading ? t('select_car_model_loading') : t('select_car_model_placeholder')}</option>
+                                    {uniqueCarModels.map(model => (
+                                        <option key={model} value={model}>{model}</option>
+                                    ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                                    <span className="material-symbols-outlined text-2xl">expand_more</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold mb-2 text-slate-800 dark:text-slate-200">
+                                {t('filter_part_number')}
                             </label>
-                            <button
-                                onClick={toggleCustomProduct}
-                                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${isCustomProduct
-                                    ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:border-red-800'
-                                    : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-                                    }`}
-                            >
-                                <span className="material-symbols-outlined text-[16px]">
-                                    {isCustomProduct ? 'close' : 'add'}
-                                </span>
-                                {isCustomProduct ? t('custom_btn_cancel') : t('custom_btn_add')}
-                            </button>
-                        </div>
-                        <div className="relative">
-                            <select
-                                value={filters.carModel}
-                                onChange={(e) => handleFilterChange('carModel', e.target.value)}
-                                className="block w-full h-12 rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-base font-medium focus:border-primary focus:ring-primary appearance-none disabled:opacity-50"
-                                disabled={loading}
-                            >
-                                <option value="">{loading ? t('select_car_model_loading') : t('select_car_model_placeholder')}</option>
-                                {uniqueCarModels.map(model => (
-                                    <option key={model} value={model}>{model}</option>
-                                ))}
-                            </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                                <span className="material-symbols-outlined text-2xl">expand_more</span>
+                            <div className="relative">
+                                <select
+                                    value={filters.partNumber}
+                                    onChange={(e) => handleFilterChange('partNumber', e.target.value)}
+                                    className="block w-full h-12 rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-base font-medium focus:border-primary focus:ring-primary appearance-none disabled:opacity-50"
+                                    disabled={loading || !filters.carModel}
+                                >
+                                    <option value="">{t('select_part_number_placeholder')}</option>
+                                    {uniquePartNumbers.map(({ partNumber, productName }) => (
+                                        <option key={partNumber} value={partNumber}>
+                                            {partNumber}{productName ? ` - ${productName}` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                                    <span className="material-symbols-outlined text-2xl">expand_more</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold mb-2 text-slate-800 dark:text-slate-200">
-                            {t('filter_part_number')}
-                        </label>
-                        <div className="relative">
-                            <select
-                                value={filters.partNumber}
-                                onChange={(e) => handleFilterChange('partNumber', e.target.value)}
-                                className="block w-full h-12 rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 text-base font-medium focus:border-primary focus:ring-primary appearance-none disabled:opacity-50"
-                                disabled={loading || !filters.carModel}
-                            >
-                                <option value="">{t('select_part_number_placeholder')}</option>
-                                {uniquePartNumbers.map(({ partNumber, productName }) => (
-                                    <option key={partNumber} value={partNumber}>
-                                        {partNumber}{productName ? ` - ${productName}` : ''}
-                                    </option>
-                                ))}
-                            </select>
-                            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                                <span className="material-symbols-outlined text-2xl">expand_more</span>
+
+                        {isCustomProduct && (
+                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl space-y-4 animate-fade-in">
+                                <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                                    <span className="material-symbols-outlined">edit_square</span>
+                                    {t('custom_input_title')}
+                                </h3>
+                                <div>
+                                    <label className="block text-sm font-bold mb-1 text-slate-700 dark:text-slate-300">
+                                        {t('custom_part_number_label')}
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder={t('custom_part_number_placeholder')}
+                                        value={customPartNumber}
+                                        onChange={(e) => setCustomPartNumber(e.target.value)}
+                                        className="w-full h-12 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold mb-1 text-slate-700 dark:text-slate-300">
+                                        {t('custom_product_name_label')} <span className="text-red-500">{t('custom_product_name_req')}</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        placeholder={t('custom_product_name_placeholder')}
+                                        value={customProductName}
+                                        onChange={(e) => setCustomProductName(e.target.value)}
+                                        className="w-full h-12 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    />
+                                </div>
+                                <button
+                                    onClick={handleStartCustomWork}
+                                    className="w-full mt-2 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 font-black text-lg active:scale-95 transition-transform"
+                                >
+                                    <span className="material-symbols-outlined">play_circle</span>
+                                    {t('start_custom_work')}
+                                </button>
                             </div>
-                        </div>
-                    </div>
+                        )}
 
-                    {/* Custom Product Entry Rendering */}
-                    {isCustomProduct && (
-                        <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl space-y-4 animate-fade-in">
-                            <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                                <span className="material-symbols-outlined">edit_square</span>
-                                {t('custom_input_title')}
-                            </h3>
-                            <div>
-                                <label className="block text-sm font-bold mb-1 text-slate-700 dark:text-slate-300">
-                                    {t('custom_part_number_label')}
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder={t('custom_part_number_placeholder')}
-                                    value={customPartNumber}
-                                    onChange={(e) => setCustomPartNumber(e.target.value)}
-                                    className="w-full h-12 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold mb-1 text-slate-700 dark:text-slate-300">
-                                    {t('custom_product_name_label')} <span className="text-red-500">{t('custom_product_name_req')}</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder={t('custom_product_name_placeholder')}
-                                    value={customProductName}
-                                    onChange={(e) => setCustomProductName(e.target.value)}
-                                    className="w-full h-12 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-                                />
-                            </div>
-                            <button
-                                onClick={handleStartCustomWork}
-                                className="w-full mt-2 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 font-black text-lg active:scale-95 transition-transform"
-                            >
-                                <span className="material-symbols-outlined">play_circle</span>
-                                {t('start_custom_work')}
-                            </button>
+                        <div className="space-y-3">
+                            <h2 className="text-base font-bold border-l-4 border-primary pl-3 text-slate-800 dark:text-slate-100">{t('all_products')}</h2>
+                            {loading ? (
+                                <div className="text-center py-8 text-slate-500">
+                                    <span className="material-symbols-outlined text-4xl animate-spin mb-2">progress_activity</span>
+                                    <p>{t('loading_data')}</p>
+                                </div>
+                            ) : !filters.carModel ? (
+                                <div className="text-center py-8 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                                    <span className="material-symbols-outlined text-5xl mb-3 opacity-30">directions_car</span>
+                                    <p className="font-bold">{t('select_car_model_placeholder')}</p>
+                                </div>
+                            ) : filteredProducts.length === 0 ? (
+                                <div className="text-center py-8 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                                    <span className="material-symbols-outlined text-4xl mb-2 flex justify-center opacity-50">search_off</span>
+                                    <p className="font-bold">{t('no_products_found')}</p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {filteredProducts.map((product, index) => renderProductCard(product, index, false, false))}
+                                </div>
+                            )}
                         </div>
-                    )}
-                </section>
-
-                {/* Product Grid */}
-                <div className="grid grid-cols-1 gap-6">
-                    <h2 className="text-lg font-bold border-l-4 border-primary pl-3 text-slate-800 dark:text-slate-100">{t('all_products')}</h2>
-
-                    {loading ? (
-                        <div className="text-center py-12 text-slate-500">
-                            <span className="material-symbols-outlined text-4xl animate-spin mb-2">progress_activity</span>
-                            <p>{t('loading_data')}</p>
-                        </div>
-                    ) : !filters.carModel ? (
-                        <div className="text-center py-12 text-slate-400 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                            <span className="material-symbols-outlined text-5xl mb-3 opacity-30">directions_car</span>
-                            <p className="font-bold">{t('select_car_model_placeholder')}</p>
-                        </div>
-                    ) : filteredProducts.length === 0 ? (
-                        <div className="text-center py-12 text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                            <span className="material-symbols-outlined text-4xl mb-2 flex justify-center opacity-50">search_off</span>
-                            <p className="font-bold">{t('no_products_found')}</p>
-                            <p className="text-xs mt-1">{t('clear_filters_hint')}</p>
-                        </div>
-                    ) : (
-                        filteredProducts.map((product, index) => renderProductCard(product, index, false, true))
-                    )}
-                </div>
-
+                    </section>
+                )}
             </main>
 
             {/* Bottom Navigation Bar */}
