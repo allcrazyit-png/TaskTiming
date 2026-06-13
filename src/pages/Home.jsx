@@ -8,7 +8,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.10.2 LOADED - Retain up to 30 past records and show work date");
+    console.log("VERSION 1.10.3 LOADED - Retain up to 30 past records and show work date");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -671,47 +671,43 @@ export default function Home() {
                                         if (diff > 0) durationStr = `${diff}分`;
                                     }
                                     return (
-                                        <div key={index} className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
-                                            {/* Header: car model + product name + date */}
-                                            <div className="flex items-center justify-between px-3 pt-3 pb-2 gap-2 border-b border-slate-100 dark:border-slate-700">
-                                                <div className="flex items-center gap-2 min-w-0">
+                                        <div key={index} className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 p-3 rounded-xl shadow-sm flex items-start gap-3">
+                                            {/* Time block */}
+                                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 flex flex-col items-center justify-center min-w-[80px] border border-blue-100 dark:border-blue-800/30 shrink-0 gap-0.5">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide">開始</span>
+                                                <span className="text-base font-black text-blue-600 dark:text-blue-400 tabular-nums leading-tight">{startStr}</span>
+                                                <span className="material-symbols-outlined text-slate-300 text-sm">arrow_downward</span>
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide">結束</span>
+                                                <span className="text-base font-black text-slate-700 dark:text-slate-200 tabular-nums leading-tight">{endStr}</span>
+                                                {durationStr && (
+                                                    <span className="mt-1 text-[11px] font-black text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">{durationStr}</span>
+                                                )}
+                                            </div>
+                                            {/* Info */}
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-1.5 flex-wrap mb-1">
                                                     {record.carModel && (
-                                                        <span className="shrink-0 bg-primary/10 text-primary dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 rounded-md text-xs font-black tracking-wider">
+                                                        <span className="bg-primary/10 text-primary dark:bg-blue-900/40 dark:text-blue-300 px-1.5 py-0.5 rounded text-[11px] font-black tracking-wider shrink-0">
                                                             {record.carModel}
                                                         </span>
                                                     )}
-                                                    <p className="text-sm font-black text-slate-800 dark:text-slate-100 leading-tight truncate">{record.productName}</p>
+                                                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/30 px-1.5 py-0.5 rounded border border-blue-100 dark:border-blue-800/50 shrink-0">
+                                                        {displayDate}
+                                                    </span>
                                                 </div>
-                                                <span className="shrink-0 text-sm font-black text-slate-500 dark:text-slate-400">{displayDate}</span>
-                                            </div>
-                                            {/* Body: time block + metrics */}
-                                            <div className="flex items-stretch gap-3 p-3">
-                                                {/* Time block — bigger & clearer */}
-                                                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl px-3 py-3 flex flex-col items-center justify-center min-w-[80px] border border-blue-100 dark:border-blue-800/30">
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">開始</span>
-                                                    <span className="text-xl font-black text-blue-600 dark:text-blue-400 tabular-nums leading-snug">{startStr}</span>
-                                                    <span className="material-symbols-outlined text-slate-300 text-base my-0.5">arrow_downward</span>
-                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">結束</span>
-                                                    <span className="text-xl font-black text-slate-700 dark:text-slate-200 tabular-nums leading-snug">{endStr}</span>
-                                                    {durationStr && (
-                                                        <span className="mt-2 text-xs font-black text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-700 px-2 py-0.5 rounded-full">{durationStr}</span>
-                                                    )}
-                                                </div>
-                                                {/* Metrics */}
-                                                <div className="flex-1 flex flex-col justify-between gap-2">
-                                                    <p className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded-md self-start">{record.partNumber}</p>
-                                                    <div className="flex flex-col gap-1.5">
-                                                        <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-emerald-100 dark:border-emerald-800/30">
-                                                            <span className="material-symbols-outlined text-base">check_circle</span>
-                                                            {t('good_count')} {record.goodCount} pcs
+                                                <p className="text-sm font-black text-slate-800 dark:text-slate-100 leading-tight mb-1">{record.productName}</p>
+                                                <p className="text-xs font-bold text-slate-500 mb-2 bg-slate-100 dark:bg-slate-900 inline-block px-2 py-0.5 rounded-md">{record.partNumber}</p>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className="text-sm font-black text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/50 px-2 py-1 rounded-md flex items-center gap-1">
+                                                        <span className="material-symbols-outlined text-base">check_circle</span>
+                                                        {t('good_count')} {record.goodCount} pcs
+                                                    </span>
+                                                    {record.totalScrap > 0 && (
+                                                        <span className="text-sm font-black text-red-700 dark:text-red-400 bg-red-100 dark:bg-red-900/50 px-2 py-1 rounded-md flex items-center gap-1">
+                                                            <span className="material-symbols-outlined text-base">cancel</span>
+                                                            {t('scrap_count')} {record.totalScrap} pcs
                                                         </span>
-                                                        {record.totalScrap > 0 && (
-                                                            <span className="text-sm font-black text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-red-100 dark:border-red-800/30">
-                                                                <span className="material-symbols-outlined text-base">cancel</span>
-                                                                {t('scrap_count')} {record.totalScrap} pcs
-                                                            </span>
-                                                        )}
-                                                    </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -1140,7 +1136,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.10.2
+                                    Version 1.10.3
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
