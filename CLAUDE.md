@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 目標受眾與 UI 設計原則
+
+這個 App 的使用者是**工廠作業員**，以 40 歲以上中年女性為主，使用個人手機（徒手操作）、每天固定做同幾種產品。
+
+UI 設計須遵守以下原則：
+- 字型預設使用大字（`text-large` 模式）
+- 按鈕觸控目標最小 64px 高
+- 常用產品（我的最愛）應放在首頁最顯眼的位置，不需要每次篩選
+- 流程步驟越少越好，避免多層下拉選單
+- 確認動作要明確，避免誤操作
+
 ## Git 工作流程
 
 所有變更預設只在本地進行。**除非使用者明確說「push」，否則不得執行 `git push` 或 `npm run deploy`。**
