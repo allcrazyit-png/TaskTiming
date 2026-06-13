@@ -579,6 +579,98 @@ export default function Home() {
         );
     };
 
+    // 未登入：顯示全版員工選擇畫面
+    if (!selectedOperator) {
+        return (
+            <div className="relative flex min-h-screen w-full flex-col bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+                {/* Password Modal（保留，供名字按鈕觸發） */}
+                {showPasswordModal && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm transform transition-all scale-100 animate-bounceScale">
+                            <div className="text-center mb-6">
+                                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <span className="material-symbols-outlined text-3xl text-primary">lock</span>
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('enter_password_title')}</h3>
+                                <p className="text-sm text-slate-500 mt-1">
+                                    {t('operator_label')} <span className="font-bold text-primary">{tempOperator?.['姓名']}</span>
+                                </p>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <input
+                                        type="password"
+                                        inputMode="numeric"
+                                        pattern="[0-9]*"
+                                        className={`w-full h-14 text-center text-2xl font-bold tracking-widest rounded-xl border-2 bg-slate-50 dark:bg-slate-900 focus:outline-none transition-colors ${passwordError ? 'border-red-500 text-red-600' : 'border-slate-200 dark:border-slate-700 focus:border-primary'}`}
+                                        placeholder={t('password_placeholder')}
+                                        value={passwordInput}
+                                        onChange={(e) => { setPasswordInput(e.target.value); setPasswordError(false); }}
+                                        onKeyDown={(e) => e.key === 'Enter' && verifyPassword()}
+                                        autoFocus
+                                    />
+                                    {passwordError && (
+                                        <p className="text-red-500 text-sm font-bold text-center mt-2 animate-shake">
+                                            {t('password_error')}
+                                        </p>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={verifyPassword}
+                                    className="w-full h-14 bg-primary text-white rounded-xl font-bold text-xl shadow-lg active:scale-95 transition-transform"
+                                >
+                                    {t('confirm_login')}
+                                </button>
+                                <button
+                                    onClick={() => { setShowPasswordModal(false); setTempOperator(null); setPasswordInput(''); }}
+                                    className="w-full h-12 text-slate-400 font-bold text-base hover:text-slate-600 dark:hover:text-slate-200"
+                                >
+                                    {t('cancel')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Company Banner */}
+                <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-2 px-4 text-center font-bold text-[11px] border-b border-slate-200 dark:border-slate-800 tracking-[0.3em] uppercase">
+                    瑞全企業股份有限公司
+                </div>
+
+                {/* Full-screen login body */}
+                <div className="flex-1 flex flex-col px-6 pt-10 pb-8">
+                    <div className="text-center mb-8">
+                        <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <span className="material-symbols-outlined text-4xl text-primary">groups</span>
+                        </div>
+                        <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100">請選擇您的名字</h1>
+                        <p className="text-sm text-slate-500 mt-1">Select your name</p>
+                    </div>
+
+                    {employees.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+                            <span className="material-symbols-outlined text-5xl animate-spin mb-3">progress_activity</span>
+                            <p className="font-bold">{t('loading_data')}</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-3">
+                            {employees.map((emp, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => selectEmployee(emp)}
+                                    className="w-full h-16 bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl text-lg font-black text-slate-800 dark:text-slate-100 text-left px-6 flex items-center gap-4 shadow-sm active:scale-[0.98] active:bg-slate-50 dark:active:bg-slate-700 transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-2xl text-primary shrink-0">person</span>
+                                    <span>{emp['姓名']}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
             {/* Password Modal */}
