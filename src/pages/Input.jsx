@@ -188,6 +188,12 @@ export default function Input() {
 
     const catColor = getCategoryColor(category);
 
+    const catLeftBorderColor = catColor === 'amber' ? '#f59e0b'
+        : catColor === 'slate' ? '#64748b'
+        : catColor === 'emerald' ? '#10b981'
+        : catColor === 'purple' ? '#a855f7'
+        : '#137fec'; // primary
+
     return (
         <div className="bg-background-light dark:bg-background-dark text-[#1e293b] dark:text-white min-h-screen flex flex-col pb-40">
             {/* Company Banner */}
@@ -205,7 +211,9 @@ export default function Input() {
                     早班
                 </div>
             </div>
-            <header className={`sticky top-0 z-20 backdrop-blur-sm border-b-2 px-4 py-3 flex items-center shadow-sm transition-colors ${catColor === 'amber' ? 'bg-amber-50/95 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800' :
+            <header
+                style={{ borderLeftColor: catLeftBorderColor }}
+                className={`sticky top-0 z-20 backdrop-blur-sm border-b-2 border-l-4 px-4 py-3 flex items-center shadow-sm transition-colors ${catColor === 'amber' ? 'bg-amber-50/95 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800' :
                 catColor === 'slate' ? 'bg-slate-50/95 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800' :
                     catColor === 'emerald' ? 'bg-emerald-50/95 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800' :
                         catColor === 'purple' ? 'bg-purple-50/95 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800' :
@@ -219,7 +227,7 @@ export default function Input() {
                 <div className="flex items-center gap-3 flex-1">
                     <div className="relative">
                         {displayProductImage ? (
-                            <img alt="Product Image" className={`w-24 h-24 rounded-xl border-2 object-cover shadow-md bg-white ${catColor === 'amber' ? 'border-amber-500' :
+                            <img alt="Product Image" className={`w-16 h-16 rounded-xl border object-cover shadow-md bg-white ${catColor === 'amber' ? 'border-amber-500' :
                                 catColor === 'slate' ? 'border-slate-500' :
                                     catColor === 'emerald' ? 'border-emerald-500' :
                                         catColor === 'purple' ? 'border-purple-500' :
@@ -231,8 +239,8 @@ export default function Input() {
                                 }}
                             />
                         ) : (
-                            <div className="w-24 h-24 rounded-xl border-2 border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
-                                <span className="material-symbols-outlined text-3xl">image_not_supported</span>
+                            <div className="w-16 h-16 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                                <span className="material-symbols-outlined text-2xl">image_not_supported</span>
                             </div>
                         )}
                         {/* Category Badge - Color Coded */}
@@ -247,25 +255,8 @@ export default function Input() {
                                 </span>
                             </div>
                         )}
-                        <div className={`absolute -bottom-1 -right-1 text-white text-[11px] px-2 py-0.5 rounded-md font-bold shadow-sm ${catColor === 'amber' ? 'bg-amber-600' :
-                            catColor === 'slate' ? 'bg-slate-700' :
-                                catColor === 'emerald' ? 'bg-emerald-700' :
-                                    catColor === 'purple' ? 'bg-purple-700' :
-                                        'bg-primary'}`}>{t('product_photo')}</div>
                     </div>
                     <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                            <h1 className="text-lg font-black leading-tight">{t('work_report')}</h1>
-                            {category && (
-                                <span className={`${catColor === 'amber' ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400' :
-                                    catColor === 'slate' ? 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/40 dark:text-slate-400' :
-                                        catColor === 'emerald' ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400' :
-                                            catColor === 'purple' ? 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/40 dark:text-purple-400' :
-                                                'bg-success/10 text-success border-success/20'} text-[10px] px-2 py-0.5 rounded-full font-black border`}>
-                                    {t(`cat_${category}`, category)}
-                                </span>
-                            )}
-                        </div>
                         <div className="mt-1">
                             <span className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-0.5">
                                 {t('car_model_label')} <span className={catColor === 'amber' ? 'text-amber-600' :
@@ -494,7 +485,7 @@ export default function Input() {
                                     {/* 1. Missing Material */}
                                     <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                         <div className="flex-1">
-                                            <p className="text-base font-black text-orange-600">{t('scrap_missing')}</p>
+                                            <p className="text-base font-black text-slate-700 dark:text-slate-300">{t('scrap_missing')}</p>
                                             <p className="text-xs font-bold text-slate-400">Missing Mat.</p>
                                         </div>
                                         {isDual ? (
@@ -527,8 +518,8 @@ export default function Input() {
                                                 <button onClick={() => handleScrapChange('missing', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-orange-600" inputMode="numeric" type="number" value={scraps.missing} readOnly />
-                                                <button onClick={() => handleScrapChange('missing', 1)} className="circle-btn bg-orange-500 text-white">
+                                                <input className={`reason-input ${scraps.missing > 0 ? 'text-danger' : 'text-slate-600 dark:text-slate-400'}`} inputMode="numeric" type="number" value={scraps.missing} readOnly />
+                                                <button onClick={() => handleScrapChange('missing', 1)} className="circle-btn bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
                                             </div>
@@ -538,7 +529,7 @@ export default function Input() {
                                     {/* 2. Dent/Scratch */}
                                     <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                         <div className="flex-1">
-                                            <p className="text-base font-black text-blue-600">{t('scrap_damage')}</p>
+                                            <p className="text-base font-black text-slate-700 dark:text-slate-300">{t('scrap_damage')}</p>
                                             <p className="text-xs font-bold text-slate-400">Dent / Scratch</p>
                                         </div>
                                         {isDual ? (
@@ -571,8 +562,8 @@ export default function Input() {
                                                 <button onClick={() => handleScrapChange('damage', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-blue-600" inputMode="numeric" type="number" value={scraps.damage} readOnly />
-                                                <button onClick={() => handleScrapChange('damage', 1)} className="circle-btn bg-blue-500 text-white">
+                                                <input className={`reason-input ${scraps.damage > 0 ? 'text-danger' : 'text-slate-600 dark:text-slate-400'}`} inputMode="numeric" type="number" value={scraps.damage} readOnly />
+                                                <button onClick={() => handleScrapChange('damage', 1)} className="circle-btn bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
                                             </div>
@@ -582,7 +573,7 @@ export default function Input() {
                                     {/* 3. Appearance Defect */}
                                     <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                                         <div className="flex-1">
-                                            <p className="text-base font-black text-purple-600">{t('scrap_appearance')}</p>
+                                            <p className="text-base font-black text-slate-700 dark:text-slate-300">{t('scrap_appearance')}</p>
                                             <p className="text-xs font-bold text-slate-400">{t('scrap_appearance_desc')}</p>
                                         </div>
                                         {isDual ? (
@@ -615,8 +606,8 @@ export default function Input() {
                                                 <button onClick={() => handleScrapChange('appearance', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-purple-600" inputMode="numeric" type="number" value={scraps.appearance} readOnly />
-                                                <button onClick={() => handleScrapChange('appearance', 1)} className="circle-btn bg-purple-500 text-white">
+                                                <input className={`reason-input ${scraps.appearance > 0 ? 'text-danger' : 'text-slate-600 dark:text-slate-400'}`} inputMode="numeric" type="number" value={scraps.appearance} readOnly />
+                                                <button onClick={() => handleScrapChange('appearance', 1)} className="circle-btn bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
                                             </div>
@@ -659,7 +650,7 @@ export default function Input() {
                                                 <button onClick={() => handleScrapChange('others', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-slate-600 dark:text-slate-300" inputMode="numeric" type="number" value={scraps.others} readOnly />
+                                                <input className={`reason-input ${scraps.others > 0 ? 'text-danger' : 'text-slate-600 dark:text-slate-400'}`} inputMode="numeric" type="number" value={scraps.others} readOnly />
                                                 <button onClick={() => handleScrapChange('others', 1)} className="circle-btn bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
