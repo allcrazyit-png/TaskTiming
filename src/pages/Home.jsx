@@ -494,11 +494,11 @@ export default function Home() {
         }
     };
 
-    const renderFavoriteCard = (product, index) => {
-        const [swipeX, setSwipeX] = React.useState(0);
-        const [isRemoving, setIsRemoving] = React.useState(false);
+    const FavoriteCard = ({ product, index }) => {
+        const [swipeX, setSwipeX] = useState(0);
+        const [isRemoving, setIsRemoving] = useState(false);
         const favKey = `${product['品番']}|${product['類別'] || ''}`;
-        const cardRef = React.useRef(null);
+        const cardRef = useMemo(() => ({ current: null }), []);
 
         const handleTouchStart = (e) => {
             setSwipeX(e.touches[0].clientX);
@@ -509,7 +509,6 @@ export default function Home() {
             const currentX = e.touches[0].clientX;
             const diff = currentX - swipeX;
 
-            // 只允許向右滑（diff > 0）
             if (diff > 0) {
                 cardRef.current.style.transform = `translateX(${diff}px)`;
                 const progress = Math.min(diff / cardRef.current.offsetWidth, 1);
@@ -525,15 +524,12 @@ export default function Home() {
             const diff = e.changedTouches[0].clientX - swipeX;
             const progress = Math.min(diff / cardRef.current.offsetWidth, 1);
 
-            // 滑超過 50% 則移除
             if (progress > 0.5) {
                 setIsRemoving(true);
-                // 淡出動畫
                 cardRef.current.style.transition = 'all 0.3s ease-out';
                 cardRef.current.style.opacity = '0';
                 cardRef.current.style.transform = 'translateX(100%)';
 
-                // 實際移除
                 setTimeout(() => {
                     const match = selectedOperator.match(/\[(.*?)\]/);
                     if (match) {
@@ -547,7 +543,6 @@ export default function Home() {
                     }
                 }, 300);
             } else {
-                // 縮回原位
                 cardRef.current.style.transition = 'all 0.2s ease-out';
                 cardRef.current.style.transform = 'translateX(0)';
                 cardRef.current.style.opacity = '1';
@@ -599,6 +594,10 @@ export default function Home() {
             </div>
         );
     };
+
+    const renderFavoriteCard = (product, index) => (
+        <FavoriteCard product={product} index={index} />
+    );
 
     const renderProductCard = (product, index, isFavoriteList = false, showImage = true) => {
         const favKey = `${product['品番']}|${product['類別'] || ''}`;
