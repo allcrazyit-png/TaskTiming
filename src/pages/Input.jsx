@@ -1,6 +1,138 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+
+const TimePicker = ({ value, onChange }) => {
+    const [hour, setHour] = useState(() => {
+        const [h] = (value || '00:00').split(':');
+        return parseInt(h);
+    });
+    const [minute, setMinute] = useState(() => {
+        const [, m] = (value || '00:00').split(':');
+        return parseInt(m);
+    });
+    const [hourOffset, setHourOffset] = useState(0);
+    const [minuteOffset, setMinuteOffset] = useState(0);
+    const hourRef = useRef(null);
+    const minuteRef = useRef(null);
+    const hourStartY = useRef(0);
+    const minuteStartY = useRef(0);
+
+    useEffect(() => {
+        onChange(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
+    }, [hour, minute, onChange]);
+
+    const handleHourTouchStart = (e) => {
+        hourStartY.current = e.touches[0].clientY;
+    };
+
+    const handleHourTouchMove = (e) => {
+        const diff = e.touches[0].clientY - hourStartY.current;
+        setHourOffset(diff);
+    };
+
+    const handleHourTouchEnd = () => {
+        const itemHeight = 48;
+        const selectedChange = Math.round(hourOffset / itemHeight);
+        let newHour = (hour - selectedChange + 24) % 24;
+        setHour(newHour);
+        setHourOffset(0);
+    };
+
+    const handleMinuteTouchStart = (e) => {
+        minuteStartY.current = e.touches[0].clientY;
+    };
+
+    const handleMinuteTouchMove = (e) => {
+        const diff = e.touches[0].clientY - minuteStartY.current;
+        setMinuteOffset(diff);
+    };
+
+    const handleMinuteTouchEnd = () => {
+        const itemHeight = 48;
+        const selectedChange = Math.round(minuteOffset / itemHeight);
+        let newMinute = (minute - selectedChange + 60) % 60;
+        setMinute(newMinute);
+        setMinuteOffset(0);
+    };
+
+    return (
+        <div className="flex gap-2 bg-white dark:bg-slate-900 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden">
+            {/* 小時 */}
+            <div className="flex-1 flex flex-col items-center">
+                <label className="text-xs font-black text-slate-400 mb-2 uppercase">小時</label>
+                <div
+                    ref={hourRef}
+                    className="relative h-48 overflow-hidden flex-1 w-full rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 touch-none"
+                    onTouchStart={handleHourTouchStart}
+                    onTouchMove={handleHourTouchMove}
+                    onTouchEnd={handleHourTouchEnd}
+                >
+                    <div
+                        className="flex flex-col items-center transition-none"
+                        style={{
+                            transform: `translateY(${-(hour * 48) + hourOffset}px)`
+                        }}
+                    >
+                        {[...Array(24)].map((_, i) => (
+                            <div
+                                key={i}
+                                className={`h-12 w-full flex items-center justify-center font-black text-lg transition-colors ${
+                                    i === hour
+                                        ? 'bg-primary/20 text-primary dark:text-blue-300'
+                                        : 'text-slate-600 dark:text-slate-400'
+                                }`}
+                            >
+                                {String(i).padStart(2, '0')}
+                            </div>
+                        ))}
+                    </div>
+                    {/* 中間指示器 */}
+                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t-2 border-b-2 border-primary pointer-events-none h-12" />
+                </div>
+                <div className="text-2xl font-black text-primary mt-2">{String(hour).padStart(2, '0')}</div>
+            </div>
+
+            {/* 冒號 */}
+            <div className="flex items-center text-3xl font-black text-primary">:</div>
+
+            {/* 分鐘 */}
+            <div className="flex-1 flex flex-col items-center">
+                <label className="text-xs font-black text-slate-400 mb-2 uppercase">分鐘</label>
+                <div
+                    ref={minuteRef}
+                    className="relative h-48 overflow-hidden flex-1 w-full rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 touch-none"
+                    onTouchStart={handleMinuteTouchStart}
+                    onTouchMove={handleMinuteTouchMove}
+                    onTouchEnd={handleMinuteTouchEnd}
+                >
+                    <div
+                        className="flex flex-col items-center transition-none"
+                        style={{
+                            transform: `translateY(${-(minute * 48) + minuteOffset}px)`
+                        }}
+                    >
+                        {[...Array(60)].map((_, i) => (
+                            <div
+                                key={i}
+                                className={`h-12 w-full flex items-center justify-center font-black text-lg transition-colors ${
+                                    i === minute
+                                        ? 'bg-primary/20 text-primary dark:text-blue-300'
+                                        : 'text-slate-600 dark:text-slate-400'
+                                }`}
+                            >
+                                {String(i).padStart(2, '0')}
+                            </div>
+                        ))}
+                    </div>
+                    {/* 中間指示器 */}
+                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t-2 border-b-2 border-primary pointer-events-none h-12" />
+                </div>
+                <div className="text-2xl font-black text-primary mt-2">{String(minute).padStart(2, '0')}</div>
+            </div>
+        </div>
+    );
+};
 
 export default function Input() {
     const { t } = useTranslation();
@@ -81,12 +213,6 @@ export default function Input() {
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
     const [remarks, setRemarks] = useState("");
-
-    // Time fields start empty; user must fill them in manually
-
-    const getCurrentTime = () => {
-        return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
-    };
 
     // Date state
     const [workDate, setWorkDate] = useState(() => {
@@ -328,27 +454,23 @@ export default function Input() {
                                     className="text-base font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-4 py-3 rounded-xl border-2 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer min-h-[48px]"
                                 />
                             </div>
-                            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-primary space-y-3">
+                            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-primary space-y-4">
                                 <div className="space-y-2">
                                     <label className="block text-sm font-black text-slate-500">
                                         {t('start_time')} <span className="text-red-500">*</span>
                                     </label>
-                                    <input
-                                        className="time-input"
-                                        type="time"
+                                    <TimePicker
                                         value={startTime}
-                                        onChange={(e) => setStartTime(e.target.value)}
+                                        onChange={setStartTime}
                                     />
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-sm font-black text-slate-500">
                                         {t('end_time')} <span className="text-red-500">*</span>
                                     </label>
-                                    <input
-                                        className="time-input"
-                                        type="time"
+                                    <TimePicker
                                         value={endTime}
-                                        onChange={(e) => setEndTime(e.target.value)}
+                                        onChange={setEndTime}
                                     />
                                 </div>
                             </div>

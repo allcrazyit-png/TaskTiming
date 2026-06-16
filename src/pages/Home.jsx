@@ -495,13 +495,76 @@ export default function Home() {
     };
 
     const renderFavoriteCard = (product, index) => {
+        const [swipeX, setSwipeX] = React.useState(0);
+        const [isRemoving, setIsRemoving] = React.useState(false);
+        const favKey = `${product['品番']}|${product['類別'] || ''}`;
+        const cardRef = React.useRef(null);
+
+        const handleTouchStart = (e) => {
+            setSwipeX(e.touches[0].clientX);
+        };
+
+        const handleTouchMove = (e) => {
+            if (!cardRef.current || isRemoving) return;
+            const currentX = e.touches[0].clientX;
+            const diff = currentX - swipeX;
+
+            // 只允許向右滑（diff > 0）
+            if (diff > 0) {
+                cardRef.current.style.transform = `translateX(${diff}px)`;
+                const progress = Math.min(diff / cardRef.current.offsetWidth, 1);
+                if (progress > 0.1) {
+                    cardRef.current.style.opacity = `${1 - progress * 0.3}`;
+                    cardRef.current.style.backgroundColor = `rgba(239, 68, 68, ${progress * 0.1})`;
+                }
+            }
+        };
+
+        const handleTouchEnd = (e) => {
+            if (!cardRef.current) return;
+            const diff = e.changedTouches[0].clientX - swipeX;
+            const progress = Math.min(diff / cardRef.current.offsetWidth, 1);
+
+            // 滑超過 50% 則移除
+            if (progress > 0.5) {
+                setIsRemoving(true);
+                // 淡出動畫
+                cardRef.current.style.transition = 'all 0.3s ease-out';
+                cardRef.current.style.opacity = '0';
+                cardRef.current.style.transform = 'translateX(100%)';
+
+                // 實際移除
+                setTimeout(() => {
+                    const match = selectedOperator.match(/\[(.*?)\]/);
+                    if (match) {
+                        const operatorId = match[1];
+                        const favoritesKey = `favoriteProducts_${operatorId}`;
+                        setFavoriteProducts(prev => {
+                            const newFavorites = prev.filter(pn => pn !== favKey);
+                            localStorage.setItem(favoritesKey, JSON.stringify(newFavorites));
+                            return newFavorites;
+                        });
+                    }
+                }, 300);
+            } else {
+                // 縮回原位
+                cardRef.current.style.transition = 'all 0.2s ease-out';
+                cardRef.current.style.transform = 'translateX(0)';
+                cardRef.current.style.opacity = '1';
+                cardRef.current.style.backgroundColor = '';
+            }
+        };
+
         return (
             <div
                 key={`fav-${product['品番']}-${index}`}
-                className="flex items-center gap-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-3 shadow-md active:scale-[0.98] transition-transform"
-                onClick={() => handleStartWork(product)}
+                ref={cardRef}
+                className="flex items-center gap-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-3 shadow-md transition-none"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
             >
-                <div className="shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <div className="shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 pointer-events-none">
                     {product['產品圖片'] ? (
                         <img
                             alt={product['品名']}
@@ -516,7 +579,7 @@ export default function Home() {
                         </div>
                     )}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 pointer-events-none">
                     {product['類別'] && (
                         <span className={`${getCategoryStyles(product['類別'])} text-white text-xs font-black px-2 py-0.5 rounded-full mb-1 inline-block`}>
                             {t(`cat_${product['類別']}`, product['類別'])}
@@ -526,8 +589,9 @@ export default function Home() {
                     <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{product['車型']}</p>
                 </div>
                 <button
-                    onClick={(e) => { e.stopPropagation(); handleStartWork(product); }}
+                    onClick={() => handleStartWork(product)}
                     className={`shrink-0 w-16 h-16 flex flex-col items-center justify-center rounded-2xl text-white shadow-md active:scale-90 transition-transform ${getCategoryBtnStyles(product['類別'])}`}
+                    style={{ pointerEvents: 'auto' }}
                 >
                     <span className="material-symbols-outlined text-3xl">play_circle</span>
                     <span className="text-xs font-black mt-0.5">開始</span>
