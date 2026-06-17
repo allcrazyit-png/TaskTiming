@@ -1,136 +1,138 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-const TimePicker = ({ value, onChange }) => {
-    const [hour, setHour] = useState(() => {
-        const [h] = (value || '00:00').split(':');
-        return parseInt(h);
+const AndroidTimePicker = ({ value, onChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [tempHour, setTempHour] = useState(() => {
+        const now = new Date();
+        return now.getHours();
     });
-    const [minute, setMinute] = useState(() => {
-        const [, m] = (value || '00:00').split(':');
-        return parseInt(m);
+    const [tempMinute, setTempMinute] = useState(() => {
+        const now = new Date();
+        return now.getMinutes();
     });
-    const [hourOffset, setHourOffset] = useState(0);
-    const [minuteOffset, setMinuteOffset] = useState(0);
-    const hourRef = useRef(null);
-    const minuteRef = useRef(null);
-    const hourStartY = useRef(0);
-    const minuteStartY = useRef(0);
 
-    useEffect(() => {
-        onChange(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
-    }, [hour, minute, onChange]);
-
-    const handleHourTouchStart = (e) => {
-        hourStartY.current = e.touches[0].clientY;
+    // 打開對話框時，重置為現在時間
+    const handleOpenPicker = () => {
+        const now = new Date();
+        setTempHour(now.getHours());
+        setTempMinute(now.getMinutes());
+        setIsOpen(true);
     };
 
-    const handleHourTouchMove = (e) => {
-        const diff = e.touches[0].clientY - hourStartY.current;
-        setHourOffset(diff);
+    const handleConfirm = () => {
+        onChange(`${String(tempHour).padStart(2, '0')}:${String(tempMinute).padStart(2, '0')}`);
+        setIsOpen(false);
     };
 
-    const handleHourTouchEnd = () => {
-        const itemHeight = 48;
-        const selectedChange = Math.round(hourOffset / itemHeight);
-        let newHour = (hour - selectedChange + 24) % 24;
-        setHour(newHour);
-        setHourOffset(0);
+    const handleHourUp = () => {
+        setTempHour((tempHour + 1) % 24);
     };
 
-    const handleMinuteTouchStart = (e) => {
-        minuteStartY.current = e.touches[0].clientY;
+    const handleHourDown = () => {
+        setTempHour((tempHour - 1 + 24) % 24);
     };
 
-    const handleMinuteTouchMove = (e) => {
-        const diff = e.touches[0].clientY - minuteStartY.current;
-        setMinuteOffset(diff);
+    const handleMinuteUp = () => {
+        setTempMinute((tempMinute + 1) % 60);
     };
 
-    const handleMinuteTouchEnd = () => {
-        const itemHeight = 48;
-        const selectedChange = Math.round(minuteOffset / itemHeight);
-        let newMinute = (minute - selectedChange + 60) % 60;
-        setMinute(newMinute);
-        setMinuteOffset(0);
+    const handleMinuteDown = () => {
+        setTempMinute((tempMinute - 1 + 60) % 60);
     };
+
+    const [h, m] = (value || '00:00').split(':');
 
     return (
-        <div className="flex gap-2 bg-white dark:bg-slate-900 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-700 overflow-hidden">
-            {/* 小時 */}
-            <div className="flex-1 flex flex-col items-center">
-                <label className="text-xs font-black text-slate-400 mb-2 uppercase">小時</label>
-                <div
-                    ref={hourRef}
-                    className="relative h-48 overflow-hidden flex-1 w-full rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 touch-none"
-                    onTouchStart={handleHourTouchStart}
-                    onTouchMove={handleHourTouchMove}
-                    onTouchEnd={handleHourTouchEnd}
-                >
-                    <div
-                        className="flex flex-col items-center transition-none"
-                        style={{
-                            transform: `translateY(${-(hour * 48) + hourOffset}px)`
-                        }}
-                    >
-                        {[...Array(24)].map((_, i) => (
-                            <div
-                                key={i}
-                                className={`h-12 w-full flex items-center justify-center font-black text-lg transition-colors ${
-                                    i === hour
-                                        ? 'bg-primary/20 text-primary dark:text-blue-300'
-                                        : 'text-slate-600 dark:text-slate-400'
-                                }`}
-                            >
-                                {String(i).padStart(2, '0')}
-                            </div>
-                        ))}
-                    </div>
-                    {/* 中間指示器 */}
-                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t-2 border-b-2 border-primary pointer-events-none h-12" />
-                </div>
-                <div className="text-2xl font-black text-primary mt-2">{String(hour).padStart(2, '0')}</div>
-            </div>
+        <>
+            {/* 顯示當前時間的輸入框 */}
+            <button
+                onClick={handleOpenPicker}
+                className="w-full bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-center text-2xl font-black text-primary hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+                {h}:{m}
+            </button>
 
-            {/* 冒號 */}
-            <div className="flex items-center text-3xl font-black text-primary">:</div>
+            {/* 彈出式時間選擇對話框 */}
+            {isOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden">
+                        {/* 時間選擇器容器 */}
+                        <div className="p-6 space-y-4">
+                            {/* 時間和分鐘並排 */}
+                            <div className="flex gap-6 justify-center items-center">
+                                {/* 小時 */}
+                                <div className="flex flex-col items-center gap-3">
+                                    <button
+                                        onClick={handleHourUp}
+                                        className="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
+                                    >
+                                        +
+                                    </button>
+                                    <div className="h-12 w-24 flex items-center justify-center font-black text-2xl bg-slate-300 dark:bg-slate-600 text-primary dark:text-blue-300 rounded-lg">
+                                        {String(tempHour).padStart(2, '0')}
+                                    </div>
+                                    <button
+                                        onClick={handleHourDown}
+                                        className="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
+                                    >
+                                        −
+                                    </button>
+                                    <div className="text-sm font-bold text-slate-500">時</div>
+                                </div>
 
-            {/* 分鐘 */}
-            <div className="flex-1 flex flex-col items-center">
-                <label className="text-xs font-black text-slate-400 mb-2 uppercase">分鐘</label>
-                <div
-                    ref={minuteRef}
-                    className="relative h-48 overflow-hidden flex-1 w-full rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 touch-none"
-                    onTouchStart={handleMinuteTouchStart}
-                    onTouchMove={handleMinuteTouchMove}
-                    onTouchEnd={handleMinuteTouchEnd}
-                >
-                    <div
-                        className="flex flex-col items-center transition-none"
-                        style={{
-                            transform: `translateY(${-(minute * 48) + minuteOffset}px)`
-                        }}
-                    >
-                        {[...Array(60)].map((_, i) => (
-                            <div
-                                key={i}
-                                className={`h-12 w-full flex items-center justify-center font-black text-lg transition-colors ${
-                                    i === minute
-                                        ? 'bg-primary/20 text-primary dark:text-blue-300'
-                                        : 'text-slate-600 dark:text-slate-400'
-                                }`}
-                            >
-                                {String(i).padStart(2, '0')}
+                                {/* 冒號 */}
+                                <div className="text-3xl font-black text-primary">:</div>
+
+                                {/* 分鐘 */}
+                                <div className="flex flex-col items-center gap-3">
+                                    <button
+                                        onClick={handleMinuteUp}
+                                        className="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
+                                    >
+                                        +
+                                    </button>
+                                    <div className="h-12 w-24 flex items-center justify-center font-black text-2xl bg-slate-300 dark:bg-slate-600 text-primary dark:text-blue-300 rounded-lg">
+                                        {String(tempMinute).padStart(2, '0')}
+                                    </div>
+                                    <button
+                                        onClick={handleMinuteDown}
+                                        className="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
+                                    >
+                                        −
+                                    </button>
+                                    <div className="text-sm font-bold text-slate-500">分</div>
+                                </div>
                             </div>
-                        ))}
+
+                            {/* 下方顯示當前時間 */}
+                            <div className="text-center pt-4 border-t border-slate-200 dark:border-slate-800">
+                                <div className="text-4xl font-black text-primary">
+                                    {String(tempHour).padStart(2, '0')}:{String(tempMinute).padStart(2, '0')}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 按鈕區域 */}
+                        <div className="flex gap-4 p-5 bg-slate-50 dark:bg-slate-800">
+                            <button
+                                onClick={() => setIsOpen(false)}
+                                className="flex-1 py-4 bg-slate-600 dark:bg-slate-700 text-white rounded-full font-black text-lg active:scale-95 transition-transform shadow-md"
+                            >
+                                取消
+                            </button>
+                            <button
+                                onClick={handleConfirm}
+                                className="flex-1 py-4 bg-primary text-white rounded-full font-black text-lg active:scale-95 transition-transform shadow-lg"
+                            >
+                                確定
+                            </button>
+                        </div>
                     </div>
-                    {/* 中間指示器 */}
-                    <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 border-t-2 border-b-2 border-primary pointer-events-none h-12" />
                 </div>
-                <div className="text-2xl font-black text-primary mt-2">{String(minute).padStart(2, '0')}</div>
-            </div>
-        </div>
+            )}
+        </>
     );
 };
 
@@ -138,6 +140,10 @@ export default function Input() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
+
+    // Detect if device is Android (only Android uses custom TimePicker)
+    // All other devices (iOS, Mac, Windows) use native time input
+    const isAndroid = () => /Android/.test(navigator.userAgent);
     // Default values for testing
     const { productName, partNumber, carModel, standardTime, operator, productImage, category } = location.state || {
         productName: "鋁合金散熱片 A-204",
@@ -459,19 +465,37 @@ export default function Input() {
                                     <label className="block text-sm font-black text-slate-500">
                                         {t('start_time')} <span className="text-red-500">*</span>
                                     </label>
-                                    <TimePicker
-                                        value={startTime}
-                                        onChange={setStartTime}
-                                    />
+                                    {isAndroid() ? (
+                                        <AndroidTimePicker
+                                            value={startTime}
+                                            onChange={setStartTime}
+                                        />
+                                    ) : (
+                                        <input
+                                            className="time-input"
+                                            type="time"
+                                            value={startTime}
+                                            onChange={(e) => setStartTime(e.target.value)}
+                                        />
+                                    )}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="block text-sm font-black text-slate-500">
                                         {t('end_time')} <span className="text-red-500">*</span>
                                     </label>
-                                    <TimePicker
-                                        value={endTime}
-                                        onChange={setEndTime}
-                                    />
+                                    {isAndroid() ? (
+                                        <AndroidTimePicker
+                                            value={endTime}
+                                            onChange={setEndTime}
+                                        />
+                                    ) : (
+                                        <input
+                                            className="time-input"
+                                            type="time"
+                                            value={endTime}
+                                            onChange={(e) => setEndTime(e.target.value)}
+                                        />
+                                    )}
                                 </div>
                             </div>
                         </section>
