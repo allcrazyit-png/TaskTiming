@@ -418,7 +418,9 @@ export default function Confirm() {
                                     </span>
                                 )}
                             </p>
-                            <p className="text-sm font-medium text-slate-500">{carModel} / {partNumber}</p>
+                            <p className="text-sm font-medium text-slate-500">
+                                {partNumber && partNumber.trim() ? `${carModel} / ${partNumber}` : '-'}
+                            </p>
                         </div>
                     </div>
                     <hr className="border-slate-100 dark:border-slate-800" />
