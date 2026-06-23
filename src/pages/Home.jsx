@@ -23,10 +23,6 @@ export default function Home() {
     const [favoriteProducts, setFavoriteProducts] = useState([]); // Store array of favorite `品番`
     const [weather, setWeather] = useState(null); // Local weather state
 
-    // Custom Product Entry State
-    const [isCustomProduct, setIsCustomProduct] = useState(false);
-    const [customProductName, setCustomProductName] = useState('');
-    const [customPartNumber, setCustomPartNumber] = useState('');
 
     // Password Modal State
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -374,35 +370,6 @@ export default function Home() {
         });
     };
 
-    const handleStartCustomWork = () => {
-        if (!selectedOperator) {
-            alert(t('login_required_work') + " (Please select an operator first)");
-            return;
-        }
-
-        if (!customProductName.trim()) {
-            alert(t('login_required_custom') + " (Custom product name is required)");
-            return;
-        }
-
-        // Scroll to top before navigating
-        window.scrollTo(0, 0);
-
-        navigate('/input', {
-            state: {
-                productName: customProductName.trim(),
-                partNumber: customPartNumber.trim(),
-                carModel: filters.carModel || '未指定',
-                standardTime: 0,
-                operator: selectedOperator,
-                productImage: null
-            }
-        });
-    };
-
-    const toggleCustomProduct = () => {
-        setIsCustomProduct(prev => !prev);
-    };
 
     // Extract unique filter options
     const uniqueCarModels = useMemo(() => {
@@ -984,23 +951,9 @@ export default function Home() {
                 {showFilter && (
                     <section className="space-y-4">
                         <div className="grid grid-cols-1 gap-4">
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-sm font-bold text-slate-800 dark:text-slate-200">
-                                    {t('filter_car_model')}
-                                </label>
-                                <button
-                                    onClick={toggleCustomProduct}
-                                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border transition-colors ${isCustomProduct
-                                        ? 'bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:border-red-800'
-                                        : 'bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50'
-                                        }`}
-                                >
-                                    <span className="material-symbols-outlined text-[16px]">
-                                        {isCustomProduct ? 'close' : 'add'}
-                                    </span>
-                                    {isCustomProduct ? t('custom_btn_cancel') : t('custom_btn_add')}
-                                </button>
-                            </div>
+                            <label className="block text-sm font-bold text-slate-800 dark:text-slate-200">
+                                {t('filter_car_model')}
+                            </label>
                             <div className="relative">
                                 <select
                                     value={filters.carModel}
@@ -1041,46 +994,6 @@ export default function Home() {
                                 </div>
                             </div>
                         </div>
-
-                        {isCustomProduct && (
-                            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-xl space-y-4 animate-fade-in">
-                                <h3 className="text-lg font-bold text-blue-800 dark:text-blue-300 flex items-center gap-2">
-                                    <span className="material-symbols-outlined">edit_square</span>
-                                    {t('custom_input_title')}
-                                </h3>
-                                <div>
-                                    <label className="block text-sm font-bold mb-1 text-slate-700 dark:text-slate-300">
-                                        {t('custom_part_number_label')}
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder={t('custom_part_number_placeholder')}
-                                        value={customPartNumber}
-                                        onChange={(e) => setCustomPartNumber(e.target.value)}
-                                        className="w-full h-12 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold mb-1 text-slate-700 dark:text-slate-300">
-                                        {t('custom_product_name_label')} <span className="text-red-500">{t('custom_product_name_req')}</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder={t('custom_product_name_placeholder')}
-                                        value={customProductName}
-                                        onChange={(e) => setCustomProductName(e.target.value)}
-                                        className="w-full h-12 px-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
-                                    />
-                                </div>
-                                <button
-                                    onClick={handleStartCustomWork}
-                                    className="w-full mt-2 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 font-black text-lg active:scale-95 transition-transform"
-                                >
-                                    <span className="material-symbols-outlined">play_circle</span>
-                                    {t('start_custom_work')}
-                                </button>
-                            </div>
-                        )}
 
                         <div className="space-y-3">
                             <h2 className="text-base font-bold border-l-4 border-primary pl-3 text-slate-800 dark:text-slate-100">{t('all_products')}</h2>
