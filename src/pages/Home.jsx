@@ -40,6 +40,9 @@ export default function Home() {
     const [theme, setTheme] = useState(() => localStorage.getItem('appTheme') || 'system'); // 'system', 'light', 'dark'
     const [fontSize, setFontSize] = useState(() => localStorage.getItem('appFontSize') || 'large'); // 'normal', 'large'
 
+    // Custom Modal State
+    const [showCustomModal, setShowCustomModal] = useState(false);
+
     // Image Display State: 手動開啟全部照片 (當自動判斷不顯示時)
     const [showAllImages, setShowAllImages] = useState(false);
     const [showFilter, setShowFilter] = useState(false);
