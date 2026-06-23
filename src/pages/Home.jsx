@@ -958,6 +958,22 @@ export default function Home() {
                                 .filter(p => favoriteProducts.includes(`${p['品番']}|${p['類別'] || ''}`))
                                 .map((product, index) => renderFavoriteCard(product, index))}
                         </div>
+                        {/* Manual Work Input Button - Below Favorites, Right Aligned */}
+                        <div className="flex justify-end pt-2">
+                            <button
+                                onClick={() => {
+                                    if (!selectedOperator) {
+                                        alert(t('login_required_work') + " (Please select an operator first)");
+                                        return;
+                                    }
+                                    setShowCustomModal(true);
+                                }}
+                                className="flex items-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors active:scale-95"
+                            >
+                                <span className="material-symbols-outlined text-xl">edit</span>
+                                <span className="text-sm">{t('custom_btn_add') || '+ 手動輸入工作'}</span>
+                            </button>
+                        </div>
                     </section>
                 ) : (
                     <div className="text-center py-8 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 text-slate-500">
