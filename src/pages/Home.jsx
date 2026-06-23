@@ -971,7 +971,10 @@ export default function Home() {
                                 className="flex items-center justify-center gap-3 bg-white dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 shadow-md active:scale-[0.98] transition-transform cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 min-h-[100px]"
                             >
                                 <span className="material-symbols-outlined text-3xl text-slate-400 dark:text-slate-500">add</span>
-                                <p className="text-lg font-bold text-slate-700 dark:text-slate-200">{t('custom_btn_add') || '+ 手動輸入工作'}</p>
+                                <div className="text-center">
+                                    <p className="text-lg font-bold text-slate-700 dark:text-slate-200">手動輸入工作</p>
+                                    <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">臨時任務</p>
+                                </div>
                             </div>
                         </div>
                     </section>
