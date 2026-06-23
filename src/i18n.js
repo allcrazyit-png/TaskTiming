@@ -16,7 +16,7 @@ const resources = {
             "select_operator": "選擇員工",
             "favorites": "我的最愛",
             "filter_car_model": "1. 選擇車型 (Filter Car Model)",
-            "custom_btn_add": "其他 (手動輸入)",
+            "custom_btn_add": "+ 手動輸入工作",
             "custom_btn_cancel": "取消手動輸入",
             "select_car_model_loading": "載入中...",
             "select_car_model_placeholder": "請點擊選擇車型",
