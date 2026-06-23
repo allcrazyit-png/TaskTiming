@@ -23,6 +23,8 @@ export default function Home() {
     const [favoriteProducts, setFavoriteProducts] = useState([]); // Store array of favorite `品番`
     const [weather, setWeather] = useState(null); // Local weather state
 
+    // Custom Product Entry State
+    const [customProductName, setCustomProductName] = useState('');
 
     // Password Modal State
     const [showPasswordModal, setShowPasswordModal] = useState(false);
