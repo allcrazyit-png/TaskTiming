@@ -1265,6 +1265,54 @@ export default function Home() {
                 </div>
             )}
 
+            {/* Custom Work Modal */}
+            {showCustomModal && selectedOperator && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 w-full max-w-sm transform transition-all scale-100 animate-bounceScale">
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <span className="material-symbols-outlined text-3xl text-blue-600 dark:text-blue-400">edit</span>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('custom_input_title') || '手動輸入工作'}</h3>
+                            <p className="text-sm text-slate-500 mt-1">{t('custom_input_desc') || '記錄清單外的臨時工作'}</p>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold mb-1 text-slate-700 dark:text-slate-300">
+                                    {t('custom_product_name_label') || '工作內容'} <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder={t('custom_product_name_placeholder') || '例如：掃廁所、整理材料、清潔設備'}
+                                    value={customProductName}
+                                    onChange={(e) => setCustomProductName(e.target.value)}
+                                    className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                    autoFocus
+                                />
+                            </div>
+
+                            <button
+                                onClick={handleStartCustomWork}
+                                className="w-full mt-2 h-12 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 font-bold transition-colors"
+                            >
+                                <span className="material-symbols-outlined">play_circle</span>
+                                {t('start_custom_work') || '開始工作'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowCustomModal(false);
+                                    setCustomProductName('');
+                                }}
+                                className="w-full h-10 text-slate-400 font-bold text-sm hover:text-slate-600 dark:hover:text-slate-200"
+                            >
+                                {t('cancel') || '取消'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
