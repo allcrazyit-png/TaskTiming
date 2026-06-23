@@ -959,10 +959,8 @@ export default function Home() {
                             {products
                                 .filter(p => favoriteProducts.includes(`${p['品番']}|${p['類別'] || ''}`))
                                 .map((product, index) => renderFavoriteCard(product, index))}
-                        </div>
-                        {/* Manual Work Input Button - Below Favorites, Right Aligned */}
-                        <div className="flex justify-end pt-2">
-                            <button
+                            {/* Add Manual Work Card */}
+                            <div
                                 onClick={() => {
                                     if (!selectedOperator) {
                                         alert(t('login_required_work') + " (Please select an operator first)");
@@ -970,11 +968,11 @@ export default function Home() {
                                     }
                                     setShowCustomModal(true);
                                 }}
-                                className="flex items-center gap-2 px-4 py-3 bg-slate-100 dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors active:scale-95"
+                                className="flex items-center justify-center gap-3 bg-white dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-4 shadow-md active:scale-[0.98] transition-transform cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 min-h-[100px]"
                             >
-                                <span className="material-symbols-outlined text-xl">edit</span>
-                                <span className="text-sm">{t('custom_btn_add') || '+ 手動輸入工作'}</span>
-                            </button>
+                                <span className="material-symbols-outlined text-3xl text-slate-400 dark:text-slate-500">add</span>
+                                <p className="text-lg font-bold text-slate-700 dark:text-slate-200">{t('custom_btn_add') || '+ 手動輸入工作'}</p>
+                            </div>
                         </div>
                     </section>
                 ) : (

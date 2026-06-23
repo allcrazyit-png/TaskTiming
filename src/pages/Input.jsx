@@ -169,11 +169,8 @@ export default function Input() {
         window.scrollTo(0, 0);
     }, []);
 
-    // Detect if this is non-product work (empty partNumber)
-    const isNonProductWork = !partNumber || partNumber.trim() === '';
-
     // Check if the part number matches the dual-cavity pattern (e.g., has _X before a dash, like 53827_8-02280-1, or CW785401_2XA)
-    const originalIsDual = partNumber && partNumber.trim() && /_(\d+)/.test(partNumber);
+    const originalIsDual = partNumber && /_(\d+)/.test(partNumber);
     const [activeMode, setActiveMode] = useState(''); // '', 'both', 'r', 'l'
 
     // Derive single part numbers if needed
@@ -360,7 +357,6 @@ export default function Input() {
                     <span className="material-symbols-outlined text-3xl font-black">arrow_back</span>
                 </button>
                 <div className="flex items-center gap-3 flex-1">
-                    {!isNonProductWork && (
                     <div className="relative">
                         {displayProductImage ? (
                             <img alt="Product Image" className={`w-16 h-16 rounded-xl border object-cover shadow-md bg-white ${catColor === 'amber' ? 'border-amber-500' :
@@ -392,7 +388,6 @@ export default function Input() {
                             </div>
                         )}
                     </div>
-                    )}
                     <div className="flex flex-col">
                         <div className="mt-1">
                             <span className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-0.5">
@@ -421,7 +416,7 @@ export default function Input() {
                 </div>
             </header>
             <main className="flex-1 p-4 space-y-6">
-                {originalIsDual && !isNonProductWork && (
+                {originalIsDual && (
                     <section className="space-y-3">
                         <h2 className="text-lg font-black flex items-center gap-2 px-1 text-slate-700 dark:text-slate-300">
                             <span className="material-symbols-outlined text-2xl">rule</span>

@@ -5,4 +5,8 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/TaskTiming/', // Set base URL for GitHub Pages
+  server: {
+    host: '0.0.0.0', // Listen on all network interfaces
+    port: 5179,
+  },
 })

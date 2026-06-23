@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed -i '' 's/VERSION 1\\\\.9\\\\.4/VERSION 1.9.5/' src/pages/Home.jsx)",
+      "Bash(sed -i '' 's/Version 1\\\\.9\\\\.4/Version 1.9.5/' src/pages/Home.jsx)",
+      "Bash(git commit -m ' *)",
+      "Bash(npm version *)",
+      "Bash(node -p \"require\\('./package.json'\\).version\")",
+      "Bash(sed -i '' 's/VERSION 1\\\\.10\\\\.0/VERSION 1.10.1/' src/pages/Home.jsx)",
+      "Bash(sed -i '' 's/Version 1\\\\.10\\\\.0/Version 1.10.1/' src/pages/Home.jsx)",
+      "Bash(sed -i '' 's/VERSION 1\\\\.10\\\\.1/VERSION 1.10.2/' src/pages/Home.jsx)",
+      "Bash(sed -i '' 's/Version 1\\\\.10\\\\.1/Version 1.10.2/' src/pages/Home.jsx)",
+      "Bash(sed -i '' 's/VERSION 1\\\\.10\\\\.2/VERSION 1.10.3/' src/pages/Home.jsx)",
+      "Bash(sed -i '' 's/Version 1\\\\.10\\\\.2/Version 1.10.3/' src/pages/Home.jsx)",
+      "Bash(mkdir -p \"/Users/takuyatop/Downloads/vibe coding/組裝報表上傳/docs/superpowers/specs\")",
+      "Bash(git commit *)",
+      "mcp__claude_ai_Gmail__search_threads",
+      "mcp__claude_ai_Gmail__get_thread",
+      "Bash(curl -s http://localhost:5173/TaskTiming/)",
+      "Bash(awk '{print $2}')",
+      "Bash(open http://localhost:5173/TaskTiming/)",
+      "Bash(kill 26789)",
+      "Bash(curl -s http://192.168.50.153:5173/TaskTiming/)",
+      "Edit(/.claude/skills/preview-on-device/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/takuyatop/Downloads/vibe coding/組裝報表上傳/docs/superpowers"
+    ]
+  }
+}
