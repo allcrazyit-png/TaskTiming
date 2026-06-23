@@ -1273,18 +1273,18 @@ export default function Home() {
                             <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
                                 <span className="material-symbols-outlined text-3xl text-blue-600 dark:text-blue-400">edit</span>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('custom_input_title') || '手動輸入工作'}</h3>
-                            <p className="text-sm text-slate-500 mt-1">{t('custom_input_desc') || '記錄清單外的臨時工作'}</p>
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t('custom_work_input_title') || '手動輸入工作'}</h3>
+                            <p className="text-sm text-slate-500 mt-1">{t('custom_work_input_desc') || '記錄清單外的臨時工作'}</p>
                         </div>
 
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-bold mb-1 text-slate-700 dark:text-slate-300">
-                                    {t('custom_product_name_label') || '工作內容'} <span className="text-red-500">*</span>
+                                    {t('custom_work_name_label') || '工作內容'} <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder={t('custom_product_name_placeholder') || '例如：掃廁所、整理材料、清潔設備'}
+                                    placeholder={t('custom_work_name_placeholder') || '例如：掃廁所、整理材料、清潔設備'}
                                     value={customProductName}
                                     onChange={(e) => setCustomProductName(e.target.value)}
                                     className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
