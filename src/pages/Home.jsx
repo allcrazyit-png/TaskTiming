@@ -43,8 +43,7 @@ export default function Home() {
     // Custom Modal State
     const [showCustomModal, setShowCustomModal] = useState(false);
 
-    // Image Display State: 手動開啟全部照片 (當自動判斷不顯示時)
-    const [showAllImages, setShowAllImages] = useState(false);
+    // Filter Display State
     const [showFilter, setShowFilter] = useState(false);
 
     // Missing upload days state: null=未載入, 0=正常, N=累計N個工作日未傳
@@ -535,7 +534,7 @@ export default function Home() {
         );
     };
 
-    const renderProductCard = (product, index, isFavoriteList = false, showImage = true) => {
+    const renderProductCard = (product, index, showImage = true) => {
         const favKey = `${product['品番']}|${product['類別'] || ''}`;
         const isFav = favoriteProducts.includes(favKey);
 
@@ -1062,7 +1061,7 @@ export default function Home() {
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-3">
-                                    {filteredProducts.map((product, index) => renderProductCard(product, index, false, false))}
+                                    {filteredProducts.map((product, index) => renderProductCard(product, index, false))}
                                 </div>
                             )}
                         </div>
