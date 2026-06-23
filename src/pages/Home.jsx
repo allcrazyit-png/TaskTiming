@@ -372,6 +372,33 @@ export default function Home() {
         });
     };
 
+    const handleStartCustomWork = () => {
+        if (!selectedOperator) {
+            alert(t('login_required_work') + " (Please select an operator first)");
+            return;
+        }
+
+        if (!customProductName.trim()) {
+            alert(t('login_required_custom') + " (Custom product name is required)");
+            return;
+        }
+
+        // Scroll to top before navigating
+        window.scrollTo(0, 0);
+
+        navigate('/input', {
+            state: {
+                productName: customProductName.trim(),
+                partNumber: "",
+                carModel: "未指定",
+                standardTime: 0,
+                operator: selectedOperator,
+                productImage: null,
+                category: null
+            }
+        });
+    };
+
 
     // Extract unique filter options
     const uniqueCarModels = useMemo(() => {
