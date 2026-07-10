@@ -120,6 +120,95 @@ html.text-large {
   to { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
+.home-weather-strip {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 18px;
+  border: 1px solid rgb(255 255 255 / 0.55);
+  background: rgb(255 255 255 / 0.72);
+  padding: 8px 10px;
+  box-shadow: 0 8px 22px rgb(15 23 42 / 0.06);
+  backdrop-filter: blur(10px);
+}
+
+.dark .home-weather-strip {
+  border-color: rgb(255 255 255 / 0.08);
+  background: rgb(15 23 42 / 0.48);
+}
+
+.home-weather-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+}
+
+@keyframes weatherSunPulse {
+  0%, 100% { transform: scale(0.96); opacity: 0.82; }
+  50% { transform: scale(1.04); opacity: 1; }
+}
+
+@keyframes weatherCloudDrift {
+  0%, 100% { transform: translateX(-1px); }
+  50% { transform: translateX(3px); }
+}
+
+@keyframes weatherRainFall {
+  0% { transform: translateY(-3px); opacity: 0.2; }
+  35% { opacity: 1; }
+  100% { transform: translateY(8px); opacity: 0.15; }
+}
+
+@keyframes weatherFogDrift {
+  0%, 100% { transform: translateX(-3px); opacity: 0.55; }
+  50% { transform: translateX(4px); opacity: 1; }
+}
+
+@keyframes weatherBoltFlash {
+  0%, 100% { opacity: 0.65; }
+  45%, 55% { opacity: 1; }
+}
+
+.weather-sun {
+  transform-origin: center;
+  animation: weatherSunPulse 2.8s ease-in-out infinite;
+}
+
+.weather-cloud {
+  animation: weatherCloudDrift 3.8s ease-in-out infinite;
+}
+
+.weather-rain {
+  animation: weatherRainFall 1.1s linear infinite;
+}
+
+.weather-rain-delay {
+  animation-delay: 0.2s;
+}
+
+.weather-rain-delay-2 {
+  animation-delay: 0.4s;
+}
+
+.weather-fog {
+  animation: weatherFogDrift 2.8s ease-in-out infinite;
+}
+
+.weather-bolt {
+  animation: weatherBoltFlash 1.7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .weather-sun,
+  .weather-cloud,
+  .weather-rain,
+  .weather-fog,
+  .weather-bolt {
+    animation: none;
+  }
+}
+
 @layer utilities {
   .animate-fadeIn {
     animation: fadeIn 0.2s ease-out both;

@@ -4,6 +4,92 @@ import { useTranslation } from 'react-i18next';
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
 
+function WeatherSvgIcon({ code }) {
+    if (code === 0) {
+        return (
+            <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
+                <circle className="weather-sun" cx="32" cy="32" r="13" fill="#fbbf24" />
+                <g stroke="#f59e0b" strokeWidth="4" strokeLinecap="round">
+                    <path d="M32 8v8" />
+                    <path d="M32 48v8" />
+                    <path d="M8 32h8" />
+                    <path d="M48 32h8" />
+                    <path d="M15 15l6 6" />
+                    <path d="M43 43l6 6" />
+                    <path d="M49 15l-6 6" />
+                    <path d="M21 43l-6 6" />
+                </g>
+            </svg>
+        );
+    }
+
+    if (code <= 3) {
+        return (
+            <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
+                <circle className="weather-sun" cx="24" cy="24" r="11" fill="#fbbf24" />
+                <path className="weather-cloud" d="M22 49h25c8 0 13-5 13-12s-6-12-13-12c-4-9-18-10-24-1-8 0-14 6-14 13s6 12 13 12z" fill="#dbeafe" stroke="#93c5fd" strokeWidth="3" />
+            </svg>
+        );
+    }
+
+    if (code <= 48) {
+        return (
+            <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
+                <path d="M15 23h35M9 34h47M16 45h37" fill="none" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" />
+                <path className="weather-fog" d="M8 28h46M14 39h42M8 50h34" fill="none" stroke="#cbd5e1" strokeWidth="5" strokeLinecap="round" />
+            </svg>
+        );
+    }
+
+    if (code >= 95) {
+        return (
+            <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
+                <path className="weather-cloud" d="M18 36h28c8 0 13-5 13-12s-6-12-13-12c-4-9-18-10-24-1-8 0-14 6-14 13s6 12 10 12z" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="3" />
+                <path className="weather-bolt" d="M35 35l-9 17h9l-5 10 16-20h-9l5-7z" fill="#facc15" />
+                <path className="weather-rain" d="M20 47l-4 8" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
+                <path className="weather-rain weather-rain-delay" d="M49 47l-4 8" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
+            </svg>
+        );
+    }
+
+    if (code <= 67 || (code >= 80 && code <= 82)) {
+        return (
+            <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
+                <path className="weather-cloud" d="M18 38h28c8 0 13-5 13-12s-6-12-13-12c-4-9-18-10-24-1-8 0-14 6-14 13s6 12 10 12z" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="3" />
+                <path className="weather-rain" d="M22 46l-5 9" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
+                <path className="weather-rain weather-rain-delay" d="M34 46l-5 9" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
+                <path className="weather-rain weather-rain-delay-2" d="M46 46l-5 9" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
+            </svg>
+        );
+    }
+
+    return (
+        <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
+            <path className="weather-cloud" d="M18 43h28c8 0 13-5 13-12s-6-12-13-12c-4-9-18-10-24-1-8 0-14 6-14 13s6 12 10 12z" fill="#dbeafe" stroke="#93c5fd" strokeWidth="3" />
+        </svg>
+    );
+}
+
+function WeatherInfo({ weather }) {
+    const today = new Date();
+    const dateText = `${today.toLocaleDateString('zh-TW')} (${['日', '一', '二', '三', '四', '五', '六'][today.getDay()]})`;
+
+    return (
+        <div className="home-weather-strip">
+            <WeatherSvgIcon code={weather?.code} />
+            <div className="min-w-0 flex-1">
+                <div className="text-sm font-black leading-tight text-slate-800 dark:text-slate-100">彰化埔鹽</div>
+                <div className="mt-0.5 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
+                    {weather ? `${weather.desc} · ${dateText}` : `天氣載入中 · ${dateText}`}
+                </div>
+            </div>
+            <div className="shrink-0 rounded-2xl bg-white px-3 py-1.5 text-xl font-black tabular-nums text-slate-900 shadow-sm dark:bg-slate-800 dark:text-slate-50">
+                {weather ? `${weather.temp}°C` : '--°C'}
+            </div>
+        </div>
+    );
+}
+
 export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
@@ -208,7 +294,8 @@ export default function Home() {
                     setWeather({
                         temp: Math.round(weatherData.current.temperature_2m),
                         icon,
-                        desc
+                        desc,
+                        code
                     });
                 }
 
@@ -920,25 +1007,8 @@ export default function Home() {
 
                         {/* Row 2: Date and Weather info (Only show when operator is selected to maintain focus) */}
                         {selectedOperator && (
-                            <div className="flex gap-2.5 mt-1 border-t border-slate-200/50 dark:border-slate-700/50 pt-3">
-                                <div className="flex items-center gap-1.5 bg-white/60 dark:bg-black/20 px-3 py-1.5 rounded-xl border border-white/50 dark:border-white/5 shadow-sm">
-                                    <span className="material-symbols-outlined text-blue-500 text-lg">calendar_today</span>
-                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                                        {new Date().toLocaleDateString('zh-TW')} ({['日', '一', '二', '三', '四', '五', '六'][new Date().getDay()]})
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center gap-1.5 bg-white/60 dark:bg-black/20 px-3 py-1.5 rounded-xl border border-white/50 dark:border-white/5 shadow-sm">
-                                    <span className="material-symbols-outlined text-orange-500 text-lg">location_on</span>
-                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">彰化埔鹽</span>
-                                    {weather ? (
-                                        <span className="text-sm font-black text-slate-800 dark:text-slate-200 ml-1 bg-white dark:bg-slate-800 px-2 py-0.5 rounded-md shadow-sm">
-                                            {weather.icon} {weather.temp}°C
-                                        </span>
-                                    ) : (
-                                        <span className="text-xs text-slate-400 ml-1">載入中</span>
-                                    )}
-                                </div>
+                            <div className="mt-1 border-t border-slate-200/50 pt-3 dark:border-slate-700/50">
+                                <WeatherInfo weather={weather} />
                             </div>
                         )}
                     </div>
