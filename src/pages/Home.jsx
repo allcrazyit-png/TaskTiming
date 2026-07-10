@@ -94,7 +94,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.12.1 LOADED - Manual work entry redesign and UI improvements");
+    console.log("VERSION 1.12.2 LOADED - Manual work entry redesign and UI improvements");
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({
@@ -1323,7 +1323,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.12.1
+                                    Version 1.12.2
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
@@ -1358,7 +1358,6 @@ export default function Home() {
                                     value={customProductName}
                                     onChange={(e) => setCustomProductName(e.target.value)}
                                     className="w-full h-12 px-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                    autoFocus
                                 />
                             </div>
 
