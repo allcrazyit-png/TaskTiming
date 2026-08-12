@@ -208,7 +208,7 @@ function syncTaskTimingEmployeesToSupabase() {
 
       try {
         var existingAuthUserId = existingEmployees[employee.employee_id] ||
-          authUsersByEmail[taskTimingEmployeeAuthEmail_(employee.employee_id)];
+          authUsersByEmail[taskTimingEmployeeAuthEmail_(employee.employee_id).toLowerCase()];
         var provisioned = taskTimingProvisionEmployeeAuth_(
           baseUrl, secret, employee, existingAuthUserId,
         );

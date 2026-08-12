@@ -18,12 +18,20 @@ vm.runInContext(employeeSyncSource, context);
 
 test('employee mirror is public-read-only and has no password column', async () => {
   const sql = await readFile(new URL('../supabase/task_timing_employees.sql', import.meta.url), 'utf8');
+  const tableDefinition = sql.match(/create table if not exists public\.task_timing_employees\s*\([\s\S]*?\);/i)?.[0];
 
   assert.match(sql, /create table if not exists public\.task_timing_employees/i);
+  assert.ok(tableDefinition);
   assert.match(sql, /employee_id text primary key/i);
-  assert.doesNotMatch(sql, /password/i);
+  assert.doesNotMatch(tableDefinition, /password/i);
+  assert.match(sql, /drop column if exists employee_password/i);
+  assert.match(sql, /add column if not exists auth_user_id uuid/i);
+  assert.match(sql, /alter column auth_user_id set not null/i);
+  assert.match(sql, /create unique index if not exists task_timing_employees_auth_user_id_idx/i);
   assert.match(sql, /enable row level security/i);
+  assert.match(sql, /revoke all on table public\.task_timing_employees from anon, authenticated/i);
   assert.match(sql, /grant select on public\.task_timing_employees to anon/i);
+  assert.match(sql, /drop policy if exists "Anonymous users can (insert|update|delete|write) task timing employees"/i);
   assert.match(sql, /for select to anon/i);
 });
 
@@ -102,6 +110,52 @@ test('retries an Auth-created employee by reconciling its email before public up
   assert.match(publicWrite.options.payload, /"auth_user_id":"auth-existing-uuid"/);
   assert.doesNotMatch(publicWrite.options.payload, /password/i);
   assert.match(alerts[0], /新增 0 筆、更新 1 筆、失敗 0 筆/);
+});
+
+test('retries an encoded employee email despite Auth returning lowercase percent escapes', () => {
+  const requests = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({ alert: () => {} }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['A/B', '王小美', ''],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      requests.push({ url, options });
+      if (url.includes('/rest/v1/task_timing_employees?select=')) {
+        return { getResponseCode: () => 200, getContentText: () => '[]' };
+      }
+      if (url.includes('/auth/v1/admin/users?')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { id: 'auth-slash-uuid', email: 'a%2fb@tasktiming.local' },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users/auth-slash-uuid')) {
+        return { getResponseCode: () => 200, getContentText: () => '{}' };
+      }
+      if (url.includes('/rest/v1/task_timing_employees?on_conflict=')) {
+        return { getResponseCode: () => 201, getContentText: () => '' };
+      }
+      throw new Error('Unexpected request: ' + url);
+    },
+  };
+
+  context.syncTaskTimingEmployeesToSupabase();
+  assert.equal(requests.some(request => request.url === 'https://example.supabase.co/auth/v1/admin/users' && request.options.method === 'post'), false);
+  assert.equal(requests.some(request => request.url.includes('/auth/v1/admin/users/auth-slash-uuid') && request.options.method === 'put'), true);
+  const publicWrite = requests.find(request => request.url.includes('/rest/v1/task_timing_employees?on_conflict='));
+  assert.match(publicWrite.options.payload, /"auth_user_id":"auth-slash-uuid"/);
 });
 
 test('paginates the existing public employee roster with Range headers', () => {
