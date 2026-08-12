@@ -43,6 +43,42 @@ test('fetches public employees ordered by name', async () => {
   }
 });
 
+test('fetches every employee page when the mirror exceeds the PostgREST page size', async () => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  const firstPage = Array.from({ length: 1000 }, (_, index) => ({
+    employee_id: `E${index}`, employee_name: `員工${index}`,
+  }));
+  const lastPage = [{ employee_id: 'E1000', employee_name: '員工1000' }];
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, options });
+    return {
+      ok: true,
+      status: 200,
+      json: async () => (requests.length === 1 ? firstPage : lastPage),
+    };
+  };
+  try {
+    const controller = new AbortController();
+    const employees = await fetchTaskTimingEmployees({
+      supabaseUrl: 'https://example.supabase.co',
+      publishableKey: 'test-key',
+      signal: controller.signal,
+    });
+
+    assert.equal(employees.length, 1001);
+    assert.equal(requests.length, 2);
+    assert.match(requests[0].url, /order=employee_name\.asc,employee_id\.asc/);
+    assert.equal(requests[0].options.headers.apikey, 'test-key');
+    assert.equal(requests[0].options.signal, controller.signal);
+    assert.equal(requests[0].options.headers.Range, '0-999');
+    assert.equal(requests[1].options.headers.Range, '1000-1999');
+    assert.equal(employees.at(-1)['員工編號'], 'E1000');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('accepts only an Auth session belonging to the selected employee', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => ({

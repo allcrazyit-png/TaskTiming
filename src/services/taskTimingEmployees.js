@@ -1,6 +1,7 @@
 const env = import.meta.env ?? {};
 const SUPABASE_URL = env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const EMPLOYEE_PAGE_SIZE = 1000;
 
 export function employeeAuthEmail(employeeId) {
   const id = String(employeeId ?? '').trim().toLowerCase();
@@ -24,13 +25,25 @@ export async function fetchTaskTimingEmployees({
     throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY');
   }
 
-  const response = await fetch(
-    `${supabaseUrl}/rest/v1/task_timing_employees?select=employee_id,employee_name&order=employee_name.asc,employee_id.asc`,
-    { headers: { apikey: publishableKey }, signal },
-  );
-  if (!response.ok) throw new Error(`Supabase employees request failed: ${response.status}`);
+  const endpoint = `${supabaseUrl}/rest/v1/task_timing_employees?select=employee_id,employee_name&order=employee_name.asc,employee_id.asc`;
+  const rows = [];
 
-  return (await response.json())
+  for (let offset = 0; ; offset += EMPLOYEE_PAGE_SIZE) {
+    const response = await fetch(endpoint, {
+      headers: {
+        apikey: publishableKey,
+        Range: `${offset}-${offset + EMPLOYEE_PAGE_SIZE - 1}`,
+      },
+      signal,
+    });
+    if (!response.ok) throw new Error(`Supabase employees request failed: ${response.status}`);
+
+    const page = await response.json();
+    rows.push(...page);
+    if (page.length < EMPLOYEE_PAGE_SIZE) break;
+  }
+
+  return rows
     .map(mapTaskTimingEmployee)
     .filter(employee => employee['員工編號'] && employee['姓名']);
 }
