@@ -29,7 +29,7 @@ export async function fetchTaskTimingProducts({
   if (!supabaseUrl || !publishableKey) {
     throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY');
   }
-  const endpoint = `${supabaseUrl}/rest/v1/task_timing_products?select=part_number,product_name,car_model,category,ct_time_seconds,product_image&category=neq.%E5%B0%84%E5%87%BA&order=part_number.asc`;
+  const endpoint = `${supabaseUrl}/rest/v1/task_timing_products?select=part_number,product_name,car_model,category,ct_time_seconds,product_image&category=neq.%E5%B0%84%E5%87%BA&order=part_number.asc,category.asc`;
   const rows = [];
 
   for (let offset = 0; ; offset += PRODUCT_PAGE_SIZE) {

@@ -23,6 +23,15 @@ test('excludes injection products from the assembly product list', () => {
   ]).map(product => product['品番']), ['A']);
 });
 
+test('keeps same part numbers when their operations differ', () => {
+  assert.deepEqual(selectAssemblyProducts([
+    { part_number: 'A', product_name: '組裝', car_model: 'M', category: '組裝' },
+    { part_number: 'A', product_name: '包裝', car_model: 'M', category: '包裝' },
+  ]).map(product => [product['品番'], product['類別']]), [
+    ['A', '組裝'], ['A', '包裝'],
+  ]);
+});
+
 test('fetches every product page when the mirror exceeds the PostgREST page size', async () => {
   const originalFetch = globalThis.fetch;
   const requests = [];
@@ -53,7 +62,7 @@ test('fetches every product page when the mirror exceeds the PostgREST page size
     assert.equal(products.length, 1001);
     assert.equal(requests.length, 2);
     assert.match(requests[0].url, /category=neq\.%E5%B0%84%E5%87%BA/);
-    assert.match(requests[0].url, /order=part_number\.asc/);
+    assert.match(requests[0].url, /order=part_number\.asc,category\.asc/);
     assert.equal(requests[0].options.headers.apikey, 'sb_publishable_test');
     assert.equal(requests[0].options.signal, controller.signal);
     assert.equal(requests[0].options.headers.Range, '0-999');
