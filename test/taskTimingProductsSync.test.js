@@ -25,3 +25,66 @@ test('keeps only the last product-master row for duplicate part numbers', () => 
     ],
   );
 });
+
+function createProductSyncContext({ rows, existingPartNumbers, upsertStatus = 201 }) {
+  const requests = [];
+  const alerts = [];
+  const context = {
+    PropertiesService: {
+      getScriptProperties: () => ({
+        getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+      }),
+    },
+    SpreadsheetApp: {
+      getActiveSpreadsheet: () => ({
+        getSheetByName: () => ({ getDataRange: () => ({ getValues: () => rows }) }),
+      }),
+      getUi: () => ({ alert: message => alerts.push(message) }),
+    },
+    UrlFetchApp: {
+      fetch: (url, options) => {
+        requests.push({ url, options });
+        const isRead = options.method === 'get';
+        const isDelete = options.method === 'delete';
+        const status = isRead || isDelete ? 200 : upsertStatus;
+        return {
+          getResponseCode: () => status,
+          getContentText: () => isRead
+            ? JSON.stringify(existingPartNumbers.map(part_number => ({ part_number })))
+            : '',
+        };
+      },
+    },
+    encodeURIComponent,
+  };
+  vm.runInNewContext(syncSource, context);
+  return { context, requests, alerts };
+}
+
+test('sync deletes Supabase products missing from the current Sheet master', () => {
+  const { context, requests, alerts } = createProductSyncContext({
+    rows: [['品番', '品名'], ['A', 'A 品'], ['B', 'B 品']],
+    existingPartNumbers: ['A', 'B', 'OLD'],
+  });
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(context.syncTaskTimingProductsToSupabase())),
+    { synced: 2, deleted: 1 },
+  );
+  const deletes = requests.filter(request => request.options.method === 'delete');
+  assert.equal(deletes.length, 1);
+  assert.match(deletes[0].url, /part_number=eq\.OLD/);
+  assert.match(alerts[0], /已同步 2 筆產品，刪除 1 筆舊產品/);
+});
+
+test('sync does not delete products when an upsert fails', () => {
+  const { context, requests } = createProductSyncContext({
+    rows: [['品番', '品名'], ['A', 'A 品']],
+    existingPartNumbers: ['A', 'OLD'],
+    upsertStatus: 500,
+  });
+
+  assert.throws(() => context.syncTaskTimingProductsToSupabase(), /Supabase 500/);
+  assert.equal(requests.filter(request => request.options.method === 'get').length, 0);
+  assert.equal(requests.filter(request => request.options.method === 'delete').length, 0);
+});

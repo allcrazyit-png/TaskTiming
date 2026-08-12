@@ -45,6 +45,54 @@ function dedupeTaskTimingProducts_(products) {
   return uniqueProducts.reverse();
 }
 
+function taskTimingObsoleteProductPartNumbers_(existingRows, currentProducts) {
+  var currentPartNumbers = {};
+  currentProducts.forEach(function (product) {
+    currentPartNumbers[product.part_number] = true;
+  });
+  return existingRows.map(function (row) {
+    return String(row.part_number || '').trim();
+  }).filter(function (partNumber) {
+    return partNumber && !currentPartNumbers[partNumber];
+  });
+}
+
+function taskTimingReadSupabaseProductPartNumbers_(baseUrl, secret) {
+  var response = UrlFetchApp.fetch(baseUrl + '/rest/v1/task_timing_products?select=part_number', {
+    method: 'get',
+    headers: {
+      apikey: secret,
+      Authorization: 'Bearer ' + secret,
+    },
+    muteHttpExceptions: true,
+  });
+  var status = response.getResponseCode();
+  if (status < 200 || status >= 300) {
+    throw new Error('讀取 Supabase 產品失敗 ' + status + ': ' + response.getContentText());
+  }
+  var rows = JSON.parse(response.getContentText());
+  if (!Array.isArray(rows)) throw new Error('讀取 Supabase 產品失敗：回應不是陣列');
+  return rows;
+}
+
+function taskTimingDeleteSupabaseProduct_(baseUrl, secret, partNumber) {
+  var response = UrlFetchApp.fetch(
+    baseUrl + '/rest/v1/task_timing_products?part_number=eq.' + encodeURIComponent(partNumber),
+    {
+      method: 'delete',
+      headers: {
+        apikey: secret,
+        Authorization: 'Bearer ' + secret,
+      },
+      muteHttpExceptions: true,
+    },
+  );
+  var status = response.getResponseCode();
+  if (status < 200 || status >= 300) {
+    throw new Error('刪除 Supabase 舊產品失敗 ' + partNumber + ' ' + status + ': ' + response.getContentText());
+  }
+}
+
 function syncTaskTimingProductsToSupabase() {
   try {
     var properties = PropertiesService.getScriptProperties();
@@ -76,7 +124,8 @@ function syncTaskTimingProductsToSupabase() {
     products = dedupeTaskTimingProducts_(products);
     if (products.length === 0) throw new Error('產品主檔沒有任何非空白品番資料');
 
-    var endpoint = url.replace(/\/$/, '') +
+    var baseUrl = url.replace(/\/$/, '');
+    var endpoint = baseUrl +
       '/rest/v1/task_timing_products?on_conflict=part_number';
     for (var start = 0; start < products.length; start += TASK_TIMING_SYNC_BATCH_SIZE) {
       var batch = products.slice(start, start + TASK_TIMING_SYNC_BATCH_SIZE);
@@ -97,8 +146,17 @@ function syncTaskTimingProductsToSupabase() {
       }
     }
 
-    SpreadsheetApp.getUi().alert('同步完成：已同步 ' + products.length + ' 筆產品。');
-    return products.length;
+    var existingRows = taskTimingReadSupabaseProductPartNumbers_(baseUrl, secret);
+    var obsoletePartNumbers = taskTimingObsoleteProductPartNumbers_(existingRows, products);
+    obsoletePartNumbers.forEach(function (partNumber) {
+      taskTimingDeleteSupabaseProduct_(baseUrl, secret, partNumber);
+    });
+
+    var result = { synced: products.length, deleted: obsoletePartNumbers.length };
+    SpreadsheetApp.getUi().alert(
+      '同步完成：已同步 ' + result.synced + ' 筆產品，刪除 ' + result.deleted + ' 筆舊產品。',
+    );
+    return result;
   } catch (error) {
     var message = error && error.message ? error.message : String(error);
     SpreadsheetApp.getUi().alert('同步失敗：' + message);
