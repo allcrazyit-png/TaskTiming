@@ -77,6 +77,37 @@ function taskTimingExistingEmployees_(baseUrl, secret) {
   return employees;
 }
 
+// An Auth user can exist even if a prior run failed before the public mirror
+// was written. Looking it up by the canonical email makes reruns idempotent.
+function taskTimingAuthUsersByEmail_(baseUrl, secret) {
+  var usersByEmail = {};
+  var page = 1;
+  var pageSize = 1000;
+
+  while (true) {
+    var response = taskTimingSupabaseRequest_(
+      baseUrl + '/auth/v1/admin/users?page=' + page + '&per_page=' + pageSize,
+      {
+        method: 'get',
+        headers: { apikey: secret, Authorization: 'Bearer ' + secret },
+        muteHttpExceptions: true,
+      },
+      '讀取既有 Auth 帳號',
+    );
+    var body = JSON.parse(response.getContentText() || '{}');
+    var users = Array.isArray(body) ? body : (body.users || []);
+    users.forEach(function (user) {
+      if (user.id && user.email) {
+        usersByEmail[String(user.email).trim().toLowerCase()] = String(user.id);
+      }
+    });
+    if (users.length < pageSize) break;
+    page += 1;
+  }
+
+  return usersByEmail;
+}
+
 function taskTimingProvisionEmployeeAuth_(baseUrl, secret, employee, authUserId) {
   var userPayload = {
     user_metadata: {
@@ -159,6 +190,7 @@ function syncTaskTimingEmployeesToSupabase() {
     if (headers.indexOf('姓名') === -1) throw new Error('員工資料缺少必要欄位：姓名');
 
     var existingEmployees = taskTimingExistingEmployees_(baseUrl, secret);
+    var authUsersByEmail = taskTimingAuthUsersByEmail_(baseUrl, secret);
     var pending = [];
     var created = 0;
     var updated = 0;
@@ -175,8 +207,10 @@ function syncTaskTimingEmployeesToSupabase() {
       seenIds[employee.employee_id] = true;
 
       try {
+        var existingAuthUserId = existingEmployees[employee.employee_id] ||
+          authUsersByEmail[taskTimingEmployeeAuthEmail_(employee.employee_id)];
         var provisioned = taskTimingProvisionEmployeeAuth_(
-          baseUrl, secret, employee, existingEmployees[employee.employee_id],
+          baseUrl, secret, employee, existingAuthUserId,
         );
         pending.push({
           employee_id: employee.employee_id,
