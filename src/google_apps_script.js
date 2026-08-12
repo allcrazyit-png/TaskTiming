@@ -1,7 +1,47 @@
 const PRODUCTS_SS_ID = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ'; // 產品資料表 (讀)
 const RECORDS_SS_ID = '1xo4YhDuxh-wpstg7tmAqW4orB9aBheF1CUFzM1TDWKw';  // 組裝紀錄表 (寫)
 
+// 讀整張試算表在 GAS 上要 10～30 秒，但產品與員工資料一天內幾乎不變。
+// 用 CacheService 把組好的 JSON 存起來，命中時直接回傳，可從 17 秒降到 1 秒內。
+var CACHE_TTL_SECONDS = 600; // 10 分鐘
+
 function doGet(e) {
+    // 紀錄表不快取：作業員上傳後會馬上去看戰報，拿到 10 分鐘前的舊資料等於錯的。
+    // 產品表與員工資料一天內幾乎不變，才是快取的對象。
+    var cacheable = (e.parameter.action !== 'records') && !e.parameter.nocache;
+
+    // 用完整的查詢參數當快取鍵，不同的篩選條件各自快取
+    var cacheKey = 'v1_' + JSON.stringify(e.parameter);
+    var cache = CacheService.getScriptCache();
+
+    if (cacheable) {
+        try {
+            var hit = cache.get(cacheKey);
+            if (hit) {
+                return ContentService.createTextOutput(hit)
+                    .setMimeType(ContentService.MimeType.JSON);
+            }
+        } catch (err) {
+            // 快取讀取失敗就當作沒命中，繼續往下走
+        }
+    }
+
+    var payload = buildPayload(e);
+
+    // CacheService 單筆上限 100KB，超過就不快取（直接回傳仍然正常）
+    try {
+        if (cacheable && payload.length < 100000) {
+            cache.put(cacheKey, payload, CACHE_TTL_SECONDS);
+        }
+    } catch (err) {
+        // 快取寫入失敗不影響回應
+    }
+
+    return ContentService.createTextOutput(payload)
+        .setMimeType(ContentService.MimeType.JSON);
+}
+
+function buildPayload(e) {
     // action=records → 讀紀錄表；其他 → 讀產品資料表
     var ssId = (e.parameter.action === 'records') ? RECORDS_SS_ID : PRODUCTS_SS_ID;
 
@@ -23,11 +63,33 @@ function doGet(e) {
         sheet = ss.getSheets()[0];
     }
 
-    if (!sheet) {
-        return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "找不到工作表" })).setMimeType(ContentService.MimeType.JSON);
+    // 紀錄表裡並沒有叫「紀錄」的分頁（實際是第一個分頁），
+    // 所以找不到指定名稱時退回第一個分頁 —— doPost 本來就是這樣做的。
+    // 少了這段，前端算漏傳天數與戰報都會拿到「找不到工作表」。
+    if (!sheet && e.parameter.action === 'records') {
+        sheet = ss.getSheets()[0];
     }
 
-    var data = sheet.getDataRange().getValues();
+    if (!sheet) {
+        return JSON.stringify({ "result": "error", "message": "找不到工作表" });
+    }
+
+    // ?lastRows=N → 只讀最後 N 筆（加上標題列）。
+    // 紀錄表已經大到整張讀取會超時（實測 40 秒後回 404），
+    // 而戰報與漏傳天數都只需要最近的資料。紀錄是用 appendRow 依時間往下加，
+    // 所以「最後 N 筆」就是「最近 N 筆」。
+    var lastRowsParam = parseInt(e.parameter.lastRows, 10);
+    var data;
+    var lastRow = sheet.getLastRow();
+    if (lastRowsParam > 0 && lastRow > 1) {
+        var lastCol = sheet.getLastColumn();
+        var headerRow = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+        var takeRows = Math.min(lastRow - 1, lastRowsParam);
+        var body = sheet.getRange(lastRow - takeRows + 1, 1, takeRows, lastCol).getValues();
+        data = [headerRow].concat(body);
+    } else {
+        data = sheet.getDataRange().getValues();
+    }
     var headers = data[0];
     var jsonArray = [];
 
@@ -92,16 +154,15 @@ function doGet(e) {
 
     // 調試模式：如果沒找到任何產品，回傳前 15 個欄位名稱供研究
     if (jsonArray.length === 0 && prune) {
-        return ContentService.createTextOutput(JSON.stringify({
+        return JSON.stringify({
             "result": "debug",
             "message": "找不到符合條件的產品",
             "detected_headers": headers.slice(0, 15),
             "clean_headers": headers.slice(0, 15).map(function (h) { return h.replace(/\[.*?\]/g, "").trim(); })
-        })).setMimeType(ContentService.MimeType.JSON);
+        });
     }
 
-    return ContentService.createTextOutput(JSON.stringify(jsonArray))
-        .setMimeType(ContentService.MimeType.JSON);
+    return JSON.stringify(jsonArray);
 }
 
 function doPost(e) {

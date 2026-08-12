@@ -61,7 +61,8 @@ export default function BattleReport() {
                 setLoading(true);
                 // 戰報讀「組裝紀錄表」，GAS 內部知道要去哪裡讀，前端不需要知道 ID
                 const sheetParam = encodeURIComponent('紀錄');
-                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=records&sheet=${sheetParam}`);
+                // lastRows：戰報只看當日資料，不需要整張紀錄表（整張讀會讓 GAS 超時）
+                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=records&sheet=${sheetParam}&lastRows=3000`);
 
                 if (!res.ok) throw new Error('HTTP error ' + res.status);
                 let data = await res.json();
@@ -69,7 +70,7 @@ export default function BattleReport() {
 
                 if (!Array.isArray(data)) {
                     console.warn('[BattleReport] Sheet name "紀錄" not found, trying index=0...');
-                    const res2 = await fetch(`${GOOGLE_SCRIPT_URL}?action=records&index=0`);
+                    const res2 = await fetch(`${GOOGLE_SCRIPT_URL}?action=records&index=0&lastRows=3000`);
                     data = await res2.json();
                 }
 

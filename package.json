@@ -1,13 +1,14 @@
 {
   "name": "stitch-app",
   "private": true,
-  "version": "1.12.2",
+  "version": "1.14.0",
   "type": "module",
   "homepage": "https://allcrazyit-png.github.io/TaskTiming/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test": "node --test test/*.test.js",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"

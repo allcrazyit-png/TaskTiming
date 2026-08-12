@@ -317,6 +317,13 @@ test('refuses to create Auth users with a blank password', () => {
   );
 });
 
+test('includes a safe per-employee reason when an Auth request fails', () => {
+  assert.match(
+    employeeSyncSource,
+    /failures\.push\(employee\.employee_id \+ '（' \+ taskTimingEmployeeSyncErrorMessage_\(error\) \+ '）'\);/,
+  );
+});
+
 test('reports a new employee with blank password without creating Auth or public mirror rows', () => {
   const requests = [];
   const alerts = [];

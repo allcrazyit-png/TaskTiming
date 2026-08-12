@@ -42,9 +42,17 @@ function taskTimingSupabaseRequest_(endpoint, options, description) {
   var response = UrlFetchApp.fetch(endpoint, options);
   var status = response.getResponseCode();
   if (status < 200 || status >= 300) {
-    throw new Error(description + ' failed (' + status + ')');
+    // Response bodies may identify the rejected field, but never include the
+    // secret or request payload in an operator-facing error.
+    var details = String(response.getContentText() || '').replace(/[\r\n]+/g, ' ').slice(0, 240);
+    throw new Error(description + ' failed (' + status + ')' + (details ? ': ' + details : ''));
   }
   return response;
+}
+
+function taskTimingEmployeeSyncErrorMessage_(error) {
+  var message = error && error.message ? String(error.message) : '未知錯誤';
+  return message.replace(/[\r\n]+/g, ' ').slice(0, 240);
 }
 
 function taskTimingExistingEmployees_(baseUrl, secret) {
@@ -294,7 +302,7 @@ function syncTaskTimingEmployeesToSupabase() {
           created: provisioned.created,
         });
       } catch (error) {
-        failures.push(employee.employee_id);
+        failures.push(employee.employee_id + '（' + taskTimingEmployeeSyncErrorMessage_(error) + '）');
       }
     });
 
