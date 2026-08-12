@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import {
   employeeAuthEmail,
   fetchTaskTimingEmployees,
@@ -116,4 +117,12 @@ test('rejects an Auth session that belongs to another employee', async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test('Home delegates employee loading and password validation to the employee service', async () => {
+  const home = await readFile(new URL('../src/pages/Home.jsx', import.meta.url), 'utf8');
+  assert.match(home, /import \{ fetchTaskTimingEmployees, verifyTaskTimingEmployeePassword \} from '\.\.\/services\/taskTimingEmployees';/);
+  assert.match(home, /fetchTaskTimingEmployees\(\{ signal: employeeController\.signal \}\)/);
+  assert.match(home, /await verifyTaskTimingEmployeePassword\(\{/);
+  assert.doesNotMatch(home, /const correctPassword = String\(tempOperator\['密碼'\]/);
 });

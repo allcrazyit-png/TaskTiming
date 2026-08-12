@@ -1,8 +1,37 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { fetchTaskTimingEmployees, verifyTaskTimingEmployeePassword } from '../services/taskTimingEmployees';
+import { fetchTaskTimingProducts } from '../services/taskTimingProducts';
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
+
+// GAS 實測：員工清單只有 684 bytes，卻要 1.7～62 秒，而且五次裡會失敗三次。
+// 所以永遠不讓畫面等網路 —— 只要本機存過資料就直接畫出來，網路在背景慢慢更新。
+// 刻意不設過期時間：員工名單幾個月才變一次，讓作業員每天早上重等一次 60 秒是最糟的選擇。
+const CACHE_KEY_PRODUCTS = 'cache_products_v1';
+const CACHE_KEY_EMPLOYEES = 'cache_employees_v1';
+
+function readCache(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return null;
+        const { data } = JSON.parse(raw);
+        if (!Array.isArray(data) || data.length === 0) return null;
+        return data;
+    } catch {
+        return null;
+    }
+}
+
+function writeCache(key, data) {
+    try {
+        localStorage.setItem(key, JSON.stringify({ at: Date.now(), data }));
+    } catch (err) {
+        // localStorage 滿了或無痕模式，忽略即可
+        console.warn('Cache write failed:', key, err);
+    }
+}
 
 function WeatherSvgIcon({ code }) {
     if (code === 0) {
@@ -94,16 +123,16 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.12.2 LOADED - Manual work entry redesign and UI improvements");
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    console.log("VERSION 1.13.0 LOADED - Manual work entry redesign and UI improvements");
+    const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
+    const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
         category: '',
         carModel: '',
         partNumber: ''
     });
 
-    const [employees, setEmployees] = useState([]);
+    const [employees, setEmployees] = useState(() => readCache(CACHE_KEY_EMPLOYEES) || []);
     const [selectedOperator, setSelectedOperator] = useState('');
     const [operatorHistory, setOperatorHistory] = useState([]); // Added state for today's history
     const [favoriteProducts, setFavoriteProducts] = useState([]); // Store array of favorite `品番`
@@ -117,6 +146,7 @@ export default function Home() {
     const [passwordInput, setPasswordInput] = useState('');
     const [tempOperator, setTempOperator] = useState(null);
     const [passwordError, setPasswordError] = useState(false);
+    const [isVerifyingPassword, setIsVerifyingPassword] = useState(false);
 
     // History Modal State
     const [showHistoryPopup, setShowHistoryPopup] = useState(false);
@@ -190,15 +220,12 @@ export default function Home() {
         if (!match) return;
         const operatorId = match[1];
         setMissingWorkDays(null); // 重置為載入中
-        const recordsUrl = `${GOOGLE_SCRIPT_URL}?action=records&sheet=${encodeURIComponent('紀錄')}`;
+        // lastRows：只要最近的紀錄就夠算漏傳天數，避免 GAS 撈整張表而超時
+        const recordsUrl = `${GOOGLE_SCRIPT_URL}?action=records&sheet=${encodeURIComponent('紀錄')}&lastRows=3000`;
         fetch(recordsUrl)
             .then(res => res.json())
-            .then(data => {
-                if (!Array.isArray(data)) {
-                    return fetch(`${GOOGLE_SCRIPT_URL}?action=records&index=0`).then(r => r.json());
-                }
-                return data;
-            })
+            // 不再退回 ?action=records&index=0：那會讓 GAS 撈整張紀錄表，
+            // 實測要 40 秒以上而且最後回 404，只是白白拖慢首頁。
             .then(data => {
                 if (Array.isArray(data)) {
                     const missing = calcConsecutiveMissingDays(data, operatorId);
@@ -240,47 +267,36 @@ export default function Home() {
         localStorage.setItem('appFontSize', fontSize);
     }, [fontSize]);
 
-    // Fetch and parse CSV data
+    // Fetch homepage data
+    // 三個來源各自獨立更新畫面，不互相等待：
+    // 員工清單只有幾百 bytes，但產品表在 GAS 上要 10～30 秒。
+    // 先前用 Promise.all 一起等，導致「請選擇您的名字」被最慢的產品請求卡住。
     useEffect(() => {
-        const loadAllData = async () => {
-            try {
-                setLoading(true);
+        // 1. 員工清單：由 Supabase 鏡像讀取。失敗時保留目前的 localStorage 快取。
+        const employeeController = new AbortController();
+        fetchTaskTimingEmployees({ signal: employeeController.signal })
+            .then(employeeData => {
+                setEmployees(employeeData);
+                writeCache(CACHE_KEY_EMPLOYEES, employeeData);
+            })
+            .catch(error => console.warn('Supabase employee load failed; retaining local cache.', error));
 
-                // Start all fetches in parallel
-                // 優化：加上伺服器端過濾參數，並相容「記錄」與「紀錄」兩種寫法
-                const prunePattern = '組裝記錄表|組裝紀錄表';
-                const productUrl = `${GOOGLE_SCRIPT_URL}?index=0&includeCol=${encodeURIComponent('類別')}&excludeVal=${encodeURIComponent('射出')}&prune=${encodeURIComponent(prunePattern)}&strip=${encodeURIComponent(prunePattern)}`;
-                const employeeUrl = `${GOOGLE_SCRIPT_URL}?sheet=${encodeURIComponent('員工資料')}`;
-                const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=23.9972&longitude=120.4638&current=temperature_2m,weather_code&timezone=Asia%2FTaipei';
+        // 2. 產品表：由 Supabase 鏡像讀取。失敗時保留目前的 localStorage 快取。
+        const productController = new AbortController();
+        fetchTaskTimingProducts({ signal: productController.signal })
+            .then(productData => {
+                setProducts(productData);
+                writeCache(CACHE_KEY_PRODUCTS, productData);
+                console.log('Products loaded from Supabase:', productData.length);
+            })
+            .catch(error => console.warn('Supabase product load failed; retaining local cache.', error))
+            .finally(() => setLoading(false));
 
-                const [pRes, eRes, wRes] = await Promise.all([
-                    fetch(productUrl).catch(err => { console.error('Product Fetch Error:', err); return { ok: false }; }),
-                    fetch(employeeUrl).catch(err => { console.error('Employee Fetch Error:', err); return { ok: false }; }),
-                    fetch(weatherUrl).catch(err => { console.error('Weather Fetch Error:', err); return { ok: false }; })
-                ]);
-
-                // Parse JSON in parallel
-                const [productData, employeeData, weatherData] = await Promise.all([
-                    (pRes && pRes.ok) ? pRes.json().catch(() => null) : Promise.resolve(null),
-                    (eRes && eRes.ok) ? eRes.json().catch(() => null) : Promise.resolve(null),
-                    (wRes && wRes.ok) ? wRes.json().catch(() => null) : Promise.resolve(null)
-                ]);
-
-                // 1. Process Products (由於伺服器端已經剪裁與過濾，這裡邏輯變輕了)
-                if (Array.isArray(productData)) {
-                    // data should already be filtered and pruned by GAS
-                    const validProducts = productData.filter(item => item['車型'] && item['品番']);
-                    setProducts(validProducts);
-                    console.log("Extreme Optimized Products Loaded:", validProducts.length);
-                }
-
-                // 2. Process Employees
-                if (Array.isArray(employeeData) && employeeData.length > 0) {
-                    const validEmployees = employeeData.filter(item => item['姓名']);
-                    setEmployees(validEmployees);
-                }
-
-                // 3. Process Weather
+        // 3. 天氣（純裝飾，失敗也無所謂）
+        const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=23.9972&longitude=120.4638&current=temperature_2m,weather_code&timezone=Asia%2FTaipei';
+        fetch(weatherUrl)
+            .then(res => res.ok ? res.json() : null)
+            .then(weatherData => {
                 if (weatherData && weatherData.current) {
                     const code = weatherData.current.weather_code;
                     let icon = '☁️';
@@ -298,16 +314,35 @@ export default function Home() {
                         code
                     });
                 }
+            })
+            .catch(err => console.error('Weather Fetch Error:', err));
 
-            } catch (error) {
-                console.error('Error loading homepage data:', error);
-            } finally {
-                setLoading(false);
-            }
+        return () => {
+            employeeController.abort();
+            productController.abort();
         };
-
-        loadAllData();
     }, []);
+
+    // 必須宣告在下面的 useEffect 之前，否則會有 TDZ 問題
+    const loadOperatorHistory = (id) => {
+        try {
+            const historyKey = `uploadHistory_${id}`;
+            const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
+            setOperatorHistory(existingHistory);
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const loadOperatorFavorites = (id) => {
+        try {
+            const favoritesKey = `favoriteProducts_${id}`;
+            const existingFavorites = JSON.parse(localStorage.getItem(favoritesKey) || '[]');
+            setFavoriteProducts(existingFavorites);
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     // Restore session when employees are loaded
     useEffect(() => {
@@ -373,26 +408,6 @@ export default function Home() {
         }
     };
 
-    const loadOperatorHistory = (id) => {
-        try {
-            const historyKey = `uploadHistory_${id}`;
-            const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
-            setOperatorHistory(existingHistory);
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
-    const loadOperatorFavorites = (id) => {
-        try {
-            const favoritesKey = `favoriteProducts_${id}`;
-            const existingFavorites = JSON.parse(localStorage.getItem(favoritesKey) || '[]');
-            setFavoriteProducts(existingFavorites);
-        } catch (e) {
-            console.error(e);
-        }
-    };
-
     const toggleFavorite = (e, partNumber, category) => {
         e.stopPropagation(); // Prevent product card click if overlapping
         if (!selectedOperator) {
@@ -423,13 +438,16 @@ export default function Home() {
         });
     };
 
-    const verifyPassword = () => {
-        if (!tempOperator) return;
+    const verifyPassword = async () => {
+        if (!tempOperator || isVerifyingPassword) return;
 
-        // Default to ID if no password set, otherwise compare
-        const correctPassword = String(tempOperator['密碼'] || tempOperator['員工編號'] || '');
-
-        if (passwordInput === correctPassword) {
+        setIsVerifyingPassword(true);
+        setPasswordError(false);
+        try {
+            await verifyTaskTimingEmployeePassword({
+                employeeId: tempOperator['員工編號'],
+                password: passwordInput,
+            });
             const operatorStr = `[${tempOperator['員工編號']}] ${tempOperator['姓名']}`;
             setSelectedOperator(operatorStr);
             localStorage.setItem('savedOperatorId', tempOperator['員工編號']); // Save just the ID
@@ -437,8 +455,10 @@ export default function Home() {
             loadOperatorFavorites(tempOperator['員工編號']); // Load favorites
             setShowPasswordModal(false);
             setTempOperator(null);
-        } else {
+        } catch {
             setPasswordError(true);
+        } finally {
+            setIsVerifyingPassword(false);
         }
     };
 
@@ -745,6 +765,7 @@ export default function Home() {
                                 </div>
                                 <button
                                     onClick={verifyPassword}
+                                    disabled={isVerifyingPassword}
                                     className="w-full h-14 bg-primary text-white rounded-xl font-bold text-xl shadow-lg active:scale-95 transition-transform"
                                 >
                                     {t('confirm_login')}
@@ -840,6 +861,7 @@ export default function Home() {
 
                             <button
                                 onClick={verifyPassword}
+                                disabled={isVerifyingPassword}
                                 className="w-full h-12 bg-primary text-white rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-transform"
                             >
                                 {t('confirm_login')}
@@ -1323,7 +1345,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.12.2
+                                    Version 1.13.0
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
