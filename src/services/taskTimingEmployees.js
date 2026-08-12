@@ -5,7 +5,7 @@ const SUPABASE_PUBLISHABLE_KEY = env.VITE_SUPABASE_PUBLISHABLE_KEY;
 export function employeeAuthEmail(employeeId) {
   const id = String(employeeId ?? '').trim().toLowerCase();
   if (!id) throw new Error('Employee ID is required');
-  return `${id}@tasktiming.local`;
+  return `${encodeURIComponent(id)}@tasktiming.local`;
 }
 
 export function mapTaskTimingEmployee(row) {

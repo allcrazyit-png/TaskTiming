@@ -17,6 +17,10 @@ test('derives a stable internal Auth email from a trimmed lowercased employee ID
   assert.equal(employeeAuthEmail(' E01 '), 'e01@tasktiming.local');
 });
 
+test('encodes reserved characters in the internal Auth email local part', () => {
+  assert.equal(employeeAuthEmail(' A/B '), 'a%2Fb@tasktiming.local');
+});
+
 test('fetches public employees ordered by name', async () => {
   const originalFetch = globalThis.fetch;
   const requests = [];
