@@ -197,6 +197,85 @@ test('stops before any network request when distinct employee IDs collide after 
   assert.match(alerts[0], /員工編號 Auth email 衝突：E01、e01/);
 });
 
+test('stops before any network request for duplicate literal employee IDs', () => {
+  const requests = [];
+  const alerts = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({ alert: message => alerts.push(message) }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['E01', '王小美', 'pass-1'],
+          ['E01', '王小華', 'pass-2'],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = { fetch: (url, options) => requests.push({ url, options }) };
+
+  assert.throws(() => context.syncTaskTimingEmployeesToSupabase(), /員工編號重複：E01/);
+  assert.equal(requests.length, 0);
+  assert.match(alerts[0], /員工編號重複：E01/);
+});
+
+test('stops before writes when a canonical Auth email belongs to another literal employee ID', () => {
+  const requests = [];
+  const alerts = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({ alert: message => alerts.push(message) }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['e01', '王小美', 'pass'],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      requests.push({ url, options });
+      if (url.includes('/rest/v1/task_timing_employees?select=')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { employee_id: 'E01', auth_user_id: 'auth-e01-uuid' },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users?')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { id: 'auth-e01-uuid', email: 'e01@tasktiming.local', user_metadata: { employee_id: 'E01' } },
+        ]) };
+      }
+      throw new Error('Unexpected write: ' + url);
+    },
+  };
+
+  assert.throws(() => context.syncTaskTimingEmployeesToSupabase(), /員工資料歸屬衝突：e01/);
+  assert.equal(requests.some(request => request.options.method === 'post' || request.options.method === 'put'), false);
+  assert.match(alerts[0], /員工資料歸屬衝突：e01/);
+});
+
+test('refuses to create Auth users with a blank password', () => {
+  assert.throws(
+    () => context.taskTimingProvisionEmployeeAuth_(
+      'https://example.supabase.co', 'secret',
+      { employee_id: 'E03', employee_name: '王小美', password: '' },
+      null,
+    ),
+    /新員工必須填寫密碼/,
+  );
+});
+
 test('reports a new employee with blank password without creating Auth or public mirror rows', () => {
   const requests = [];
   const alerts = [];
@@ -246,7 +325,8 @@ test('paginates the existing public employee roster with Range headers', () => {
   };
 
   const employees = context.taskTimingExistingEmployees_('https://example.supabase.co', 'secret');
-  assert.equal(employees.E1000, 'uuid-1000');
+  assert.equal(employees.byEmployeeId.E1000, 'uuid-1000');
+  assert.equal(employees.employeeIdByAuthUserId['uuid-1000'], 'E1000');
   assert.equal(requests.length, 2);
   assert.equal(requests[0].options.headers.Range, '0-999');
   assert.equal(requests[1].options.headers.Range, '1000-1999');

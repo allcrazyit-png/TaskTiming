@@ -48,7 +48,7 @@ function taskTimingSupabaseRequest_(endpoint, options, description) {
 }
 
 function taskTimingExistingEmployees_(baseUrl, secret) {
-  var employees = {};
+  var employees = { byEmployeeId: {}, employeeIdByAuthUserId: {} };
   var start = 0;
   var pageSize = 1000;
 
@@ -69,7 +69,10 @@ function taskTimingExistingEmployees_(baseUrl, secret) {
     var rows = JSON.parse(response.getContentText() || '[]');
     rows.forEach(function (row) {
       if (row.employee_id && row.auth_user_id) {
-        employees[String(row.employee_id)] = String(row.auth_user_id);
+        var employeeId = String(row.employee_id);
+        var authUserId = String(row.auth_user_id);
+        employees.byEmployeeId[employeeId] = authUserId;
+        employees.employeeIdByAuthUserId[authUserId] = employeeId;
       }
     });
     if (rows.length < pageSize) break;
@@ -100,7 +103,12 @@ function taskTimingAuthUsersByEmail_(baseUrl, secret) {
     var users = Array.isArray(body) ? body : (body.users || []);
     users.forEach(function (user) {
       if (user.id && user.email) {
-        usersByEmail[String(user.email).trim().toLowerCase()] = String(user.id);
+        usersByEmail[String(user.email).trim().toLowerCase()] = {
+          id: String(user.id),
+          employee_id: user.user_metadata && user.user_metadata.employee_id !== undefined && user.user_metadata.employee_id !== null
+            ? String(user.user_metadata.employee_id)
+            : '',
+        };
       }
     });
     if (users.length < pageSize) break;
@@ -134,9 +142,10 @@ function taskTimingProvisionEmployeeAuth_(baseUrl, secret, employee, authUserId)
     return { auth_user_id: authUserId, created: false };
   }
 
+  if (!employee.password) throw new Error('新員工必須填寫密碼');
   userPayload.email = taskTimingEmployeeAuthEmail_(employee.employee_id);
   userPayload.email_confirm = true;
-  userPayload.password = employee.password || employee.employee_id;
+  userPayload.password = employee.password;
   var response = taskTimingSupabaseRequest_(
     baseUrl + '/auth/v1/admin/users',
     {
@@ -199,6 +208,21 @@ function syncTaskTimingEmployeesToSupabase() {
 
     // Auth treats canonical emails as case-insensitive. Detect source IDs that
     // collapse to the same account before any Supabase request can mutate data.
+    var sourceEmployeeIds = {};
+    var duplicateEmployeeIds = [];
+    employees.forEach(function (employee) {
+      if (sourceEmployeeIds[employee.employee_id]) {
+        if (duplicateEmployeeIds.indexOf(employee.employee_id) === -1) {
+          duplicateEmployeeIds.push(employee.employee_id);
+        }
+        return;
+      }
+      sourceEmployeeIds[employee.employee_id] = true;
+    });
+    if (duplicateEmployeeIds.length) {
+      throw new Error('員工編號重複：' + duplicateEmployeeIds.join('、'));
+    }
+
     var sourceIdsByAuthEmail = {};
     var collisions = [];
     employees.forEach(function (employee) {
@@ -217,6 +241,21 @@ function syncTaskTimingEmployeesToSupabase() {
 
     var existingEmployees = taskTimingExistingEmployees_(baseUrl, secret);
     var authUsersByEmail = taskTimingAuthUsersByEmail_(baseUrl, secret);
+    var ownershipConflicts = [];
+    employees.forEach(function (employee) {
+      var authEmail = taskTimingEmployeeAuthEmail_(employee.employee_id).toLowerCase();
+      var authUser = authUsersByEmail[authEmail];
+      var authUserId = existingEmployees.byEmployeeId[employee.employee_id] || (authUser && authUser.id);
+      var mirrorOwner = authUserId && existingEmployees.employeeIdByAuthUserId[authUserId];
+      var hasAuthOwnerConflict = authUser && authUser.employee_id && authUser.employee_id !== employee.employee_id;
+      var hasMirrorOwnerConflict = mirrorOwner && mirrorOwner !== employee.employee_id;
+      if ((hasAuthOwnerConflict || hasMirrorOwnerConflict) && ownershipConflicts.indexOf(employee.employee_id) === -1) {
+        ownershipConflicts.push(employee.employee_id);
+      }
+    });
+    if (ownershipConflicts.length) {
+      throw new Error('員工資料歸屬衝突：' + ownershipConflicts.join('、'));
+    }
     var pending = [];
     var created = 0;
     var updated = 0;
@@ -231,8 +270,8 @@ function syncTaskTimingEmployeesToSupabase() {
       seenIds[employee.employee_id] = true;
 
       try {
-        var existingAuthUserId = existingEmployees[employee.employee_id] ||
-          authUsersByEmail[taskTimingEmployeeAuthEmail_(employee.employee_id).toLowerCase()];
+        var authUser = authUsersByEmail[taskTimingEmployeeAuthEmail_(employee.employee_id).toLowerCase()];
+        var existingAuthUserId = existingEmployees.byEmployeeId[employee.employee_id] || (authUser && authUser.id);
         // A blank password preserves existing Auth credentials, but a new Auth
         // account must never be created with an implicit/predictable password.
         if (!existingAuthUserId && !employee.password) {
