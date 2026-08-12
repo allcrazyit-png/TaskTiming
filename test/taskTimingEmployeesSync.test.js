@@ -265,6 +265,47 @@ test('stops before writes when a canonical Auth email belongs to another literal
   assert.match(alerts[0], /員工資料歸屬衝突：e01/);
 });
 
+test('stops before writes when the mirror and canonical Auth email point to different UUIDs', () => {
+  const requests = [];
+  const alerts = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({ alert: message => alerts.push(message) }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['E01', '王小美', 'pass'],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      requests.push({ url, options });
+      if (url.includes('/rest/v1/task_timing_employees?select=')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { employee_id: 'E01', auth_user_id: 'mirror-uuid' },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users?')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { id: 'auth-uuid', email: 'e01@tasktiming.local', user_metadata: { employee_id: 'E01' } },
+        ]) };
+      }
+      throw new Error('Unexpected write: ' + url);
+    },
+  };
+
+  assert.throws(() => context.syncTaskTimingEmployeesToSupabase(), /員工資料歸屬衝突：E01/);
+  assert.equal(requests.some(request => request.options.method === 'post' || request.options.method === 'put'), false);
+  assert.match(alerts[0], /員工資料歸屬衝突：E01/);
+});
+
 test('refuses to create Auth users with a blank password', () => {
   assert.throws(
     () => context.taskTimingProvisionEmployeeAuth_(

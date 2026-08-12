@@ -245,11 +245,16 @@ function syncTaskTimingEmployeesToSupabase() {
     employees.forEach(function (employee) {
       var authEmail = taskTimingEmployeeAuthEmail_(employee.employee_id).toLowerCase();
       var authUser = authUsersByEmail[authEmail];
-      var authUserId = existingEmployees.byEmployeeId[employee.employee_id] || (authUser && authUser.id);
+      var mirrorAuthUserId = existingEmployees.byEmployeeId[employee.employee_id];
+      var emailAuthUserId = authUser && authUser.id;
+      var authUserId = mirrorAuthUserId || emailAuthUserId;
       var mirrorOwner = authUserId && existingEmployees.employeeIdByAuthUserId[authUserId];
       var hasAuthOwnerConflict = authUser && authUser.employee_id && authUser.employee_id !== employee.employee_id;
       var hasMirrorOwnerConflict = mirrorOwner && mirrorOwner !== employee.employee_id;
-      if ((hasAuthOwnerConflict || hasMirrorOwnerConflict) && ownershipConflicts.indexOf(employee.employee_id) === -1) {
+      // Both pointers must identify the same Auth user. Otherwise a PUT could
+      // silently repair the wrong account or overwrite a different employee.
+      var hasPointerConflict = mirrorAuthUserId && emailAuthUserId && mirrorAuthUserId !== emailAuthUserId;
+      if ((hasAuthOwnerConflict || hasMirrorOwnerConflict || hasPointerConflict) && ownershipConflicts.indexOf(employee.employee_id) === -1) {
         ownershipConflicts.push(employee.employee_id);
       }
     });
