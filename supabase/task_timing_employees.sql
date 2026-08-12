@@ -9,6 +9,7 @@ create table if not exists public.task_timing_employees (
 -- Migration for the pre-existing unsafe table. It was verified empty before
 -- applying the NOT NULL requirement below, so no employee data is discarded.
 alter table public.task_timing_employees
+  drop column if exists password,
   drop column if exists employee_password,
   add column if not exists auth_user_id uuid;
 

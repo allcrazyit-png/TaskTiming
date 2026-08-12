@@ -18,8 +18,10 @@ function employeeRowToTaskTimingEmployee_(headers, row) {
     source[String(header).trim()] = row[index];
   });
 
-  var employeeId = String(source['員工編號'] || '').trim();
-  var employeeName = String(source['姓名'] || '').trim();
+  var rawEmployeeId = source['員工編號'];
+  var rawEmployeeName = source['姓名'];
+  var employeeId = String(rawEmployeeId === null || rawEmployeeId === undefined ? '' : rawEmployeeId).trim();
+  var employeeName = String(rawEmployeeName === null || rawEmployeeName === undefined ? '' : rawEmployeeName).trim();
   if (!employeeId || !employeeName) return null;
 
   return {
@@ -189,6 +191,30 @@ function syncTaskTimingEmployeesToSupabase() {
     if (headers.indexOf('員工編號') === -1) throw new Error('員工資料缺少必要欄位：員工編號');
     if (headers.indexOf('姓名') === -1) throw new Error('員工資料缺少必要欄位：姓名');
 
+    var employees = data.slice(1).map(function (row) {
+      return employeeRowToTaskTimingEmployee_(headers, row);
+    }).filter(function (employee) {
+      return employee !== null;
+    });
+
+    // Auth treats canonical emails as case-insensitive. Detect source IDs that
+    // collapse to the same account before any Supabase request can mutate data.
+    var sourceIdsByAuthEmail = {};
+    var collisions = [];
+    employees.forEach(function (employee) {
+      var authEmail = taskTimingEmployeeAuthEmail_(employee.employee_id).toLowerCase();
+      var firstEmployeeId = sourceIdsByAuthEmail[authEmail];
+      if (firstEmployeeId && firstEmployeeId !== employee.employee_id) {
+        if (collisions.indexOf(firstEmployeeId) === -1) collisions.push(firstEmployeeId);
+        if (collisions.indexOf(employee.employee_id) === -1) collisions.push(employee.employee_id);
+        return;
+      }
+      sourceIdsByAuthEmail[authEmail] = employee.employee_id;
+    });
+    if (collisions.length) {
+      throw new Error('員工編號 Auth email 衝突：' + collisions.join('、'));
+    }
+
     var existingEmployees = taskTimingExistingEmployees_(baseUrl, secret);
     var authUsersByEmail = taskTimingAuthUsersByEmail_(baseUrl, secret);
     var pending = [];
@@ -197,9 +223,7 @@ function syncTaskTimingEmployeesToSupabase() {
     var failures = [];
     var seenIds = {};
 
-    data.slice(1).forEach(function (row) {
-      var employee = employeeRowToTaskTimingEmployee_(headers, row);
-      if (!employee) return;
+    employees.forEach(function (employee) {
       if (seenIds[employee.employee_id]) {
         failures.push(employee.employee_id + '（重複員工編號）');
         return;
@@ -209,6 +233,12 @@ function syncTaskTimingEmployeesToSupabase() {
       try {
         var existingAuthUserId = existingEmployees[employee.employee_id] ||
           authUsersByEmail[taskTimingEmployeeAuthEmail_(employee.employee_id).toLowerCase()];
+        // A blank password preserves existing Auth credentials, but a new Auth
+        // account must never be created with an implicit/predictable password.
+        if (!existingAuthUserId && !employee.password) {
+          failures.push(employee.employee_id);
+          return;
+        }
         var provisioned = taskTimingProvisionEmployeeAuth_(
           baseUrl, secret, employee, existingAuthUserId,
         );

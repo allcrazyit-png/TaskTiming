@@ -24,6 +24,7 @@ test('employee mirror is public-read-only and has no password column', async () 
   assert.ok(tableDefinition);
   assert.match(sql, /employee_id text primary key/i);
   assert.doesNotMatch(tableDefinition, /password/i);
+  assert.match(sql, /drop column if exists password/i);
   assert.match(sql, /drop column if exists employee_password/i);
   assert.match(sql, /add column if not exists auth_user_id uuid/i);
   assert.match(sql, /alter column auth_user_id set not null/i);
@@ -43,6 +44,17 @@ test('maps an employee row and preserves a blank password as no password update'
 
   assert.deepEqual(JSON.parse(JSON.stringify(employee)), {
     employee_id: 'E01', employee_name: '王小美', password: '',
+  });
+});
+
+test('maps numeric zero employee IDs without dropping them', () => {
+  const employee = context.employeeRowToTaskTimingEmployee_(
+    ['員工編號', '姓名', '密碼'],
+    [0, '王小美', ''],
+  );
+
+  assert.deepEqual(JSON.parse(JSON.stringify(employee)), {
+    employee_id: '0', employee_name: '王小美', password: '',
   });
 });
 
@@ -156,6 +168,68 @@ test('retries an encoded employee email despite Auth returning lowercase percent
   assert.equal(requests.some(request => request.url.includes('/auth/v1/admin/users/auth-slash-uuid') && request.options.method === 'put'), true);
   const publicWrite = requests.find(request => request.url.includes('/rest/v1/task_timing_employees?on_conflict='));
   assert.match(publicWrite.options.payload, /"auth_user_id":"auth-slash-uuid"/);
+});
+
+test('stops before any network request when distinct employee IDs collide after Auth email normalization', () => {
+  const requests = [];
+  const alerts = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({ alert: message => alerts.push(message) }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['E01', '王小美', ''],
+          ['e01', '王小華', ''],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = { fetch: (url, options) => requests.push({ url, options }) };
+
+  assert.throws(() => context.syncTaskTimingEmployeesToSupabase(), /員工編號 Auth email 衝突：E01、e01/);
+  assert.equal(requests.length, 0);
+  assert.match(alerts[0], /員工編號 Auth email 衝突：E01、e01/);
+});
+
+test('reports a new employee with blank password without creating Auth or public mirror rows', () => {
+  const requests = [];
+  const alerts = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({ alert: message => alerts.push(message) }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['E02', '王小華', ''],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      requests.push({ url, options });
+      if (url.includes('/rest/v1/task_timing_employees?select=') || url.includes('/auth/v1/admin/users?')) {
+        return { getResponseCode: () => 200, getContentText: () => '[]' };
+      }
+      throw new Error('Unexpected write: ' + url);
+    },
+  };
+
+  assert.throws(() => context.syncTaskTimingEmployeesToSupabase(), /員工同步失敗：E02/);
+  assert.equal(requests.some(request => request.url === 'https://example.supabase.co/auth/v1/admin/users' && request.options.method === 'post'), false);
+  assert.equal(requests.some(request => request.url.includes('/rest/v1/task_timing_employees?on_conflict=')), false);
+  assert.match(alerts[0], /新增 0 筆、更新 0 筆、失敗 1 筆/);
 });
 
 test('paginates the existing public employee roster with Range headers', () => {
