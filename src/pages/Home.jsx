@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { fetchTaskTimingEmployees, verifyTaskTimingEmployeePassword } from '../services/taskTimingEmployees';
 import { fetchTaskTimingProducts } from '../services/taskTimingProducts';
+import { formatLatestLocalUpload } from '../utils/localUploadStatus';
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
 
@@ -162,81 +163,7 @@ export default function Home() {
     // Filter Display State
     const [showFilter, setShowFilter] = useState(false);
 
-    // Missing upload days state: null=未載入, 0=正常, N=累計N個工作日未傳
-    const [missingWorkDays, setMissingWorkDays] = useState(null);
-
-    // 計算從昨天往回連續幾個工作日沒上傳
-    const calcConsecutiveMissingDays = (records, operatorId) => {
-        const uploadedDates = new Set();
-        records.forEach(r => {
-            if (String(r['作業者'] ?? '').startsWith(`[${operatorId}]`)) {
-                const raw = String(r['日期'] ?? '');
-                if (raw) {
-                    const d = new Date(raw);
-                    uploadedDates.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
-                }
-            }
-        });
-        // 若完全沒有紀錄，直接回傳 0
-        if (uploadedDates.size === 0) return 0;
-
-        // 找出最早上傳日期
-        const firstUploadDate = Array.from(uploadedDates).sort()[0];
-
-        // 今天的日期字串
-        const today = new Date();
-        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-        // 新員工：第一次上傳就是今天，不顯示警告
-        if (firstUploadDate >= todayStr) return 0;
-
-        let count = 0;
-        const d = new Date();
-        d.setDate(d.getDate() - 1); // 從昨天開始
-        for (let i = 0; i < 60; i++) {
-            const dow = d.getDay();
-            const str = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            // 不往回數到加入之前的日期
-            if (str < firstUploadDate) break;
-            if (dow !== 0 && dow !== 6) { // 工作日才算
-                if (!uploadedDates.has(str)) {
-                    count++;
-                } else {
-                    break;
-                }
-            }
-            d.setDate(d.getDate() - 1);
-        }
-        return count;
-    };
-
-    // 當登入者改變時抓取紀錄並計算漏傳天數
-    useEffect(() => {
-        if (!selectedOperator) {
-            setMissingWorkDays(null);
-            return;
-        }
-        const match = selectedOperator.match(/\[(\S+)\]/);
-        if (!match) return;
-        const operatorId = match[1];
-        setMissingWorkDays(null); // 重置為載入中
-        // lastRows：只要最近的紀錄就夠算漏傳天數，避免 GAS 撈整張表而超時
-        const recordsUrl = `${GOOGLE_SCRIPT_URL}?action=records&sheet=${encodeURIComponent('紀錄')}&lastRows=3000`;
-        fetch(recordsUrl)
-            .then(res => res.json())
-            // 不再退回 ?action=records&index=0：那會讓 GAS 撈整張紀錄表，
-            // 實測要 40 秒以上而且最後回 404，只是白白拖慢首頁。
-            .then(data => {
-                if (Array.isArray(data)) {
-                    const missing = calcConsecutiveMissingDays(data, operatorId);
-                    console.log(`[MissingDays] operatorId=${operatorId}, totalRecords=${data.length}, missingDays=${missing}`);
-                    setMissingWorkDays(missing);
-                } else {
-                    setMissingWorkDays(0);
-                }
-            })
-            .catch(() => setMissingWorkDays(0));
-    }, [selectedOperator]);
+    const [latestUploadStatus, setLatestUploadStatus] = useState(null);
 
     // Apply Theme
     useEffect(() => {
@@ -329,8 +256,10 @@ export default function Home() {
             const historyKey = `uploadHistory_${id}`;
             const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
             setOperatorHistory(existingHistory);
+            setLatestUploadStatus(formatLatestLocalUpload(existingHistory));
         } catch (e) {
             console.error(e);
+            setLatestUploadStatus(null);
         }
     };
 
@@ -391,6 +320,7 @@ export default function Home() {
         if (!value) {
             setSelectedOperator('');
             setOperatorHistory([]);
+            setLatestUploadStatus(null);
             setFavoriteProducts([]);
             localStorage.removeItem('savedOperatorId');
             return;
@@ -572,6 +502,7 @@ export default function Home() {
             localStorage.removeItem('savedOperatorId');
             setSelectedOperator('');
             setOperatorHistory([]);
+            setLatestUploadStatus(null);
             setFavoriteProducts([]);
             setShowSettingsPopup(false);
         }
@@ -999,11 +930,7 @@ export default function Home() {
                                     return (
                                         <>
                                             <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-0.5 tracking-wide">{greetingTitle}</h2>
-                                            {missingWorkDays > 1 ? (
-                                                <p className="text-sm font-bold text-slate-400 dark:text-slate-500">💬 {t('missing_days_soft')}</p>
-                                            ) : (
-                                                <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{greetingSub}</p>
-                                            )}
+                                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{latestUploadStatus || greetingSub}</p>
                                         </>
                                     );
                                 })()}

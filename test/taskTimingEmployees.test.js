@@ -126,3 +126,11 @@ test('Home delegates employee loading and password validation to the employee se
   assert.match(home, /await verifyTaskTimingEmployeePassword\(\{/);
   assert.doesNotMatch(home, /const correctPassword = String\(tempOperator\['密碼'\]/);
 });
+
+test('Home shows local upload status without requesting GAS records', async () => {
+  const home = await readFile(new URL('../src/pages/Home.jsx', import.meta.url), 'utf8');
+  assert.match(home, /import \{ formatLatestLocalUpload \} from '\.\.\/utils\/localUploadStatus';/);
+  assert.match(home, /setLatestUploadStatus\(formatLatestLocalUpload\(existingHistory\)\)/);
+  assert.doesNotMatch(home, /action=records/);
+  assert.doesNotMatch(home, /missingWorkDays/);
+});
