@@ -927,10 +927,14 @@ export default function Home() {
                                         greetingTitle = t('good_evening', { name });
                                         greetingSub = t('good_evening_sub');
                                     }
+                                    // 在這裡才組字串，切換語言時最近上傳時間才會跟著翻譯。
+                                    const uploadText = latestUploadStatus
+                                        ? t(latestUploadStatus.isToday ? 'latest_upload_today' : 'latest_upload_day', latestUploadStatus)
+                                        : greetingSub;
                                     return (
                                         <>
                                             <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-0.5 tracking-wide">{greetingTitle}</h2>
-                                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{latestUploadStatus || greetingSub}</p>
+                                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{uploadText}</p>
                                         </>
                                     );
                                 })()}

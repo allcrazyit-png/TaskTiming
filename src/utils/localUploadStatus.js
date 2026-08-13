@@ -16,7 +16,11 @@ export function formatLatestLocalUpload(records, now = new Date()) {
     && latest.getMonth() === now.getMonth()
     && latest.getDate() === now.getDate();
 
-  return isToday
-    ? `最近上傳：今天 ${time}`
-    : `最近上傳：${latest.getMonth() + 1}/${latest.getDate()} ${time}`;
+  // 只回傳資料，不組字串：文字交給 i18n，切換語言時畫面才會跟著變。
+  return {
+    isToday,
+    time,
+    month: latest.getMonth() + 1,
+    day: latest.getDate(),
+  };
 }
