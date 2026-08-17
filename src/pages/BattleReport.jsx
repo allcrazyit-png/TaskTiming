@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { MEN_DUTY_ROSTER, WOMEN_DUTY_ROSTER, getWeeklyDutyRoster } from '../utils/dutyRoster';
 
 // Same URL as Home.jsx
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
@@ -47,12 +48,85 @@ function EfficiencyGauge({ value }) {
     );
 }
 
+function DutyRoster({ t, roster, isExpanded, onToggle }) {
+    const formatDate = (date) => `${date.getMonth() + 1}/${date.getDate()}`;
+    const weekLabel = `${formatDate(roster.weekStart)}（一）～${formatDate(roster.weekEnd)}（五）`;
+    const groups = [
+        { label: t('duty_roster_women'), people: WOMEN_DUTY_ROSTER, currentIndex: roster.womenIndex, color: 'rose' },
+        { label: t('duty_roster_men'), people: MEN_DUTY_ROSTER, currentIndex: roster.menIndex, color: 'sky' },
+    ];
+
+    return (
+        <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-t-4 border-emerald-500 p-4 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+                <div>
+                    <h2 className="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-white">
+                        <span className="material-symbols-outlined text-2xl text-emerald-600">cleaning_services</span>
+                        {t('duty_roster_title')}
+                    </h2>
+                    <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-400">{weekLabel}</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 dark:border-rose-900 dark:bg-rose-950/30">
+                    <p className="text-sm font-black text-rose-700 dark:text-rose-300">{t('duty_roster_women')}</p>
+                    <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{roster.current.women}</p>
+                    <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">{t('duty_roster_next_week')}：{roster.next.women}</p>
+                </div>
+                <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 dark:border-sky-900 dark:bg-sky-950/30">
+                    <p className="text-sm font-black text-sky-700 dark:text-sky-300">{t('duty_roster_men')}</p>
+                    <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{roster.current.men}</p>
+                    <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">{t('duty_roster_next_week')}：{roster.next.men}</p>
+                </div>
+            </div>
+
+            <button
+                type="button"
+                aria-expanded={isExpanded}
+                onClick={onToggle}
+                className="min-h-16 w-full rounded-2xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 text-base font-black text-emerald-700 active:scale-[0.99] dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
+            >
+                {isExpanded ? t('duty_roster_hide_full') : t('duty_roster_view_full')}
+            </button>
+
+            {isExpanded && (
+                <div className="grid grid-cols-1 gap-3 border-t border-slate-200 pt-4 dark:border-slate-700">
+                    {groups.map(group => (
+                        <div key={group.label}>
+                            <h3 className="text-base font-black text-slate-800 dark:text-white">{group.label}</h3>
+                            <ol className="mt-2 space-y-2">
+                                {group.people.map((person, index) => {
+                                    const isCurrent = index === group.currentIndex;
+                                    const hasPassed = index < group.currentIndex;
+                                    const tone = isCurrent
+                                        ? 'border-emerald-400 bg-emerald-50 text-emerald-800 dark:border-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-200'
+                                        : hasPassed
+                                            ? 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500'
+                                            : 'border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white';
+                                    return (
+                                        <li key={person} className={`flex min-h-12 items-center justify-between rounded-xl border px-3 text-base font-black ${tone}`}>
+                                            <span>{index + 1}. {person}</span>
+                                            {isCurrent && <span className="rounded-full bg-emerald-600 px-2 py-1 text-xs text-white">{t('duty_roster_this_week')}</span>}
+                                        </li>
+                                    );
+                                })}
+                            </ol>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </section>
+    );
+}
+
 export default function BattleReport() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [records, setRecords] = useState([]);
     const [error, setError] = useState(null);
+    const [isRosterExpanded, setIsRosterExpanded] = useState(false);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -163,6 +237,7 @@ export default function BattleReport() {
     if (avgEfficiency >= 90) gaugeColor = '#f59e0b';
     if (avgEfficiency >= 100) gaugeColor = '#22c55e';
     if (avgEfficiency >= 110) gaugeColor = '#0d9488';
+    const dutyRoster = getWeeklyDutyRoster();
 
     return (
         <div className="bg-background-light dark:bg-background-dark text-[#1e293b] dark:text-white min-h-screen flex flex-col pb-36">
@@ -174,7 +249,7 @@ export default function BattleReport() {
             {/* Header */}
             <header className="sticky top-0 z-20 bg-white/95 dark:bg-background-dark/95 backdrop-blur-sm border-b-2 border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center gap-3 shadow-sm">
                 <div className="flex items-center gap-2 flex-1">
-                    <span className="material-symbols-outlined text-3xl text-primary">bar_chart</span>
+                    <span className="material-symbols-outlined text-3xl text-primary">campaign</span>
                     <div>
                         <h1 className="text-lg font-black leading-tight">{t('br_title')}</h1>
                         <p className="text-xs text-slate-400 font-medium">{todayStr.replace(/\//g, ' / ')}</p>
@@ -185,6 +260,14 @@ export default function BattleReport() {
                     <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{t('br_live_indicator')}</span>
                 </div>
             </header>
+
+            <main className="p-4 space-y-4 flex-1">
+                <DutyRoster
+                    t={t}
+                    roster={dutyRoster}
+                    isExpanded={isRosterExpanded}
+                    onToggle={() => setIsRosterExpanded(value => !value)}
+                />
 
             {loading ? (
                 <div className="flex flex-col items-center justify-center flex-1 py-20 gap-4">
@@ -203,7 +286,7 @@ export default function BattleReport() {
                     </button>
                 </div>
             ) : (
-                <main className="p-4 space-y-4 flex-1">
+                <>
 
                     {/* === SECTION 1: Cumulative Milestone === */}
                     <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-t-4 border-primary p-4 space-y-3">
@@ -315,8 +398,9 @@ export default function BattleReport() {
                         </div>
 
                     </section>
-                </main>
+                </>
             )}
+            </main>
 
             {/* Bottom Navigation */}
             <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 pb-6 pt-2 px-4 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
@@ -341,7 +425,7 @@ export default function BattleReport() {
                     </button>
                     <button className="flex flex-col items-center gap-1">
                         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
-                            <span className="material-symbols-outlined text-2xl">bar_chart</span>
+                            <span className="material-symbols-outlined text-2xl">campaign</span>
                         </div>
                         <span className="text-xs font-bold text-primary">{t('battle_report_tab')}</span>
                     </button>
