@@ -124,7 +124,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.15.1 LOADED - Manual work entry redesign and UI improvements");
+    console.log("VERSION 1.15.2 LOADED - Manual work entry redesign and UI improvements");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -1276,7 +1276,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.15.1
+                                    Version 1.15.2
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity

@@ -1,7 +1,7 @@
 {
   "name": "stitch-app",
   "private": true,
-  "version": "1.15.1",
+  "version": "1.15.2",
   "type": "module",
   "homepage": "https://allcrazyit-png.github.io/TaskTiming/",
   "scripts": {

@@ -25,7 +25,7 @@ export function getWeeklyDutyRoster(date = new Date()) {
   const weekStart = getMonday(date);
   const weekOffset = Math.round((weekStart - BASELINE_MONDAY) / (7 * DAY_MS));
   const womenIndex = modulo(6 + weekOffset, WOMEN_DUTY_ROSTER.length);
-  const menIndex = modulo(4 + weekOffset, MEN_DUTY_ROSTER.length);
+  const menIndex = modulo(5 + weekOffset, MEN_DUTY_ROSTER.length);
 
   return {
     weekStart,
