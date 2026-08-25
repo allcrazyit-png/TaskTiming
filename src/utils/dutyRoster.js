@@ -2,7 +2,7 @@ export const WOMEN_DUTY_ROSTER = [
   '林祐香', '何淑如', '陳玉薇', '楊淑婷', '黃舒嬪', '陳麗如', '何佩函', '潘麗芳', '杜氏美蓮',
 ];
 
-export const MEN_DUTY_ROSTER = ['毆吉 🇮🇩', '阿里 🇮🇩', '施聖浩', '阿杜 🇮🇩', '楊子賢', '志丹'];
+export const MEN_DUTY_ROSTER = ['毆吉 🇮🇩', '阿里 🇮🇩', '施聖浩', '阿杜 🇮🇩', '楊子賢', '志丹 🇮🇩'];
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const BASELINE_MONDAY = new Date(2026, 7, 17);
