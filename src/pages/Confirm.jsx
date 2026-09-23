@@ -53,6 +53,12 @@ export default function Confirm() {
         category: ""
     };
 
+    // 雙穴零件只做單邊時（另一邊良品與報廢皆為 0），只上傳有數量的那一邊
+    const sumScraps = (s) => s ? Object.values(s).reduce((a, b) => a + b, 0) : 0;
+    const hasR = goodCountR + sumScraps(location.state?.scrapsR) > 0;
+    const hasL = goodCountL + sumScraps(location.state?.scrapsL) > 0;
+    const onlySide = isDual && hasR !== hasL ? (hasR ? 'side_r' : 'side_l') : null;
+
     const getScrapLabel = (key) => {
         const labels = {
             missing: t('scrap_missing'),
@@ -298,8 +304,8 @@ export default function Confirm() {
                 efficiency: metricsL.efficiency + "%"
             };
 
-            submitPayload(payloadR);
-            submitPayload(payloadL);
+            if (goodCountR + scrapR > 0) submitPayload(payloadR);
+            if (goodCountL + scrapL > 0) submitPayload(payloadL);
         } else {
             const payload = {
                 operator: operator,
@@ -388,6 +394,12 @@ export default function Confirm() {
                         {t('confirm_desc')}
                     </h1>
                 </header>
+                {onlySide && (
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-400 rounded-xl p-4 flex items-center gap-3">
+                        <span className="material-symbols-outlined text-3xl text-amber-600">info</span>
+                        <p className="text-xl font-black text-amber-800 dark:text-amber-300">{t('only_upload_side', { side: t(onlySide) })}</p>
+                    </div>
+                )}
                 <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 p-4 space-y-4">
                     <div className="flex items-center gap-3">
                         <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
