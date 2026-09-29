@@ -1,9 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { WOMEN_DUTY_ROSTER, getWeeklyDutyRoster } from '../src/utils/dutyRoster.js';
+import {
+  MEN_DUTY_ROSTER,
+  WOMEN_DUTY_ROSTER,
+  getDutyRosterDisplayName,
+  getWeeklyDutyRoster,
+} from '../src/utils/dutyRoster.js';
 
 test('places 阮金霞 after 杜氏美蓮 at the end of the women roster', () => {
   assert.deepEqual(WOMEN_DUTY_ROSTER.slice(-2), ['杜氏美蓮', '阮金霞']);
+});
+
+test('marks the Vietnamese women without changing their roster names', () => {
+  assert.equal(getDutyRosterDisplayName('陳玉薇'), '陳玉薇 🇻🇳');
+  assert.equal(getDutyRosterDisplayName('杜氏美蓮'), '杜氏美蓮 🇻🇳');
+  assert.equal(getDutyRosterDisplayName('阮金霞'), '阮金霞 🇻🇳');
+});
+
+test('removes 毆吉 while preserving the current men assignment', () => {
+  const weekBeforeRemoval = getWeeklyDutyRoster(new Date(2026, 8, 21, 9));
+  const removalWeek = getWeeklyDutyRoster(new Date(2026, 8, 28, 9));
+  const followingWeek = getWeeklyDutyRoster(new Date(2026, 9, 5, 9));
+
+  assert.equal(MEN_DUTY_ROSTER.includes('毆吉'), false);
+  assert.equal(weekBeforeRemoval.current.men, '楊子賢');
+  assert.equal(weekBeforeRemoval.next.men, '志丹');
+  assert.equal(removalWeek.current.men, '志丹');
+  assert.equal(removalWeek.next.men, '阿里');
+  assert.equal(followingWeek.current.men, '阿里');
 });
 
 test('preserves the women schedule when the expanded roster takes effect', () => {

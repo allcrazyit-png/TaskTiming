@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { MEN_DUTY_ROSTER, WOMEN_DUTY_ROSTER, getWeeklyDutyRoster } from '../utils/dutyRoster';
+import {
+    MEN_DUTY_ROSTER,
+    WOMEN_DUTY_ROSTER,
+    getDutyRosterDisplayName,
+    getWeeklyDutyRoster,
+} from '../utils/dutyRoster';
 
 // Same URL as Home.jsx
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
@@ -71,13 +76,13 @@ function DutyRoster({ t, roster, isExpanded, onToggle }) {
             <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 dark:border-rose-900 dark:bg-rose-950/30">
                     <p className="text-sm font-black text-rose-700 dark:text-rose-300">{t('duty_roster_women')}</p>
-                    <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{roster.current.women}</p>
-                    <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">{t('duty_roster_next_week')}：{roster.next.women}</p>
+                    <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{getDutyRosterDisplayName(roster.current.women)}</p>
+                    <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">{t('duty_roster_next_week')}：{getDutyRosterDisplayName(roster.next.women)}</p>
                 </div>
                 <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 dark:border-sky-900 dark:bg-sky-950/30">
                     <p className="text-sm font-black text-sky-700 dark:text-sky-300">{t('duty_roster_men')}</p>
-                    <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{roster.current.men}</p>
-                    <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">{t('duty_roster_next_week')}：{roster.next.men}</p>
+                    <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{getDutyRosterDisplayName(roster.current.men)}</p>
+                    <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">{t('duty_roster_next_week')}：{getDutyRosterDisplayName(roster.next.men)}</p>
                 </div>
             </div>
 
@@ -106,7 +111,7 @@ function DutyRoster({ t, roster, isExpanded, onToggle }) {
                                             : 'border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white';
                                     return (
                                         <li key={person} className={`flex min-h-12 items-center justify-between rounded-xl border px-3 text-base font-black ${tone}`}>
-                                            <span>{index + 1}. {person}</span>
+                                            <span>{index + 1}. {getDutyRosterDisplayName(person)}</span>
                                             {isCurrent && <span className="rounded-full bg-emerald-600 px-2 py-1 text-xs text-white">{t('duty_roster_this_week')}</span>}
                                         </li>
                                     );
