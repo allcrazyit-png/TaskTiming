@@ -1,6 +1,28 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getWeeklyDutyRoster } from '../src/utils/dutyRoster.js';
+import { WOMEN_DUTY_ROSTER, getWeeklyDutyRoster } from '../src/utils/dutyRoster.js';
+
+test('places 阮金霞 after 杜氏美蓮 at the end of the women roster', () => {
+  assert.deepEqual(WOMEN_DUTY_ROSTER.slice(-2), ['杜氏美蓮', '阮金霞']);
+});
+
+test('preserves the women schedule when the expanded roster takes effect', () => {
+  const weekBefore = getWeeklyDutyRoster(new Date(2026, 8, 21, 9));
+  const effectiveWeek = getWeeklyDutyRoster(new Date(2026, 8, 28, 9));
+  const oldLastWeek = getWeeklyDutyRoster(new Date(2026, 10, 2, 9));
+  const newLastWeek = getWeeklyDutyRoster(new Date(2026, 10, 9, 9));
+  const wrappedWeek = getWeeklyDutyRoster(new Date(2026, 10, 16, 9));
+
+  assert.equal(weekBefore.current.women, '陳玉薇');
+  assert.equal(weekBefore.next.women, '楊淑婷');
+  assert.equal(effectiveWeek.current.women, '楊淑婷');
+  assert.equal(effectiveWeek.next.women, '黃舒嬪');
+  assert.equal(oldLastWeek.current.women, '杜氏美蓮');
+  assert.equal(oldLastWeek.next.women, '阮金霞');
+  assert.equal(newLastWeek.current.women, '阮金霞');
+  assert.equal(newLastWeek.next.women, '林祐香');
+  assert.equal(wrappedWeek.current.women, '林祐香');
+});
 
 test('uses 2026-08-17 as the confirmed roster baseline', () => {
   const roster = getWeeklyDutyRoster(new Date(2026, 7, 17, 9));
