@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   MEN_DUTY_ROSTER,
   WOMEN_DUTY_ROSTER,
+  getDutyRosterEmployeeId,
   getDutyRosterDisplayName,
   getWeeklyDutyRoster,
 } from '../src/utils/dutyRoster.js';
@@ -15,6 +16,22 @@ test('marks the Vietnamese women without changing their roster names', () => {
   assert.equal(getDutyRosterDisplayName('陳玉薇'), '陳玉薇 🇻🇳');
   assert.equal(getDutyRosterDisplayName('杜氏美蓮'), '杜氏美蓮 🇻🇳');
   assert.equal(getDutyRosterDisplayName('阮金霞'), '阮金霞 🇻🇳');
+});
+
+test('uses the confirmed employee IDs, separately from roster positions', () => {
+  const expected = {
+    '林祐香': '26', '何淑如': '16', '陳玉薇': '33', '楊淑婷': '21', '黃舒嬪': '39',
+    '陳麗如': '20', '何佩函': '36', '潘麗芳': '31', '杜氏美蓮': '15', '阮金霞': '27',
+    '阿里': '77', '施聖浩': '32', '阿杜': '94', '楊子賢': '58', '志丹': '84',
+  };
+  const people = [...WOMEN_DUTY_ROSTER, ...MEN_DUTY_ROSTER];
+
+  assert.equal(people.length, Object.keys(expected).length);
+  assert.equal(new Set(Object.values(expected)).size, people.length);
+  for (const person of people) {
+    assert.equal(getDutyRosterEmployeeId(person), expected[person]);
+  }
+  assert.equal(getDutyRosterEmployeeId('毆吉'), null);
 });
 
 test('removes 毆吉 while preserving the current men assignment', () => {

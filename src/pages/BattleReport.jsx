@@ -5,6 +5,7 @@ import {
     MEN_DUTY_ROSTER,
     WOMEN_DUTY_ROSTER,
     getDutyRosterDisplayName,
+    getDutyRosterEmployeeId,
     getWeeklyDutyRoster,
 } from '../utils/dutyRoster';
 
@@ -53,9 +54,48 @@ function EfficiencyGauge({ value }) {
     );
 }
 
+function EmployeeBadgeIcon({ className = 'h-5 w-5' }) {
+    return (
+        <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+            <rect x="2.5" y="4" width="19" height="16" rx="3" />
+            <circle cx="8.5" cy="10" r="2" />
+            <path d="M5.5 16c.5-2 1.5-3 3-3s2.5 1 3 3M14 9h4.5M14 13h4.5" />
+        </svg>
+    );
+}
+
 function DutyRoster({ t, roster, isExpanded, onToggle }) {
     const formatDate = (date) => `${date.getMonth() + 1}/${date.getDate()}`;
     const weekLabel = `${formatDate(roster.weekStart)}（一）～${formatDate(roster.weekEnd)}（五）`;
+    const renderEmployeeNumber = (number, className, iconClassName = 'h-5 w-5') => {
+        if (!number) return null;
+        return (
+            <span className={`inline-flex items-center gap-1.5 tabular-nums ${className}`} aria-label={t('duty_roster_employee_number', { number })}>
+                <EmployeeBadgeIcon className={iconClassName} />
+                <span>{number}</span>
+            </span>
+        );
+    };
+    const renderCurrentPerson = (name) => {
+        const number = getDutyRosterEmployeeId(name);
+        return (
+            <>
+                <p className="mt-1 text-3xl font-black text-slate-900 dark:text-white">
+                    {number ? renderEmployeeNumber(number, '', 'h-6 w-6 shrink-0') : getDutyRosterDisplayName(name)}
+                </p>
+                {number && <p className="mt-1 text-base font-bold text-slate-800 dark:text-slate-100">{getDutyRosterDisplayName(name)}</p>}
+            </>
+        );
+    };
+    const renderNextPerson = (name) => {
+        const number = getDutyRosterEmployeeId(name);
+        return (
+            <>
+                {number && <>{renderEmployeeNumber(number, 'font-black', 'h-4 w-4')} · </>}
+                {getDutyRosterDisplayName(name)}
+            </>
+        );
+    };
     const groups = [
         { label: t('duty_roster_women'), people: WOMEN_DUTY_ROSTER, currentIndex: roster.womenIndex, color: 'rose' },
         { label: t('duty_roster_men'), people: MEN_DUTY_ROSTER, currentIndex: roster.menIndex, color: 'sky' },
@@ -76,13 +116,13 @@ function DutyRoster({ t, roster, isExpanded, onToggle }) {
             <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 dark:border-rose-900 dark:bg-rose-950/30">
                     <p className="text-sm font-black text-rose-700 dark:text-rose-300">{t('duty_roster_women')}</p>
-                    <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{getDutyRosterDisplayName(roster.current.women)}</p>
-                    <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">{t('duty_roster_next_week')}：{getDutyRosterDisplayName(roster.next.women)}</p>
+                    {renderCurrentPerson(roster.current.women)}
+                    <p className="mt-2 text-sm font-bold leading-snug text-slate-600 dark:text-slate-300">{t('duty_roster_next_week')}：{renderNextPerson(roster.next.women)}</p>
                 </div>
                 <div className="rounded-2xl border border-sky-200 bg-sky-50 p-3 dark:border-sky-900 dark:bg-sky-950/30">
                     <p className="text-sm font-black text-sky-700 dark:text-sky-300">{t('duty_roster_men')}</p>
-                    <p className="mt-1 text-2xl font-black text-slate-900 dark:text-white">{getDutyRosterDisplayName(roster.current.men)}</p>
-                    <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">{t('duty_roster_next_week')}：{getDutyRosterDisplayName(roster.next.men)}</p>
+                    {renderCurrentPerson(roster.current.men)}
+                    <p className="mt-2 text-sm font-bold leading-snug text-slate-600 dark:text-slate-300">{t('duty_roster_next_week')}：{renderNextPerson(roster.next.men)}</p>
                 </div>
             </div>
 
@@ -100,23 +140,27 @@ function DutyRoster({ t, roster, isExpanded, onToggle }) {
                     {groups.map(group => (
                         <div key={group.label}>
                             <h3 className="text-base font-black text-slate-800 dark:text-white">{group.label}</h3>
-                            <ol className="mt-2 space-y-2">
+                            <ul className="mt-2 space-y-2">
                                 {group.people.map((person, index) => {
                                     const isCurrent = index === group.currentIndex;
                                     const hasPassed = index < group.currentIndex;
+                                    const employeeNumber = getDutyRosterEmployeeId(person);
                                     const tone = isCurrent
                                         ? 'border-emerald-400 bg-emerald-50 text-emerald-800 dark:border-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-200'
                                         : hasPassed
-                                            ? 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500'
+                                            ? 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
                                             : 'border-slate-200 bg-white text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white';
                                     return (
-                                        <li key={person} className={`flex min-h-12 items-center justify-between rounded-xl border px-3 text-base font-black ${tone}`}>
-                                            <span>{index + 1}. {getDutyRosterDisplayName(person)}</span>
-                                            {isCurrent && <span className="rounded-full bg-emerald-600 px-2 py-1 text-xs text-white">{t('duty_roster_this_week')}</span>}
+                                        <li key={person} className={`flex min-h-14 items-center justify-between gap-2 rounded-xl border px-3 py-2 text-base font-black ${tone}`}>
+                                            <span className="flex min-w-0 items-center gap-2">
+                                                {employeeNumber && renderEmployeeNumber(employeeNumber, 'w-16 shrink-0 text-lg font-black', 'h-5 w-5 shrink-0')}
+                                                <span className="min-w-0 break-words">{getDutyRosterDisplayName(person)}</span>
+                                            </span>
+                                            {isCurrent && <span className="shrink-0 rounded-full bg-emerald-600 px-2 py-1 text-xs text-white">{t('duty_roster_this_week')}</span>}
                                         </li>
                                     );
                                 })}
-                            </ol>
+                            </ul>
                         </div>
                     ))}
                 </div>

@@ -124,7 +124,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.17.1 LOADED - Duty roster nationality and active-member updates");
+    console.log("VERSION 1.17.2 LOADED - Favorites and duty roster UI updates");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -137,6 +137,7 @@ export default function Home() {
     const [selectedOperator, setSelectedOperator] = useState('');
     const [operatorHistory, setOperatorHistory] = useState([]); // Added state for today's history
     const [favoriteProducts, setFavoriteProducts] = useState([]); // Store array of favorite `品番`
+    const [favoriteToRemove, setFavoriteToRemove] = useState(null);
     const [weather, setWeather] = useState(null); // Local weather state
 
     // Custom Product Entry State
@@ -368,6 +369,12 @@ export default function Home() {
         });
     };
 
+    const confirmFavoriteRemoval = (e) => {
+        if (!favoriteToRemove) return;
+        toggleFavorite(e, favoriteToRemove['品番'], favoriteToRemove['類別']);
+        setFavoriteToRemove(null);
+    };
+
     const verifyPassword = async () => {
         if (!tempOperator || isVerifyingPassword) return;
 
@@ -534,40 +541,53 @@ export default function Home() {
         return (
             <div
                 key={`fav-${product['品番']}-${index}`}
-                className="flex items-center gap-4 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-3 shadow-md active:scale-[0.98] transition-transform"
+                className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-3 shadow-md active:scale-[0.98] transition-transform"
                 onClick={() => handleStartWork(product)}
             >
-                <div className="shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                    {product['產品圖片'] ? (
-                        <img
-                            alt={product['品名']}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                            src={getImageUrl(product['產品圖片'])}
-                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/80x80?text=?'; }}
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-400">
-                            <span className="material-symbols-outlined text-3xl">image_not_supported</span>
-                        </div>
-                    )}
+                <div className="flex items-center gap-4">
+                    <div className="shrink-0 w-24 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        {product['產品圖片'] ? (
+                            <img
+                                alt={product['品名']}
+                                className="w-full h-full object-contain"
+                                loading="lazy"
+                                src={getImageUrl(product['產品圖片'])}
+                                onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/80x80?text=?'; }}
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                <span className="material-symbols-outlined text-3xl">image_not_supported</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                        {product['類別'] && (
+                            <span className={`${getCategoryStyles(product['類別'])} text-white text-xs font-black px-2 py-0.5 rounded-full mb-1 inline-block`}>
+                                {t(`cat_${product['類別']}`, product['類別'])}
+                            </span>
+                        )}
+                        <p className="text-lg font-black text-slate-800 dark:text-slate-100 leading-tight break-words">{product['品名']}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{product['車型']}</p>
+                    </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                    {product['類別'] && (
-                        <span className={`${getCategoryStyles(product['類別'])} text-white text-xs font-black px-2 py-0.5 rounded-full mb-1 inline-block`}>
-                            {t(`cat_${product['類別']}`, product['類別'])}
-                        </span>
-                    )}
-                    <p className="text-lg font-black text-slate-800 dark:text-slate-100 leading-tight line-clamp-2">{product['品名']}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{product['車型']}</p>
+                <div className="mt-3 flex gap-3">
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); handleStartWork(product); }}
+                        className={`min-h-16 min-w-0 flex-1 rounded-2xl text-base font-black text-white shadow-md active:scale-[0.98] transition-transform focus-visible:ring-4 focus-visible:ring-primary ${getCategoryBtnStyles(product['類別'])}`}
+                    >
+                        {t('start_favorite')}
+                    </button>
+                    <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); setFavoriteToRemove(product); }}
+                        aria-label={`${t('remove_favorite')}：${product['品名']}`}
+                        className="flex min-h-16 min-w-0 flex-1 items-center justify-center gap-1 rounded-2xl border-2 border-red-300 px-1 text-base font-black leading-tight text-red-700 dark:border-red-400 dark:text-red-300 active:scale-[0.98] focus-visible:ring-4 focus-visible:ring-primary"
+                    >
+                        <span className="material-symbols-outlined text-xl font-variation-fill" aria-hidden="true">favorite</span>
+                        <span>{t('remove_favorite')}</span>
+                    </button>
                 </div>
-                <button
-                    onClick={(e) => { e.stopPropagation(); handleStartWork(product); }}
-                    className={`shrink-0 w-16 h-16 flex flex-col items-center justify-center rounded-2xl text-white shadow-md active:scale-90 transition-transform ${getCategoryBtnStyles(product['類別'])}`}
-                >
-                    <span className="material-symbols-outlined text-3xl">play_circle</span>
-                    <span className="text-xs font-black mt-0.5">開始</span>
-                </button>
             </div>
         );
     };
@@ -753,6 +773,26 @@ export default function Home() {
 
     return (
         <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+            {favoriteToRemove && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div role="dialog" aria-modal="true" aria-labelledby="remove-favorite-title" className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl dark:bg-slate-800">
+                        <div className="mb-5 text-center">
+                            <span className="material-symbols-outlined mb-2 text-4xl text-red-500" aria-hidden="true">heart_minus</span>
+                            <h2 id="remove-favorite-title" className="text-xl font-black text-slate-900 dark:text-white">{t('remove_favorite_confirm_title')}</h2>
+                            <p className="mt-3 break-words text-base font-bold text-slate-700 dark:text-slate-200">{favoriteToRemove['品名']}</p>
+                            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{t('remove_favorite_hint')}</p>
+                        </div>
+                        <div className="space-y-3">
+                            <button type="button" onClick={() => setFavoriteToRemove(null)} className="min-h-16 w-full rounded-xl border-2 border-slate-300 text-base font-black text-slate-700 dark:border-slate-600 dark:text-slate-100">
+                                {t('cancel')}
+                            </button>
+                            <button type="button" onClick={confirmFavoriteRemoval} className="min-h-16 w-full rounded-xl bg-red-600 text-base font-black text-white active:bg-red-700">
+                                {t('remove_favorite')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Password Modal */}
             {showPasswordModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -1276,7 +1316,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.17.1
+                                    Version 1.17.2
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity

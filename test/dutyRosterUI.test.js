@@ -20,4 +20,15 @@ test('all supported languages label the latest information duty roster', async (
   assert.equal((translations.match(/"battle_report_tab": "(?:最新資訊|Thông tin mới|Info terbaru)"/g) || []).length, 3);
   assert.equal((translations.match(/"duty_roster_title":/g) || []).length, 3);
   assert.equal((translations.match(/"duty_roster_view_full":/g) || []).length, 3);
+  assert.equal((translations.match(/"duty_roster_employee_number":/g) || []).length, 3);
+});
+
+test('duty roster shows employee numbers with a badge icon, without list position or ID text', async () => {
+  const page = await readFile(new URL('../src/pages/BattleReport.jsx', import.meta.url), 'utf8');
+  const roster = page.slice(page.indexOf('function EmployeeBadgeIcon'), page.indexOf('export default function BattleReport'));
+
+  assert.match(roster, /<svg viewBox="0 0 24 24"/);
+  assert.match(roster, /duty_roster_employee_number/);
+  assert.doesNotMatch(roster, /\{index \+ 1\}/);
+  assert.doesNotMatch(roster, /ID \$\{/);
 });

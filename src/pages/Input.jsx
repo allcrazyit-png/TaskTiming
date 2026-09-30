@@ -330,10 +330,10 @@ export default function Input() {
                 >
                     <span className="material-symbols-outlined text-3xl font-black">arrow_back</span>
                 </button>
-                <div className="flex items-center gap-3 flex-1">
-                    <div className="relative">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                    <div className="shrink-0">
                         {displayProductImage ? (
-                            <img alt="Product Image" className={`w-16 h-16 rounded-xl border object-cover shadow-md bg-white ${catColor === 'amber' ? 'border-amber-500' :
+                            <img alt={productName} className={`w-20 h-16 rounded-xl border object-contain shadow-md bg-white ${catColor === 'amber' ? 'border-amber-500' :
                                 catColor === 'slate' ? 'border-slate-500' :
                                     catColor === 'emerald' ? 'border-emerald-500' :
                                         catColor === 'purple' ? 'border-purple-500' :
@@ -345,25 +345,23 @@ export default function Input() {
                                 }}
                             />
                         ) : (
-                            <div className="w-16 h-16 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+                            <div className="flex h-16 w-20 items-center justify-center rounded-xl border border-slate-300 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800">
                                 <span className="material-symbols-outlined text-2xl">image_not_supported</span>
                             </div>
                         )}
-                        {/* Category Badge - Color Coded */}
+                    </div>
+                    <div className="flex min-w-0 flex-col">
+                        {/* Keep the category visible without covering the product photo. */}
                         {category && (
-                            <div className="absolute top-1 left-1">
-                                <span className={`${catColor === 'amber' ? 'bg-amber-500' :
+                            <span className={`mb-1 self-start rounded-md px-2 py-0.5 text-xs font-black text-white ${catColor === 'amber' ? 'bg-amber-500' :
                                     catColor === 'slate' ? 'bg-slate-600' :
                                         catColor === 'emerald' ? 'bg-emerald-600' :
                                             catColor === 'purple' ? 'bg-purple-600' :
-                                                'bg-black/60'} backdrop-blur-md text-white px-2 py-0.5 rounded-md text-[10px] font-black border border-white/20 shadow-sm`}>
-                                    {t(`cat_${category}`, category)}
-                                </span>
-                            </div>
+                                                'bg-slate-700'}`}>
+                                {t(`cat_${category}`, category)}
+                            </span>
                         )}
-                    </div>
-                    <div className="flex flex-col">
-                        <div className="mt-1">
+                        <div className="min-w-0">
                             <span className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-0.5">
                                 {t('car_model_label')} <span className={catColor === 'amber' ? 'text-amber-600' :
                                     catColor === 'slate' ? 'text-slate-600' :
@@ -372,13 +370,13 @@ export default function Input() {
                                                 'text-primary'}>{carModel}</span>
                             </span>
                             <span className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-0.5">
-                                {t('part_number_input_label')} <span className={catColor === 'amber' ? 'text-amber-600' :
+                                {t('part_number_input_label')} <span className={`break-all ${catColor === 'amber' ? 'text-amber-600' :
                                     catColor === 'slate' ? 'text-slate-600' :
                                         catColor === 'emerald' ? 'text-emerald-600' :
                                             catColor === 'purple' ? 'text-purple-600' :
-                                                'text-primary'}>{partNumber}</span>
+                                                'text-primary'}`}>{partNumber}</span>
                             </span>
-                            <span className={`product-name-badge mt-0.5 inline-block ${catColor === 'amber' ? 'bg-amber-500' :
+                            <span className={`product-name-badge mt-0.5 max-w-full break-words ${catColor === 'amber' ? 'bg-amber-500' :
                                 catColor === 'slate' ? 'bg-slate-600' :
                                     catColor === 'emerald' ? 'bg-emerald-600' :
                                         catColor === 'purple' ? 'bg-purple-600' :
