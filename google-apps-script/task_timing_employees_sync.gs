@@ -5,6 +5,7 @@
  * are sent only to Supabase Auth Admin and are never included in that table.
  */
 var TASK_TIMING_EMPLOYEE_SYNC_BATCH_SIZE = 200;
+var TASK_TIMING_EMPLOYEE_PASSWORD_FINGERPRINT_PREFIX = 'TASK_TIMING_EMPLOYEE_PASSWORD_FINGERPRINT_';
 
 function normalizeTaskTimingHeaders_(headers) {
   return headers.map(function (header) {
@@ -36,6 +37,14 @@ function taskTimingEmployeeAuthEmail_(employeeId) {
   var id = String(employeeId === null || employeeId === undefined ? '' : employeeId).trim().toLowerCase();
   if (!id) throw new Error('Employee ID is required');
   return encodeURIComponent(id) + '@tasktiming.local';
+}
+
+function taskTimingEmployeePasswordFingerprint_(employee, secret) {
+  var input = employee.employee_id + '\n' + employee.password;
+  var signature = Utilities.computeHmacSha256Signature(input, secret);
+  return 'v1:' + signature.map(function (byte) {
+    return ('0' + (byte & 255).toString(16)).slice(-2);
+  }).join('');
 }
 
 function taskTimingSupabaseRequest_(endpoint, options, description) {
@@ -126,7 +135,7 @@ function taskTimingAuthUsersByEmail_(baseUrl, secret) {
   return usersByEmail;
 }
 
-function taskTimingProvisionEmployeeAuth_(baseUrl, secret, employee, authUserId) {
+function taskTimingProvisionEmployeeAuth_(baseUrl, secret, employee, authUserId, updatePassword) {
   var userPayload = {
     user_metadata: {
       employee_id: employee.employee_id,
@@ -135,7 +144,9 @@ function taskTimingProvisionEmployeeAuth_(baseUrl, secret, employee, authUserId)
   };
 
   if (authUserId) {
-    if (employee.password) userPayload.password = employee.password;
+    // A row deletion sync must not resubmit every remaining employee's
+    // password. Auth password updates can invalidate their active sessions.
+    if (updatePassword && employee.password) userPayload.password = employee.password;
     taskTimingSupabaseRequest_(
       baseUrl + '/auth/v1/admin/users/' + encodeURIComponent(authUserId),
       {
@@ -368,9 +379,22 @@ function syncTaskTimingEmployeesToSupabase(options) {
           failures.push(employee.employee_id);
           return;
         }
+        var fingerprintKey = TASK_TIMING_EMPLOYEE_PASSWORD_FINGERPRINT_PREFIX + encodeURIComponent(employee.employee_id);
+        var fingerprint = employee.password ? taskTimingEmployeePasswordFingerprint_(employee, secret) : '';
+        var previousFingerprint = fingerprint ? properties.getProperty(fingerprintKey) : '';
+        // Existing accounts have no fingerprint on the first run after this
+        // change. Record their current Sheet password as a baseline without
+        // resetting it. Later manual changes update only that one password.
+        var passwordChanged = !automatic && !!existingAuthUserId && !!previousFingerprint
+          && previousFingerprint !== fingerprint;
         var provisioned = taskTimingProvisionEmployeeAuth_(
-          baseUrl, secret, employee, existingAuthUserId,
+          baseUrl, secret, employee, existingAuthUserId, passwordChanged,
         );
+        // An automatic deletion sync never acknowledges a changed password;
+        // the next manual sync must still be able to apply that change.
+        if (fingerprint && (!automatic || provisioned.created)) {
+          properties.setProperty(fingerprintKey, fingerprint);
+        }
         pending.push({
           employee_id: employee.employee_id,
           employee_name: employee.employee_name,

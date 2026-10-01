@@ -131,7 +131,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.18.0 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.18.1 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -281,10 +281,11 @@ export default function Home() {
         }
     };
 
-    // Restore session when employees are loaded
+    // Restore the selected employee immediately; a temporary refresh failure
+    // must not erase the saved login or make the operator choose their name.
     useEffect(() => {
         let cancelled = false;
-        const restoreOperator = async () => {
+        const restoreOperator = () => {
             if (employees.length > 0) {
                 const savedOperatorId = localStorage.getItem('savedOperatorId');
                 console.log("Restoring session, saved ID:", savedOperatorId);
@@ -292,13 +293,6 @@ export default function Home() {
                 if (savedOperatorId) {
                     const session = readTaskTimingSession();
                     if (!session || String(session.employeeId) !== String(savedOperatorId)) {
-                        localStorage.removeItem('savedOperatorId');
-                        clearTaskTimingSession();
-                        return;
-                    }
-                    try {
-                        await getTaskTimingAccessToken();
-                    } catch {
                         localStorage.removeItem('savedOperatorId');
                         clearTaskTimingSession();
                         return;
@@ -311,6 +305,18 @@ export default function Home() {
                         setSelectedOperator(operatorStr);
                         loadOperatorHistory(foundEmp['員工編號']);
                         loadOperatorFavorites(foundEmp['員工編號']);
+                        getTaskTimingAccessToken().catch(error => {
+                            // Only a definitely rejected refresh needs another password.
+                            // Keep the selected name and session on network/server errors.
+                            if (error.message !== 'Employee login expired' || cancelled) return;
+                            if (localStorage.getItem('savedOperatorId') !== String(savedOperatorId)) return;
+                            if (readTaskTimingSession()?.refreshToken !== session.refreshToken) return;
+                            setSelectedOperator('');
+                            setTempOperator(foundEmp);
+                            setPasswordInput('');
+                            setPasswordError(false);
+                            setShowPasswordModal(true);
+                        });
                     } else {
                         console.log("Saved ID not found in employee list");
                     }
@@ -1344,7 +1350,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.18.0
+                                    Version 1.18.1
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity

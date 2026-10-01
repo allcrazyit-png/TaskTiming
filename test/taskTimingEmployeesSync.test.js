@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { createHmac } from 'node:crypto';
 import vm from 'node:vm';
 
 const employeeSyncSource = await readFile(
@@ -13,8 +14,23 @@ const context = vm.createContext({
   String,
   Object,
   encodeURIComponent,
+  Utilities: {
+    computeHmacSha256Signature: (value, key) => [...createHmac('sha256', key).update(value).digest()],
+  },
 });
 vm.runInContext(employeeSyncSource, context);
+
+function createScriptProperties(initial = {}) {
+  const values = new Map([
+    ['TASK_TIMING_SUPABASE_URL', 'https://example.supabase.co'],
+    ['TASK_TIMING_SUPABASE_SECRET_KEY', 'secret'],
+    ...Object.entries(initial),
+  ]);
+  return {
+    getProperty: key => values.get(key) ?? null,
+    setProperty: (key, value) => values.set(key, String(value)),
+  };
+}
 
 test('employee mirror is public-read-only and has no password column', async () => {
   const sql = await readFile(new URL('../supabase/task_timing_employees.sql', import.meta.url), 'utf8');
@@ -71,14 +87,81 @@ test('retains a numeric zero employee ID like the browser helper', () => {
   assert.equal(context.taskTimingEmployeeAuthEmail_(0), '0@tasktiming.local');
 });
 
+test('automatic employee sync does not resubmit existing passwords', () => {
+  const requests = [];
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      requests.push({ url, options });
+      return { getResponseCode: () => 200, getContentText: () => '{}' };
+    },
+  };
+  const employee = { employee_id: 'E01', employee_name: '王小美', password: 'existing-password' };
+  context.taskTimingProvisionEmployeeAuth_('https://example.supabase.co', 'secret', employee, 'auth-e01', false);
+  assert.doesNotMatch(requests[0].options.payload, /password/i);
+  context.taskTimingProvisionEmployeeAuth_('https://example.supabase.co', 'secret', employee, 'auth-e01', true);
+  assert.equal(JSON.parse(requests[1].options.payload).password, 'existing-password');
+  assert.match(employeeSyncSource, /employee, existingAuthUserId, passwordChanged/);
+});
+
+test('only a later manual Sheet password change updates an existing Auth password', () => {
+  const properties = createScriptProperties();
+  const authUpdates = [];
+  let sheetPassword = 'initial-password';
+  context.PropertiesService = { getScriptProperties: () => properties };
+  context.SpreadsheetApp = {
+    getUi: () => ({ alert: () => undefined }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['E01', '王小美', sheetPassword],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      if (url.includes('/rest/v1/task_timing_employees?select=')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { employee_id: 'E01', auth_user_id: 'auth-e01' },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users?')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { id: 'auth-e01', email: 'e01@tasktiming.local', user_metadata: { employee_id: 'E01' } },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users/auth-e01') && options.method === 'put') {
+        authUpdates.push(JSON.parse(options.payload));
+        return { getResponseCode: () => 200, getContentText: () => '{}' };
+      }
+      if (url.includes('/rest/v1/task_timing_employees?on_conflict=')) {
+        return { getResponseCode: () => 201, getContentText: () => '' };
+      }
+      throw new Error('Unexpected request: ' + url);
+    },
+  };
+
+  context.syncTaskTimingEmployeesToSupabase(); // record a baseline without resetting the password
+  assert.equal(authUpdates[0].password, undefined);
+  const baseline = properties.getProperty('TASK_TIMING_EMPLOYEE_PASSWORD_FINGERPRINT_E01');
+  assert.match(baseline, /^v1:[0-9a-f]{64}$/);
+
+  sheetPassword = 'changed-password';
+  context.syncTaskTimingEmployeesToSupabase({ automatic: true });
+  assert.equal(authUpdates[1].password, undefined);
+  assert.equal(properties.getProperty('TASK_TIMING_EMPLOYEE_PASSWORD_FINGERPRINT_E01'), baseline);
+
+  context.syncTaskTimingEmployeesToSupabase();
+  assert.equal(authUpdates[2].password, 'changed-password');
+  context.syncTaskTimingEmployeesToSupabase();
+  assert.equal(authUpdates[3].password, undefined);
+});
+
 test('retries an Auth-created employee by reconciling its email before public upsert', () => {
   const requests = [];
   const alerts = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({
       ButtonSet: { YES_NO: 'YES_NO' },
@@ -133,11 +216,7 @@ test('retries an Auth-created employee by reconciling its email before public up
 
 test('retries an encoded employee email despite Auth returning lowercase percent escapes', () => {
   const requests = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({
       ButtonSet: { YES_NO: 'YES_NO' },
@@ -184,11 +263,7 @@ test('retries an encoded employee email despite Auth returning lowercase percent
 test('stops before any network request when distinct employee IDs collide after Auth email normalization', () => {
   const requests = [];
   const alerts = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({
       ButtonSet: { YES_NO: 'YES_NO' },
@@ -218,11 +293,7 @@ test('stops before any network request when distinct employee IDs collide after 
 test('stops before any network request for duplicate literal employee IDs', () => {
   const requests = [];
   const alerts = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({ alert: message => alerts.push(message) }),
     getActiveSpreadsheet: () => ({
@@ -245,11 +316,7 @@ test('stops before any network request for duplicate literal employee IDs', () =
 test('stops before writes when a canonical Auth email belongs to another literal employee ID', () => {
   const requests = [];
   const alerts = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({ alert: message => alerts.push(message) }),
     getActiveSpreadsheet: () => ({
@@ -286,11 +353,7 @@ test('stops before writes when a canonical Auth email belongs to another literal
 test('stops before writes when the mirror and canonical Auth email point to different UUIDs', () => {
   const requests = [];
   const alerts = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({ alert: message => alerts.push(message) }),
     getActiveSpreadsheet: () => ({
@@ -345,11 +408,7 @@ test('includes a safe per-employee reason when an Auth request fails', () => {
 test('reports a new employee with blank password without creating Auth or public mirror rows', () => {
   const requests = [];
   const alerts = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({ alert: message => alerts.push(message) }),
     getActiveSpreadsheet: () => ({
@@ -403,11 +462,7 @@ test('paginates the existing public employee roster with Range headers', () => {
 test('deletes employees missing from the Sheet from both the public mirror and Auth', () => {
   const requests = [];
   const alerts = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({
       ButtonSet: { YES_NO: 'YES_NO' },
@@ -469,11 +524,7 @@ test('deletes employees missing from the Sheet from both the public mirror and A
 
 test('deletes an orphaned managed Auth account even when its public mirror row is already gone', () => {
   const requests = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({
       ButtonSet: { YES_NO: 'YES_NO' },
@@ -525,11 +576,7 @@ test('deletes an orphaned managed Auth account even when its public mirror row i
 
 test('does not delete stale employees when a source employee update fails', () => {
   const requests = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({
       ButtonSet: { YES_NO: 'YES_NO' },
@@ -573,11 +620,7 @@ test('does not delete stale employees when a source employee update fails', () =
 
 test('recreates an employee after it is added back to the Sheet with a password', () => {
   const requests = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({ alert: () => {} }),
     getActiveSpreadsheet: () => ({
@@ -613,11 +656,7 @@ test('recreates an employee after it is added back to the Sheet with a password'
 
 test('allows a header-only Sheet to intentionally remove every mirrored employee', () => {
   const requests = [];
-  context.PropertiesService = {
-    getScriptProperties: () => ({
-      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
-    }),
-  };
+  context.PropertiesService = { getScriptProperties: () => createScriptProperties() };
   context.SpreadsheetApp = {
     getUi: () => ({
       ButtonSet: { YES_NO: 'YES_NO' },
