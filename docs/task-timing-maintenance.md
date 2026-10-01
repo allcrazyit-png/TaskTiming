@@ -98,6 +98,7 @@ GitHub Pages 部署不會更新 Apps Script；Apps Script 儲存或部署也不�
 | 1.14.0 | 產品與員工名單改由 Supabase 讀取；員工密碼改由 Supabase Auth 驗證。 |
 | 1.14.1 | 首頁停止讀取組裝紀錄 Sheet，改顯示手機本機的最近上傳時間。 |
 | 1.18.0 | 組裝紀錄採 Sheet 主檔＋Supabase 鏡像；戰報改由已登入使用者呼叫 Supabase RPC。Apps Script Web App 已部署為第 33 版。 |
+| 1.18.1 | 修正登入憑證續期的重複請求與暫時失敗清除登入問題；員工同步只更新真正變更的密碼。Apps Script Web App 已部署為第 34 版。 |
 
 ## 異常排查
 
