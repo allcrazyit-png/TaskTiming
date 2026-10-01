@@ -2,11 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import {
+  clearTaskTimingSession,
   employeeAuthEmail,
   fetchTaskTimingEmployees,
+  getTaskTimingAccessToken,
   mapTaskTimingEmployee,
+  readTaskTimingSession,
+  saveTaskTimingSession,
   verifyTaskTimingEmployeePassword,
 } from '../src/services/taskTimingEmployees.js';
+
+function createStorage() {
+  const values = new Map();
+  return {
+    getItem: key => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: key => values.delete(key),
+  };
+}
 
 test('maps a public employee row without a password', () => {
   assert.deepEqual(mapTaskTimingEmployee({ employee_id: 'E01', employee_name: '王小美' }), {
@@ -80,21 +93,68 @@ test('fetches every employee page when the mirror exceeds the PostgREST page siz
   }
 });
 
-test('accepts only an Auth session belonging to the selected employee', async () => {
+test('returns only the session fields needed for authenticated record reads', async () => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async () => ({
     ok: true,
     status: 200,
     json: async () => ({
       user: { user_metadata: { employee_id: 'E01' } },
-      access_token: 'not-stored',
-      refresh_token: 'not-stored',
+      access_token: 'access-token',
+      refresh_token: 'refresh-token',
+      expires_at: 2000000000,
     }),
   });
   try {
-    assert.equal(await verifyTaskTimingEmployeePassword({
+    assert.deepEqual(await verifyTaskTimingEmployeePassword({
       employeeId: 'E01', password: '1234', supabaseUrl: 'https://example.supabase.co', publishableKey: 'test-key',
-    }), true);
+    }), {
+      employeeId: 'E01',
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      expiresAt: 2000000000,
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('stores, reads, and clears the employee Auth session without storing a password', () => {
+  const storage = createStorage();
+  const session = {
+    employeeId: 'E01', accessToken: 'access-token', refreshToken: 'refresh-token', expiresAt: 2000000000,
+  };
+  saveTaskTimingSession(session, storage);
+  assert.deepEqual(readTaskTimingSession(storage), session);
+  assert.doesNotMatch(JSON.stringify(readTaskTimingSession(storage)), /password/i);
+  clearTaskTimingSession(storage);
+  assert.equal(readTaskTimingSession(storage), null);
+});
+
+test('refreshes an expired session and persists the replacement tokens', async () => {
+  const originalFetch = globalThis.fetch;
+  const storage = createStorage();
+  saveTaskTimingSession({
+    employeeId: 'E01', accessToken: 'expired', refreshToken: 'refresh-token', expiresAt: 1,
+  }, storage);
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    json: async () => ({
+      user: { user_metadata: { employee_id: 'E01' } },
+      access_token: 'new-access-token',
+      refresh_token: 'new-refresh-token',
+      expires_at: 2000000000,
+    }),
+  });
+  try {
+    assert.equal(await getTaskTimingAccessToken({
+      storage,
+      nowSeconds: 100,
+      supabaseUrl: 'https://example.supabase.co',
+      publishableKey: 'test-key',
+    }), 'new-access-token');
+    assert.equal(readTaskTimingSession(storage).refreshToken, 'new-refresh-token');
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -121,9 +181,12 @@ test('rejects an Auth session that belongs to another employee', async () => {
 
 test('Home delegates employee loading and password validation to the employee service', async () => {
   const home = await readFile(new URL('../src/pages/Home.jsx', import.meta.url), 'utf8');
-  assert.match(home, /import \{ fetchTaskTimingEmployees, verifyTaskTimingEmployeePassword \} from '\.\.\/services\/taskTimingEmployees';/);
+  assert.match(home, /fetchTaskTimingEmployees,/);
+  assert.match(home, /verifyTaskTimingEmployeePassword,/);
+  assert.match(home, /from '\.\.\/services\/taskTimingEmployees';/);
   assert.match(home, /fetchTaskTimingEmployees\(\{ signal: employeeController\.signal \}\)/);
   assert.match(home, /await verifyTaskTimingEmployeePassword\(\{/);
+  assert.match(home, /saveTaskTimingSession\(session\)/);
   assert.doesNotMatch(home, /const correctPassword = String\(tempOperator\['密碼'\]/);
 });
 

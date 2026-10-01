@@ -153,18 +153,22 @@ export default function Confirm() {
         setIsSubmitting(true);
 
         const submitPayload = (payload) => {
+            const recordId = payload.recordId
+                || globalThis.crypto?.randomUUID?.()
+                || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const payloadWithId = { ...payload, recordId };
             fetch(GOOGLE_SCRIPT_URL, {
                 method: "POST",
                 mode: "no-cors",
                 keepalive: true,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+                body: JSON.stringify(payloadWithId),
             }).catch(err => console.error(err));
 
             // Save to LocalStorage History
             try {
                 // Extract Operator ID from "[ID] Name" format
-                const match = payload.operator.match(/\[(.*?)\]/);
+                const match = payloadWithId.operator.match(/\[(.*?)\]/);
                 const opId = match ? match[1] : 'unknown';
                 const historyKey = `uploadHistory_${opId}`;
 
@@ -172,7 +176,7 @@ export default function Confirm() {
 
                 // Add timestamp to the payload copy
                 const historyRecord = {
-                    ...payload,
+                    ...payloadWithId,
                     submitDate: new Date().toLocaleDateString(),
                     submitTimestamp: new Date().getTime()
                 };

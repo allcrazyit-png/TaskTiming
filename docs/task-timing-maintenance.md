@@ -1,6 +1,6 @@
 # TaskTiming 維護手冊
 
-最後更新：2026-08-12
+最後更新：2026-10-01
 
 ## 資料分工
 
@@ -9,11 +9,13 @@
 | 產品主檔 | Google Sheet「產品總表」 | Supabase `task_timing_products` |
 | 員工姓名與編號 | Google Sheet「員工資料」 | Supabase `task_timing_employees` |
 | 員工密碼 | Google Sheet「員工資料」的「密碼」欄 | Supabase Auth |
-| 組裝作業紀錄 | 網站上傳至 Google Apps Script | Google Sheet「組裝紀錄」 |
+| 組裝作業紀錄 | 網站經 Google Apps Script 寫入 Google Sheet「組裝紀錄」 | Supabase `task_timing_records`（戰報查詢鏡像） |
 
-Sheet 是產品與員工資料的人工維護主檔；Supabase 是網站快速讀取的鏡像與登入服務。
+Sheet 是產品、員工與組裝紀錄的人工維護主檔；Supabase 是網站快速讀取的鏡像與登入服務。組裝上傳永遠先寫入 Sheet，寫入成功後才鏡像到 Supabase；Supabase 暫時失敗不會讓已寫入 Sheet 的生產紀錄遺失。
 
 產品鏡像規則：Supabase 只鏡像**非射出**的產品，並以「品番＋類別」這組配對當作一筆資料的身分。同一個品番出現在不同工序（例如「組裝」「包裝」「檢查」）是刻意保留的，每個工序各自是一筆；Sheet 刪掉某個品番＋類別的組合，下次同步就會從 Supabase 刪除該筆。
+
+組裝紀錄鏡像規則：每一筆以 `Supabase紀錄ID` 作為固定身分，`Supabase同步狀態` 顯示「已同步」或錯誤內容。既有資料會以每批 1,000 筆補同步；未完成時建立下一個一分鐘單次觸發器，另有每 10 分鐘的定時補漏同步。
 
 ## 日常操作
 
@@ -38,10 +40,17 @@ Sheet 是產品與員工資料的人工維護主檔；Supabase 是網站快速�
 | --- | --- | --- |
 | 首頁 | 否 | 產品、員工讀 Supabase；最近上傳時間讀本機瀏覽器資料。 |
 | 員工登入 | 否 | 由 Supabase Auth 驗證密碼。 |
-| 上傳作業 | 寫入 | 經 Google Apps Script 寫入組裝紀錄。 |
-| 戰報 | 讀取 | 讀取組裝紀錄最近 3,000 筆。 |
+| 上傳作業 | 寫入 | 經 Google Apps Script 先寫入組裝紀錄，再鏡像到 Supabase。 |
+| 戰報 | 否 | 登入後呼叫 Supabase RPC，讀取伺服器端彙總結果。 |
 | 員工同步 | 讀取 | 手動執行時讀「員工資料」並寫入 Supabase。 |
 | 產品同步 | 讀取 | 手動執行時讀「產品總表」並寫入 Supabase。 |
+
+### 組裝紀錄同步
+
+- Sheet 的 W 欄為 `Supabase紀錄ID`，X 欄為 `Supabase同步狀態`。
+- 新上傳會先完成 Sheet 寫入，再嘗試寫入 Supabase。
+- 若狀態不是「已同步」，定時觸發器會重新補同步，不必要求作業員重複上傳。
+- 戰報只允許已登入的員工透過 `task_timing_battle_report` RPC 取得彙總資料；匿名使用者不能直接讀取整張紀錄表。
 
 ### 首頁最近上傳提示
 
@@ -74,6 +83,7 @@ GitHub Pages 部署不會更新 Apps Script；Apps Script 儲存或部署也不�
 | --- | --- |
 | 1.14.0 | 產品與員工名單改由 Supabase 讀取；員工密碼改由 Supabase Auth 驗證。 |
 | 1.14.1 | 首頁停止讀取組裝紀錄 Sheet，改顯示手機本機的最近上傳時間。 |
+| 1.18.0 | 組裝紀錄採 Sheet 主檔＋Supabase 鏡像；戰報改由已登入使用者呼叫 Supabase RPC。Apps Script Web App 已部署為第 33 版。 |
 
 ## 異常排查
 
@@ -82,5 +92,6 @@ GitHub Pages 部署不會更新 Apps Script；Apps Script 儲存或部署也不�
 | Sheet 改了員工／產品，網站沒變 | 是否已執行對應 Supabase 同步。 |
 | 員工無法登入 | 密碼是否至少 6 碼、同步是否成功、是否輸入正確員工編號的密碼。 |
 | 首頁沒有最近上傳 | 該手機可能沒有此員工的本機上傳紀錄；不代表 Sheet 沒有紀錄。 |
-| 戰報載入慢 | 戰報會讀取 Sheet 最近 3,000 筆紀錄，先檢查 GAS 與 Sheet 回應。 |
+| 戰報載入失敗 | 確認員工仍為登入狀態、Supabase RPC 權限與 `task_timing_records` 是否有同步資料。 |
+| Sheet 紀錄沒有同步到 Supabase | 查看 X 欄錯誤內容、Apps Script「執行項目」與 `syncTaskTimingRecordsToSupabase` 觸發器。 |
 | 網站沒出現程式更新 | 確認已執行 GitHub Pages deploy，並重新整理或清除瀏覽器快取。 |

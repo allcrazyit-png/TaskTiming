@@ -8,19 +8,15 @@ import {
     getDutyRosterEmployeeId,
     getWeeklyDutyRoster,
 } from '../utils/dutyRoster';
-
-// Same URL as Home.jsx
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
+import { getTaskTimingAccessToken } from '../services/taskTimingEmployees';
+import { fetchTaskTimingBattleReport } from '../services/taskTimingRecords';
 
 const MILESTONES = [10000, 50000, 100000, 500000, 1000000];
 
 
-function parseTotalSeconds(timeStr) {
-    if (!timeStr || typeof timeStr !== 'string') return 0;
-    const parts = timeStr.split(':').map(Number);
-    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    if (parts.length === 2) return parts[0] * 60 + parts[1];
-    return 0;
+function getLocalDateString() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 // Semi-circle gauge
@@ -173,85 +169,42 @@ export default function BattleReport() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const [records, setRecords] = useState([]);
+    const [report, setReport] = useState(null);
     const [error, setError] = useState(null);
     const [isRosterExpanded, setIsRosterExpanded] = useState(false);
+    const todayStr = getLocalDateString();
 
     useEffect(() => {
         window.scrollTo(0, 0);
+        const controller = new AbortController();
         const load = async () => {
             try {
                 setLoading(true);
-                // 戰報讀「組裝紀錄表」，GAS 內部知道要去哪裡讀，前端不需要知道 ID
-                const sheetParam = encodeURIComponent('紀錄');
-                // lastRows：戰報只看當日資料，不需要整張紀錄表（整張讀會讓 GAS 超時）
-                const res = await fetch(`${GOOGLE_SCRIPT_URL}?action=records&sheet=${sheetParam}&lastRows=3000`);
-
-                if (!res.ok) throw new Error('HTTP error ' + res.status);
-                let data = await res.json();
-                console.log('[BattleReport] Raw data from Records sheet:', data);
-
-                if (!Array.isArray(data)) {
-                    console.warn('[BattleReport] Sheet name "紀錄" not found, trying index=0...');
-                    const res2 = await fetch(`${GOOGLE_SCRIPT_URL}?action=records&index=0&lastRows=3000`);
-                    data = await res2.json();
-                }
-
-                if (Array.isArray(data)) {
-                    setRecords(data);
-                } else {
-                    setError('無法讀取紀錄，請確認組裝紀錄表中有「紀錄」分頁');
-                }
+                const accessToken = await getTaskTimingAccessToken({ signal: controller.signal });
+                const data = await fetchTaskTimingBattleReport({
+                    accessToken,
+                    today: todayStr,
+                    signal: controller.signal,
+                });
+                setReport(data);
             } catch (e) {
-                setError('資料讀取失敗：' + e.message);
+                if (e.name !== 'AbortError') {
+                    const needsLogin = /login|required|expired/i.test(e.message);
+                    setError(needsLogin ? '請先返回首頁重新登入' : '資料讀取失敗：' + e.message);
+                }
             } finally {
-                setLoading(false);
+                if (!controller.signal.aborted) setLoading(false);
             }
         };
         load();
-    }, []);
+        return () => controller.abort();
+    }, [todayStr]);
 
-    // Cumulative total across ALL records
-    const cumulativeTotal = records.reduce((sum, r) => {
-        return sum + (parseInt(r['良品數量'] ?? 0) || 0);
-    }, 0);
-
-    // Today's date in TWN timezone (UTC+8)
-    // GAS stores dates as ISO UTC, e.g. "2026-03-05T16:00:00.000Z" = 2026-03-06 00:00 TWN
-    // We compare by parsing the date from sheet and converting to local date
-    const todayStr = (() => {
-        const now = new Date();
-        // Use local date string in YYYY-MM-DD format for comparison
-        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    })();
-
-    const todayRecords = records.filter(r => {
-        const raw = String(r['日期'] ?? '');
-        if (!raw) return false;
-        // Parse the date from sheet (ISO or any format) and compare as local date
-        const d = new Date(raw);
-        const localStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        return localStr === todayStr;
-    });
-
-    const todayGoodCount = todayRecords.reduce((s, r) => s + (parseInt(r['良品數量'] ?? 0) || 0), 0);
-
-    // 效率計算：用試算表已計算好的「效率值」欄位 (ratio, e.g. 1.188 = 118.8%)
-    // 加權平均：依良品數量×標準秒加權，避免短工單過度影響結果
-    let earnedTotal = 0, actualTotal = 0;
-    todayRecords.forEach(r => {
-        const gc = parseInt(r['良品數量'] ?? 0) || 0;
-        const st = parseFloat(r['標準組裝秒數'] ?? 0) || 0;
-        const eff = parseFloat(r['效率值'] ?? 0) || 0;
-        // 只計入有設定標準秒數、且效率值有效的紀錄
-        if (st > 0 && eff > 0 && gc > 0) {
-            earnedTotal += gc * st;           // 標準應花秒數
-            actualTotal += (gc * st) / eff;  // 實際花秒數 = 應花 / 效率
-        }
-    });
-    const avgEfficiency = actualTotal > 0 ? (earnedTotal / actualTotal) * 100 : 0;
-
-    const todayOperators = new Set(todayRecords.map(r => r['作業者'] ?? '')).size;
+    const cumulativeTotal = report?.cumulativeTotal ?? 0;
+    const todayGoodCount = report?.todayGoodCount ?? 0;
+    const todayRecordCount = report?.todayRecordCount ?? 0;
+    const todayOperators = report?.todayOperators ?? 0;
+    const avgEfficiency = report?.avgEfficiency ?? 0;
 
     // Language-aware number formatter
     const formatSmallNumber = (n) => {
@@ -272,15 +225,6 @@ export default function BattleReport() {
     const progressPct = nextMilestone > prevMilestone
         ? Math.min(100, ((cumulativeTotal - prevMilestone) / (nextMilestone - prevMilestone)) * 100)
         : 100;
-
-    // Live feed - last 20 records with a name
-    const liveFeed = [...records]
-        .filter(r => r['作業者'])
-        .slice(-30)
-        .reverse()
-        .slice(0, 15);
-
-    const avatarColors = ['bg-primary', 'bg-blue-500', 'bg-violet-500', 'bg-rose-500', 'bg-amber-500', 'bg-teal-500'];
 
     let gaugeColor = '#ef4444';
     if (avgEfficiency >= 90) gaugeColor = '#f59e0b';
@@ -406,9 +350,9 @@ export default function BattleReport() {
 
                         <div className="text-center -mt-2">
                             <span className="text-4xl font-black" style={{ color: gaugeColor }}>
-                                {todayRecords.length > 0 ? avgEfficiency.toFixed(1) : '--'}%
+                                {todayRecordCount > 0 ? avgEfficiency.toFixed(1) : '--'}%
                             </span>
-                            {todayRecords.length === 0 && (
+                            {todayRecordCount === 0 && (
                                 <p className="text-xs text-slate-400 font-medium mt-1">{t('br_no_records')}</p>
                             )}
                         </div>
@@ -427,7 +371,7 @@ export default function BattleReport() {
                             </div>
                             <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-center">
                                 <span className="material-symbols-outlined text-xl text-amber-500 block">fact_check</span>
-                                <span className="text-sm font-black text-slate-800 dark:text-white">{todayRecords.length}筆</span>
+                                <span className="text-sm font-black text-slate-800 dark:text-white">{todayRecordCount}筆</span>
                                 <span className="text-[10px] text-slate-400 block font-medium">{t('br_upload_count')}</span>
                             </div>
                         </div>

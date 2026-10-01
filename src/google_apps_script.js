@@ -1,9 +1,247 @@
 const PRODUCTS_SS_ID = '1YSOI1VPh4GBYkr7QVx60YOxtrfpC4JofuXOy_dyPHaQ'; // 產品資料表 (讀)
 const RECORDS_SS_ID = '1xo4YhDuxh-wpstg7tmAqW4orB9aBheF1CUFzM1TDWKw';  // 組裝紀錄表 (寫)
+const TASK_TIMING_RECORD_ID_HEADER = 'Supabase紀錄ID';
+const TASK_TIMING_SYNC_STATUS_HEADER = 'Supabase同步狀態';
+const TASK_TIMING_RECORD_BATCH_SIZE = 1000;
+const TASK_TIMING_UPSERT_BATCH_SIZE = 200;
 
 // 讀整張試算表在 GAS 上要 10～30 秒，但產品與員工資料一天內幾乎不變。
 // 用 CacheService 把組好的 JSON 存起來，命中時直接回傳，可從 17 秒降到 1 秒內。
 var CACHE_TTL_SECONDS = 600; // 10 分鐘
+
+function onOpen() {
+    SpreadsheetApp.getUi()
+        .createMenu('組裝報表工具')
+        .addItem('設定並開始 Supabase 紀錄同步', 'setupTaskTimingRecordSync')
+        .addItem('立即補同步生產紀錄', 'syncTaskTimingRecordsToSupabase')
+        .addToUi();
+}
+
+function taskTimingRecordSheet_() {
+    var ss = SpreadsheetApp.openById(RECORDS_SS_ID);
+    return ss.getSheetByName('紀錄') || ss.getSheets()[0];
+}
+
+function taskTimingEnsureSyncColumns_(sheet) {
+    var lastCol = Math.max(sheet.getLastColumn(), 1);
+    var headers = sheet.getRange(1, 1, 1, lastCol).getDisplayValues()[0];
+    var idCol = headers.indexOf(TASK_TIMING_RECORD_ID_HEADER) + 1;
+    var statusCol = headers.indexOf(TASK_TIMING_SYNC_STATUS_HEADER) + 1;
+
+    if (!idCol) {
+        idCol = ++lastCol;
+        sheet.getRange(1, idCol).setValue(TASK_TIMING_RECORD_ID_HEADER);
+    }
+    if (!statusCol) {
+        statusCol = ++lastCol;
+        sheet.getRange(1, statusCol).setValue(TASK_TIMING_SYNC_STATUS_HEADER);
+    }
+    return { id: idCol, status: statusCol };
+}
+
+function taskTimingNumber_(value) {
+    if (typeof value === 'number') return isFinite(value) ? value : 0;
+    var parsed = parseFloat(String(value == null ? '' : value).replace(/,/g, ''));
+    return isFinite(parsed) ? parsed : 0;
+}
+
+function taskTimingInteger_(value) {
+    return Math.round(taskTimingNumber_(value));
+}
+
+function taskTimingRatio_(value) {
+    if (value == null || value === '') return 0;
+    var text = String(value).trim();
+    var ratio = taskTimingNumber_(text.replace('%', ''));
+    if (text.indexOf('%') !== -1 || Math.abs(ratio) > 10) ratio = ratio / 100;
+    return ratio;
+}
+
+function taskTimingIsoDate_(value) {
+    if (value instanceof Date) return Utilities.formatDate(value, 'GMT+8', 'yyyy-MM-dd');
+    var match = String(value == null ? '' : value).trim().match(/^(\d{4})[\/-](\d{1,2})[\/-](\d{1,2})/);
+    if (!match) return null;
+    return match[1] + '-' + String(match[2]).padStart(2, '0') + '-' + String(match[3]).padStart(2, '0');
+}
+
+function taskTimingTimeText_(value) {
+    if (value instanceof Date) return Utilities.formatDate(value, 'GMT+8', 'HH:mm:ss');
+    if (typeof value === 'number' && value >= 0 && value < 1) {
+        var seconds = Math.round(value * 86400) % 86400;
+        return [Math.floor(seconds / 3600), Math.floor((seconds % 3600) / 60), seconds % 60]
+            .map(function (part) { return String(part).padStart(2, '0'); })
+            .join(':');
+    }
+    return String(value == null ? '' : value).trim();
+}
+
+function taskTimingDurationSeconds_(value) {
+    if (typeof value === 'number') return value >= 0 && value < 1 ? Math.round(value * 86400) : value;
+    var parts = String(value == null ? '' : value).trim().split(':').map(Number);
+    if (parts.length === 3 && parts.every(isFinite)) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    if (parts.length === 2 && parts.every(isFinite)) return parts[0] * 60 + parts[1];
+    return 0;
+}
+
+function taskTimingOperator_(label) {
+    var text = String(label == null ? '' : label).trim();
+    var match = text.match(/^\[([^\]]+)\]\s*(.*)$/);
+    return {
+        label: text,
+        id: match ? match[1] : text,
+        name: match ? match[2] : text
+    };
+}
+
+function taskTimingRecordFromRow_(sheet, rowNumber, row, recordId) {
+    var operator = taskTimingOperator_(row[0]);
+    return {
+        record_id: recordId,
+        source_sheet_id: RECORDS_SS_ID,
+        source_sheet_name: sheet.getName(),
+        source_row: rowNumber,
+        operator_label: operator.label,
+        operator_id: operator.id,
+        operator_name: operator.name,
+        car_model: String(row[1] == null ? '' : row[1]),
+        category: String(row[2] == null ? '' : row[2]),
+        part_number: String(row[3] == null ? '' : row[3]),
+        product_name: String(row[4] == null ? '' : row[4]),
+        work_date: taskTimingIsoDate_(row[5]),
+        start_time: taskTimingTimeText_(row[6]),
+        end_time: taskTimingTimeText_(row[7]),
+        total_time: taskTimingTimeText_(row[8]),
+        total_seconds: taskTimingDurationSeconds_(row[8]),
+        avg_time_seconds: taskTimingNumber_(row[9]),
+        standard_time_seconds: taskTimingNumber_(row[10]),
+        good_count: taskTimingInteger_(row[11]),
+        defect_missing: taskTimingInteger_(row[12]),
+        defect_deform: taskTimingInteger_(row[13]),
+        defect_appearance: taskTimingInteger_(row[14]),
+        defect_other: taskTimingInteger_(row[15]),
+        total_scrap: taskTimingInteger_(row[16]),
+        remarks: String(row[17] == null ? '' : row[17]),
+        scrap_rate: taskTimingRatio_(row[18]),
+        yield_rate: taskTimingRatio_(row[19]),
+        efficiency_ratio: taskTimingRatio_(row[20]),
+        satisfaction: taskTimingNumber_(row[21]),
+        source_updated_at: new Date().toISOString(),
+        synced_at: new Date().toISOString()
+    };
+}
+
+function taskTimingSupabaseConfig_() {
+    var properties = PropertiesService.getScriptProperties();
+    var baseUrl = String(properties.getProperty('TASK_TIMING_SUPABASE_URL') || '').replace(/\/$/, '');
+    var secret = properties.getProperty('TASK_TIMING_SUPABASE_SECRET_KEY');
+    if (!baseUrl || !secret) throw new Error('尚未設定 TASK_TIMING_SUPABASE_URL 或 TASK_TIMING_SUPABASE_SECRET_KEY');
+    return { baseUrl: baseUrl, secret: secret };
+}
+
+function taskTimingUpsertRecords_(records) {
+    if (!records.length) return;
+    var config = taskTimingSupabaseConfig_();
+    var response = UrlFetchApp.fetch(
+        config.baseUrl + '/rest/v1/task_timing_records?on_conflict=record_id',
+        {
+            method: 'post',
+            contentType: 'application/json',
+            headers: {
+                apikey: config.secret,
+                Authorization: 'Bearer ' + config.secret,
+                Prefer: 'resolution=merge-duplicates,return=minimal'
+            },
+            payload: JSON.stringify(records),
+            muteHttpExceptions: true
+        }
+    );
+    var status = response.getResponseCode();
+    if (status < 200 || status >= 300) {
+        throw new Error('Supabase ' + status + ': ' + response.getContentText().slice(0, 300));
+    }
+}
+
+function taskTimingScheduleContinuation_() {
+    var handler = 'continueTaskTimingRecordSync';
+    // A one-shot trigger is still visible to getProjectTriggers() while its
+    // handler is running (and may remain listed as disabled afterward). Remove
+    // that stale trigger before scheduling the next batch so backfills do not
+    // stop after 2,000 rows.
+    ScriptApp.getProjectTriggers().forEach(function (trigger) {
+        if (trigger.getHandlerFunction() === handler) ScriptApp.deleteTrigger(trigger);
+    });
+    ScriptApp.newTrigger(handler).timeBased().after(60 * 1000).create();
+}
+
+function continueTaskTimingRecordSync() {
+    return syncTaskTimingRecordsToSupabase();
+}
+
+function setupTaskTimingRecordSync() {
+    taskTimingSupabaseConfig_();
+    var handler = 'syncTaskTimingRecordsToSupabase';
+    var exists = ScriptApp.getProjectTriggers().some(function (trigger) {
+        return trigger.getHandlerFunction() === handler;
+    });
+    if (!exists) ScriptApp.newTrigger(handler).timeBased().everyMinutes(10).create();
+    return syncTaskTimingRecordsToSupabase();
+}
+
+function syncTaskTimingRecordsToSupabase() {
+    var lock = LockService.getScriptLock();
+    lock.waitLock(10000);
+    try {
+        var sheet = taskTimingRecordSheet_();
+        var columns = taskTimingEnsureSyncColumns_(sheet);
+        var lastRow = sheet.getLastRow();
+        if (lastRow <= 1) return { synced: 0, failed: 0, remaining: 0 };
+
+        var width = Math.max(sheet.getLastColumn(), columns.id, columns.status, 22);
+        var rows = sheet.getRange(2, 1, lastRow - 1, width).getValues();
+        var pending = [];
+        for (var index = 0; index < rows.length; index++) {
+            if (String(rows[index][columns.status - 1] || '') === '已同步') continue;
+            if (!rows[index][columns.id - 1]) rows[index][columns.id - 1] = Utilities.getUuid();
+            pending.push({
+                index: index,
+                record: taskTimingRecordFromRow_(sheet, index + 2, rows[index], String(rows[index][columns.id - 1]))
+            });
+            if (pending.length >= TASK_TIMING_RECORD_BATCH_SIZE) break;
+        }
+
+        var synced = 0;
+        var failed = 0;
+        for (var start = 0; start < pending.length; start += TASK_TIMING_UPSERT_BATCH_SIZE) {
+            var chunk = pending.slice(start, start + TASK_TIMING_UPSERT_BATCH_SIZE);
+            try {
+                taskTimingUpsertRecords_(chunk.map(function (item) { return item.record; }));
+                chunk.forEach(function (item) {
+                    rows[item.index][columns.status - 1] = '已同步';
+                    synced++;
+                });
+            } catch (error) {
+                chunk.forEach(function (item) {
+                    rows[item.index][columns.status - 1] = '待重試';
+                    failed++;
+                });
+                console.error(error);
+            }
+        }
+
+        sheet.getRange(2, columns.id, rows.length, 1)
+            .setValues(rows.map(function (row) { return [row[columns.id - 1] || '']; }));
+        sheet.getRange(2, columns.status, rows.length, 1)
+            .setValues(rows.map(function (row) { return [row[columns.status - 1] || '']; }));
+
+        var remaining = Math.max(0, rows.filter(function (row) {
+            return String(row[columns.status - 1] || '') !== '已同步';
+        }).length);
+        if (remaining > 0) taskTimingScheduleContinuation_();
+        return { synced: synced, failed: failed, remaining: remaining };
+    } finally {
+        lock.releaseLock();
+    }
+}
 
 function doGet(e) {
     // 紀錄表不快取：作業員上傳後會馬上去看戰報，拿到 10 分鐘前的舊資料等於錯的。
@@ -170,6 +408,7 @@ function doPost(e) {
     try {
         lock.waitLock(10000);
         var data = JSON.parse(e.postData.contents);
+        var recordId = String(data.recordId || Utilities.getUuid());
         var rowData = [
             data.operator || "", 
             data.carModel || "", 
@@ -194,13 +433,34 @@ function doPost(e) {
             data.efficiency || "",
             data.satisfaction || 0    // 滿意度
         ];
-        var ss = SpreadsheetApp.getActiveSpreadsheet();
-        var sheet = ss.getSheetByName("紀錄") || ss.getSheets()[0];
+        var sheet = taskTimingRecordSheet_();
+        var columns = taskTimingEnsureSyncColumns_(sheet);
         sheet.appendRow(rowData);
+        var rowNumber = sheet.getLastRow();
+        sheet.getRange(rowNumber, columns.id).setValue(recordId);
+        sheet.getRange(rowNumber, columns.status).setValue('待同步');
         SpreadsheetApp.flush();
-        return ContentService.createTextOutput(JSON.stringify({ "result": "success", "row": sheet.getLastRow() })).setMimeType(ContentService.MimeType.JSON);
+
+        var synced = false;
+        try {
+            var storedRow = sheet.getRange(rowNumber, 1, 1, Math.max(sheet.getLastColumn(), 22)).getValues()[0];
+            taskTimingUpsertRecords_([taskTimingRecordFromRow_(sheet, rowNumber, storedRow, recordId)]);
+            sheet.getRange(rowNumber, columns.status).setValue('已同步');
+            synced = true;
+        } catch (syncError) {
+            sheet.getRange(rowNumber, columns.status).setValue('待重試');
+            console.error(syncError);
+            taskTimingScheduleContinuation_();
+        }
+
+        return ContentService.createTextOutput(JSON.stringify({
+            "result": "success",
+            "row": rowNumber,
+            "recordId": recordId,
+            "supabaseSynced": synced
+        })).setMimeType(ContentService.MimeType.JSON);
     } catch (error) {
-        return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": "找不到工作表" })).setMimeType(ContentService.MimeType.JSON);
+        return ContentService.createTextOutput(JSON.stringify({ "result": "error", "message": String(error.message || error) })).setMimeType(ContentService.MimeType.JSON);
     } finally {
         lock.releaseLock();
     }
@@ -282,6 +542,3 @@ function getTimeGapInMinutes(e, s) {
   }; 
   return p(s)-p(e); 
 }
-
-
-

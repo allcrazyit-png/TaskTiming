@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { fetchTaskTimingEmployees, verifyTaskTimingEmployeePassword } from '../services/taskTimingEmployees';
+import {
+    clearTaskTimingSession,
+    fetchTaskTimingEmployees,
+    getTaskTimingAccessToken,
+    readTaskTimingSession,
+    saveTaskTimingSession,
+    verifyTaskTimingEmployeePassword,
+} from '../services/taskTimingEmployees';
 import { fetchTaskTimingProducts } from '../services/taskTimingProducts';
 import { formatLatestLocalUpload } from '../utils/localUploadStatus';
 
@@ -124,7 +131,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.17.2 LOADED - Favorites and duty roster UI updates");
+    console.log("VERSION 1.18.0 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -276,24 +283,42 @@ export default function Home() {
 
     // Restore session when employees are loaded
     useEffect(() => {
-        if (employees.length > 0) {
-            const savedOperatorId = localStorage.getItem('savedOperatorId');
-            console.log("Restoring session, saved ID:", savedOperatorId);
+        let cancelled = false;
+        const restoreOperator = async () => {
+            if (employees.length > 0) {
+                const savedOperatorId = localStorage.getItem('savedOperatorId');
+                console.log("Restoring session, saved ID:", savedOperatorId);
 
-            if (savedOperatorId) {
-                // Use String() to compare because GAS returns numbers, localStorage saves strings
-                const foundEmp = employees.find(emp => String(emp['員工編號']) === String(savedOperatorId));
-                if (foundEmp) {
-                    const operatorStr = `[${foundEmp['員工編號']}] ${foundEmp['姓名']}`;
-                    console.log("Found employee, restoring:", operatorStr);
-                    setSelectedOperator(operatorStr);
-                    loadOperatorHistory(foundEmp['員工編號']);
-                    loadOperatorFavorites(foundEmp['員工編號']);
-                } else {
-                    console.log("Saved ID not found in employee list");
+                if (savedOperatorId) {
+                    const session = readTaskTimingSession();
+                    if (!session || String(session.employeeId) !== String(savedOperatorId)) {
+                        localStorage.removeItem('savedOperatorId');
+                        clearTaskTimingSession();
+                        return;
+                    }
+                    try {
+                        await getTaskTimingAccessToken();
+                    } catch {
+                        localStorage.removeItem('savedOperatorId');
+                        clearTaskTimingSession();
+                        return;
+                    }
+                    // Use String() to compare because GAS returns numbers, localStorage saves strings
+                    const foundEmp = employees.find(emp => String(emp['員工編號']) === String(savedOperatorId));
+                    if (foundEmp && !cancelled) {
+                        const operatorStr = `[${foundEmp['員工編號']}] ${foundEmp['姓名']}`;
+                        console.log("Found employee, restoring:", operatorStr);
+                        setSelectedOperator(operatorStr);
+                        loadOperatorHistory(foundEmp['員工編號']);
+                        loadOperatorFavorites(foundEmp['員工編號']);
+                    } else {
+                        console.log("Saved ID not found in employee list");
+                    }
                 }
             }
-        }
+        };
+        restoreOperator();
+        return () => { cancelled = true; };
     }, [employees]);
 
     // Handle navigation state (e.g., from Battle Report)
@@ -324,6 +349,7 @@ export default function Home() {
             setLatestUploadStatus(null);
             setFavoriteProducts([]);
             localStorage.removeItem('savedOperatorId');
+            clearTaskTimingSession();
             return;
         }
 
@@ -381,10 +407,11 @@ export default function Home() {
         setIsVerifyingPassword(true);
         setPasswordError(false);
         try {
-            await verifyTaskTimingEmployeePassword({
+            const session = await verifyTaskTimingEmployeePassword({
                 employeeId: tempOperator['員工編號'],
                 password: passwordInput,
             });
+            saveTaskTimingSession(session);
             const operatorStr = `[${tempOperator['員工編號']}] ${tempOperator['姓名']}`;
             setSelectedOperator(operatorStr);
             localStorage.setItem('savedOperatorId', tempOperator['員工編號']); // Save just the ID
@@ -507,6 +534,7 @@ export default function Home() {
                 localStorage.removeItem(`favoriteProducts_${operatorId}`);
             }
             localStorage.removeItem('savedOperatorId');
+            clearTaskTimingSession();
             setSelectedOperator('');
             setOperatorHistory([]);
             setLatestUploadStatus(null);
@@ -1316,7 +1344,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.17.2
+                                    Version 1.18.0
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
