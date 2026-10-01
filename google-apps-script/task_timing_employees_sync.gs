@@ -66,7 +66,7 @@ function taskTimingExistingEmployees_(baseUrl, secret) {
       {
         method: 'get',
         headers: {
-          apikey: secret,
+          ApiKey: secret,
           Authorization: 'Bearer ' + secret,
           Range: start + '-' + (start + pageSize - 1),
         },
@@ -102,7 +102,7 @@ function taskTimingAuthUsersByEmail_(baseUrl, secret) {
       baseUrl + '/auth/v1/admin/users?page=' + page + '&per_page=' + pageSize,
       {
         method: 'get',
-        headers: { apikey: secret, Authorization: 'Bearer ' + secret },
+        headers: { ApiKey: secret, Authorization: 'Bearer ' + secret },
         muteHttpExceptions: true,
       },
       '讀取既有 Auth 帳號',
@@ -141,7 +141,7 @@ function taskTimingProvisionEmployeeAuth_(baseUrl, secret, employee, authUserId)
       {
         method: 'put',
         contentType: 'application/json',
-        headers: { apikey: secret, Authorization: 'Bearer ' + secret },
+        headers: { ApiKey: secret, Authorization: 'Bearer ' + secret },
         payload: JSON.stringify(userPayload),
         muteHttpExceptions: true,
       },
@@ -159,7 +159,7 @@ function taskTimingProvisionEmployeeAuth_(baseUrl, secret, employee, authUserId)
     {
       method: 'post',
       contentType: 'application/json',
-      headers: { apikey: secret, Authorization: 'Bearer ' + secret },
+      headers: { ApiKey: secret, Authorization: 'Bearer ' + secret },
       payload: JSON.stringify(userPayload),
       muteHttpExceptions: true,
     },
@@ -177,7 +177,7 @@ function taskTimingUpsertEmployeeBatch_(baseUrl, secret, rows) {
       method: 'post',
       contentType: 'application/json',
       headers: {
-        apikey: secret,
+        ApiKey: secret,
         Authorization: 'Bearer ' + secret,
         Prefer: 'resolution=merge-duplicates,return=minimal',
       },
@@ -188,9 +188,86 @@ function taskTimingUpsertEmployeeBatch_(baseUrl, secret, rows) {
   );
 }
 
-function syncTaskTimingEmployeesToSupabase() {
+function taskTimingEmployeeSourceSpreadsheet_() {
+  // When this file is merged into the main Web App project, PRODUCTS_SS_ID is
+  // the spreadsheet that contains the employee master. Keep the active-sheet
+  // fallback so the standalone source remains reusable and testable.
+  if (typeof PRODUCTS_SS_ID !== 'undefined' && PRODUCTS_SS_ID) {
+    return SpreadsheetApp.openById(PRODUCTS_SS_ID);
+  }
+  return SpreadsheetApp.getActiveSpreadsheet();
+}
+
+function taskTimingObsoleteEmployees_(sourceEmployeeIds, existingEmployees, authUsersByEmail) {
+  var obsoleteByEmployeeId = {};
+
+  Object.keys(existingEmployees.byEmployeeId).forEach(function (employeeId) {
+    if (sourceEmployeeIds[employeeId]) return;
+    obsoleteByEmployeeId[employeeId] = {
+      employee_id: employeeId,
+      auth_user_id: existingEmployees.byEmployeeId[employeeId],
+    };
+  });
+
+  // A previous run may have deleted the public row before an Auth deletion
+  // failed. Include only accounts that have both our canonical email and
+  // matching employee metadata so unrelated Supabase users are never removed.
+  Object.keys(authUsersByEmail).forEach(function (email) {
+    var authUser = authUsersByEmail[email];
+    var employeeId = String(authUser.employee_id || '').trim();
+    if (!employeeId || sourceEmployeeIds[employeeId]) return;
+    if (email !== taskTimingEmployeeAuthEmail_(employeeId).toLowerCase()) return;
+
+    var existing = obsoleteByEmployeeId[employeeId];
+    if (existing && existing.auth_user_id && existing.auth_user_id !== authUser.id) {
+      throw new Error('待刪除員工資料歸屬衝突：' + employeeId);
+    }
+    obsoleteByEmployeeId[employeeId] = {
+      employee_id: employeeId,
+      auth_user_id: authUser.id,
+    };
+  });
+
+  return Object.keys(obsoleteByEmployeeId).sort().map(function (employeeId) {
+    return obsoleteByEmployeeId[employeeId];
+  });
+}
+
+function taskTimingDeleteEmployee_(baseUrl, secret, employee) {
+  // Remove the public selection-list row first. If Auth deletion then fails,
+  // the next sync can still find the managed orphan through its metadata.
+  taskTimingSupabaseRequest_(
+    baseUrl + '/rest/v1/task_timing_employees?employee_id=eq.' + encodeURIComponent(employee.employee_id),
+    {
+      method: 'delete',
+      headers: { ApiKey: secret, Authorization: 'Bearer ' + secret },
+      muteHttpExceptions: true,
+    },
+    '刪除員工鏡像 ' + employee.employee_id,
+  );
+
+  if (!employee.auth_user_id) return;
+  var response = UrlFetchApp.fetch(
+    baseUrl + '/auth/v1/admin/users/' + encodeURIComponent(employee.auth_user_id),
+    {
+      method: 'delete',
+      headers: { ApiKey: secret, Authorization: 'Bearer ' + secret },
+      muteHttpExceptions: true,
+    },
+  );
+  var status = response.getResponseCode();
+  // A missing Auth user already matches the requested final state.
+  if ((status < 200 || status >= 300) && status !== 404) {
+    var details = String(response.getContentText() || '').replace(/[\r\n]+/g, ' ').slice(0, 240);
+    throw new Error('刪除員工 Auth 帳號 ' + employee.employee_id + ' failed (' + status + ')'
+      + (details ? ': ' + details : ''));
+  }
+}
+
+function syncTaskTimingEmployeesToSupabase(options) {
+  var automatic = options && options.automatic === true;
   var alertShown = false;
-  var ui = SpreadsheetApp.getUi();
+  var ui = automatic ? null : SpreadsheetApp.getUi();
   try {
     var properties = PropertiesService.getScriptProperties();
     var baseUrl = String(properties.getProperty('TASK_TIMING_SUPABASE_URL') || '').trim().replace(/\/$/, '');
@@ -198,12 +275,12 @@ function syncTaskTimingEmployeesToSupabase() {
     if (!baseUrl) throw new Error('缺少 Script Property：TASK_TIMING_SUPABASE_URL');
     if (!secret) throw new Error('缺少 Script Property：TASK_TIMING_SUPABASE_SECRET_KEY');
 
-    var spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    var spreadsheet = taskTimingEmployeeSourceSpreadsheet_();
     var sheet = spreadsheet && spreadsheet.getSheetByName('員工資料');
     if (!sheet) throw new Error('找不到工作表：員工資料');
 
     var data = sheet.getDataRange().getValues();
-    if (!data || data.length < 2) throw new Error('員工資料工作表沒有可同步的資料');
+    if (!data || data.length === 0) throw new Error('員工資料工作表沒有標題列');
     var headers = normalizeTaskTimingHeaders_(data[0]);
     if (headers.indexOf('員工編號') === -1) throw new Error('員工資料缺少必要欄位：員工編號');
     if (headers.indexOf('姓名') === -1) throw new Error('員工資料缺少必要欄位：姓名');
@@ -327,16 +404,77 @@ function syncTaskTimingEmployeesToSupabase() {
       }
     }
 
-    var message = '同步完成：新增 ' + created + ' 筆、更新 ' + updated + ' 筆、失敗 ' + failures.length + ' 筆。';
-    if (failures.length) message += '\n失敗員工編號：' + failures.join('、');
-    ui.alert(message);
-    alertShown = true;
-    if (failures.length) throw new Error('員工同步失敗：' + failures.join('、'));
-    return { created: created, updated: updated, failed: 0 };
+    // Never delete when any source employee failed to create or update. This
+    // prevents a partial write from being followed by destructive cleanup.
+    if (failures.length) {
+      var failureMessage = '同步未完成：新增 ' + created + ' 筆、更新 ' + updated + ' 筆、失敗 '
+        + failures.length + ' 筆。\n失敗員工編號：' + failures.join('、') + '\n已取消刪除步驟。';
+      if (ui) {
+        ui.alert(failureMessage);
+        alertShown = true;
+      } else {
+        console.error(failureMessage);
+      }
+      throw new Error('員工同步失敗：' + failures.join('、'));
+    }
+
+    var obsoleteEmployees = taskTimingObsoleteEmployees_(sourceEmployeeIds, existingEmployees, authUsersByEmail);
+    if (!automatic && obsoleteEmployees.length > 0) {
+      var confirmation = ui.alert(
+        '確認刪除 Supabase 員工',
+        'Sheet 已不存在的 ' + obsoleteEmployees.length
+          + ' 位員工將從登入名單與 Supabase Auth 帳號永久刪除。是否繼續？',
+        ui.ButtonSet.YES_NO,
+      );
+      if (confirmation !== ui.Button.YES) {
+        ui.alert('已取消刪除，Supabase 員工資料沒有變更。');
+        alertShown = true;
+        return { created: created, updated: updated, deleted: 0, failed: 0, cancelled: true };
+      }
+    }
+    var deleted = 0;
+    var deletionFailures = [];
+    obsoleteEmployees.forEach(function (employee) {
+      try {
+        taskTimingDeleteEmployee_(baseUrl, secret, employee);
+        deleted += 1;
+      } catch (error) {
+        deletionFailures.push(employee.employee_id + '（' + taskTimingEmployeeSyncErrorMessage_(error) + '）');
+      }
+    });
+
+    if (deletionFailures.length) {
+      var deletionMessage = '同步未完成：新增 ' + created + ' 筆、更新 ' + updated + ' 筆、刪除 '
+        + deleted + ' 筆、刪除失敗 ' + deletionFailures.length + ' 筆。\n失敗員工編號：'
+        + deletionFailures.join('、');
+      if (ui) {
+        ui.alert(deletionMessage);
+        alertShown = true;
+      } else {
+        console.error(deletionMessage);
+      }
+      throw new Error('員工刪除同步失敗：' + deletionFailures.join('、'));
+    }
+
+    var message = '同步完成：新增 ' + created + ' 筆、更新 ' + updated + ' 筆、刪除 ' + deleted + ' 筆、失敗 0 筆。';
+    if (ui) {
+      ui.alert(message);
+      alertShown = true;
+    } else {
+      console.log('刪除列自動' + message);
+    }
+    return { created: created, updated: updated, deleted: deleted, failed: 0 };
   } catch (error) {
-    if (!alertShown) {
+    if (ui && !alertShown) {
       ui.alert('同步失敗：' + (error && error.message ? error.message : String(error)));
+    } else if (!ui) {
+      console.error('同步失敗：' + (error && error.message ? error.message : String(error)));
     }
     throw error;
   }
+}
+
+function taskTimingHandleEmployeeSheetChange(e) {
+  if (!e || e.changeType !== 'REMOVE_ROW') return;
+  return syncTaskTimingEmployeesToSupabase({ automatic: true });
 }

@@ -4,6 +4,7 @@ const TASK_TIMING_RECORD_ID_HEADER = 'Supabase紀錄ID';
 const TASK_TIMING_SYNC_STATUS_HEADER = 'Supabase同步狀態';
 const TASK_TIMING_RECORD_BATCH_SIZE = 1000;
 const TASK_TIMING_UPSERT_BATCH_SIZE = 200;
+const TASK_TIMING_DELETE_BATCH_SIZE = 100;
 
 // 讀整張試算表在 GAS 上要 10～30 秒，但產品與員工資料一天內幾乎不變。
 // 用 CacheService 把組好的 JSON 存起來，命中時直接回傳，可從 17 秒降到 1 秒內。
@@ -12,8 +13,9 @@ var CACHE_TTL_SECONDS = 600; // 10 分鐘
 function onOpen() {
     SpreadsheetApp.getUi()
         .createMenu('組裝報表工具')
-        .addItem('設定並開始 Supabase 紀錄同步', 'setupTaskTimingRecordSync')
-        .addItem('立即補同步生產紀錄', 'syncTaskTimingRecordsToSupabase')
+        .addItem('同步員工資料到 Supabase', 'syncTaskTimingEmployeesToSupabase')
+        .addItem('設定並開始 Supabase 自動同步', 'setupTaskTimingRecordSync')
+        .addItem('立即完整同步生產紀錄', 'syncAndReconcileTaskTimingRecordsToSupabase')
         .addToUi();
 }
 
@@ -147,7 +149,7 @@ function taskTimingUpsertRecords_(records) {
             method: 'post',
             contentType: 'application/json',
             headers: {
-                apikey: config.secret,
+                ApiKey: config.secret,
                 Authorization: 'Bearer ' + config.secret,
                 Prefer: 'resolution=merge-duplicates,return=minimal'
             },
@@ -158,6 +160,77 @@ function taskTimingUpsertRecords_(records) {
     var status = response.getResponseCode();
     if (status < 200 || status >= 300) {
         throw new Error('Supabase ' + status + ': ' + response.getContentText().slice(0, 300));
+    }
+}
+
+function taskTimingReadSupabaseRecordIds_() {
+    var config = taskTimingSupabaseConfig_();
+    var recordIds = [];
+    var start = 0;
+    var pageSize = 1000;
+    while (true) {
+        var response = UrlFetchApp.fetch(
+            config.baseUrl + '/rest/v1/task_timing_records?source_sheet_id=eq.' + encodeURIComponent(RECORDS_SS_ID)
+                + '&select=record_id&order=record_id.asc',
+            {
+                method: 'get',
+                headers: {
+                    ApiKey: config.secret,
+                    Authorization: 'Bearer ' + config.secret,
+                    Range: start + '-' + (start + pageSize - 1)
+                },
+                muteHttpExceptions: true
+            }
+        );
+        var status = response.getResponseCode();
+        if (status < 200 || status >= 300) {
+            throw new Error('讀取 Supabase 生產紀錄失敗 ' + status + ': ' + response.getContentText().slice(0, 300));
+        }
+        var rows = JSON.parse(response.getContentText() || '[]');
+        if (!Array.isArray(rows)) throw new Error('讀取 Supabase 生產紀錄失敗：回應不是陣列');
+        rows.forEach(function (row) {
+            if (row.record_id) recordIds.push(String(row.record_id));
+        });
+        if (rows.length < pageSize) break;
+        start += pageSize;
+    }
+    return recordIds;
+}
+
+function taskTimingObsoleteRecordIds_(supabaseRecordIds, sheetRecordIds) {
+    var sheetIdSet = {};
+    sheetRecordIds.forEach(function (recordId) {
+        var normalized = String(recordId || '').trim();
+        if (normalized) sheetIdSet[normalized] = true;
+    });
+    return supabaseRecordIds.map(function (recordId) {
+        return String(recordId || '').trim();
+    }).filter(function (recordId) {
+        return recordId && !sheetIdSet[recordId];
+    });
+}
+
+function taskTimingDeleteRecordIds_(recordIds) {
+    if (!recordIds.length) return;
+    var config = taskTimingSupabaseConfig_();
+    for (var start = 0; start < recordIds.length; start += TASK_TIMING_DELETE_BATCH_SIZE) {
+        var batch = recordIds.slice(start, start + TASK_TIMING_DELETE_BATCH_SIZE);
+        var response = UrlFetchApp.fetch(
+            config.baseUrl + '/rest/v1/task_timing_records?source_sheet_id=eq.' + encodeURIComponent(RECORDS_SS_ID)
+                + '&record_id=in.(' + batch.map(encodeURIComponent).join(',') + ')',
+            {
+                method: 'delete',
+                headers: {
+                    ApiKey: config.secret,
+                    Authorization: 'Bearer ' + config.secret
+                },
+                muteHttpExceptions: true
+            }
+        );
+        var status = response.getResponseCode();
+        if (status < 200 || status >= 300) {
+            throw new Error('刪除 Supabase 生產紀錄失敗 ' + status + ': ' + response.getContentText().slice(0, 300));
+        }
     }
 }
 
@@ -184,7 +257,22 @@ function setupTaskTimingRecordSync() {
         return trigger.getHandlerFunction() === handler;
     });
     if (!exists) ScriptApp.newTrigger(handler).timeBased().everyMinutes(10).create();
+
+    taskTimingEnsureSheetChangeTrigger_('taskTimingHandleRecordSheetChange', RECORDS_SS_ID);
+    taskTimingEnsureSheetChangeTrigger_('taskTimingHandleEmployeeSheetChange', PRODUCTS_SS_ID);
     return syncTaskTimingRecordsToSupabase();
+}
+
+function taskTimingEnsureSheetChangeTrigger_(handler, spreadsheetId) {
+    var exists = ScriptApp.getProjectTriggers().some(function (trigger) {
+        return trigger.getHandlerFunction() === handler;
+    });
+    if (!exists) {
+        ScriptApp.newTrigger(handler)
+            .forSpreadsheet(spreadsheetId)
+            .onChange()
+            .create();
+    }
 }
 
 function syncTaskTimingRecordsToSupabase() {
@@ -200,8 +288,11 @@ function syncTaskTimingRecordsToSupabase() {
         var rows = sheet.getRange(2, 1, lastRow - 1, width).getValues();
         var pending = [];
         for (var index = 0; index < rows.length; index++) {
+            if (!rows[index][columns.id - 1]) {
+                rows[index][columns.id - 1] = Utilities.getUuid();
+                rows[index][columns.status - 1] = '待同步';
+            }
             if (String(rows[index][columns.status - 1] || '') === '已同步') continue;
-            if (!rows[index][columns.id - 1]) rows[index][columns.id - 1] = Utilities.getUuid();
             pending.push({
                 index: index,
                 record: taskTimingRecordFromRow_(sheet, index + 2, rows[index], String(rows[index][columns.id - 1]))
@@ -241,6 +332,86 @@ function syncTaskTimingRecordsToSupabase() {
     } finally {
         lock.releaseLock();
     }
+}
+
+function taskTimingSyncAndReconcileRecords_(options) {
+    var automatic = options && options.automatic === true;
+    var ui = automatic ? null : SpreadsheetApp.getUi();
+    try {
+        var syncResult = syncTaskTimingRecordsToSupabase();
+        if (syncResult.failed > 0 || syncResult.remaining > 0) {
+            var incompleteMessage = '生產紀錄尚未全部同步：成功 ' + syncResult.synced + ' 筆、失敗 '
+                + syncResult.failed + ' 筆、待處理 ' + syncResult.remaining + ' 筆。本次未執行刪除。';
+            if (ui) ui.alert(incompleteMessage);
+            else console.error(incompleteMessage);
+            return {
+                synced: syncResult.synced,
+                failed: syncResult.failed,
+                remaining: syncResult.remaining,
+                deleted: 0
+            };
+        }
+
+        var lock = LockService.getScriptLock();
+        lock.waitLock(10000);
+        try {
+            var sheet = taskTimingRecordSheet_();
+            var columns = taskTimingEnsureSyncColumns_(sheet);
+            var lastRow = sheet.getLastRow();
+            var sheetRecordIds = lastRow <= 1 ? [] : sheet.getRange(2, columns.id, lastRow - 1, 1)
+                .getDisplayValues()
+                .map(function (row) { return String(row[0] || '').trim(); })
+                .filter(function (recordId) { return Boolean(recordId); });
+            var supabaseRecordIds = taskTimingReadSupabaseRecordIds_();
+            var obsoleteRecordIds = taskTimingObsoleteRecordIds_(supabaseRecordIds, sheetRecordIds);
+            if (!automatic && obsoleteRecordIds.length > 0) {
+                var confirmation = ui.alert(
+                    '確認刪除 Supabase 生產紀錄',
+                    'Sheet 已不存在的 ' + obsoleteRecordIds.length + ' 筆紀錄將從 Supabase 永久刪除。是否繼續？',
+                    ui.ButtonSet.YES_NO
+                );
+                if (confirmation !== ui.Button.YES) {
+                    ui.alert('已取消刪除，Supabase 生產紀錄沒有變更。');
+                    return {
+                        synced: syncResult.synced,
+                        failed: 0,
+                        remaining: 0,
+                        deleted: 0,
+                        cancelled: true
+                    };
+                }
+            }
+            taskTimingDeleteRecordIds_(obsoleteRecordIds);
+            var result = {
+                synced: syncResult.synced,
+                failed: 0,
+                remaining: 0,
+                deleted: obsoleteRecordIds.length
+            };
+            if (ui) {
+                ui.alert('完整同步完成：新增或更新 ' + result.synced + ' 筆、刪除 ' + result.deleted + ' 筆。');
+            } else {
+                console.log('刪除列自動同步完成：新增或更新 ' + result.synced + ' 筆、刪除 ' + result.deleted + ' 筆。');
+            }
+            return result;
+        } finally {
+            lock.releaseLock();
+        }
+    } catch (error) {
+        var errorMessage = '完整同步失敗：' + String(error && error.message ? error.message : error);
+        if (ui) ui.alert(errorMessage);
+        else console.error(errorMessage);
+        throw error;
+    }
+}
+
+function syncAndReconcileTaskTimingRecordsToSupabase() {
+    return taskTimingSyncAndReconcileRecords_({ automatic: false });
+}
+
+function taskTimingHandleRecordSheetChange(e) {
+    if (!e || e.changeType !== 'REMOVE_ROW') return;
+    return taskTimingSyncAndReconcileRecords_({ automatic: true });
 }
 
 function doGet(e) {

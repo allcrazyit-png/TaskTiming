@@ -80,7 +80,14 @@ test('retries an Auth-created employee by reconciling its email before public up
     }),
   };
   context.SpreadsheetApp = {
-    getUi: () => ({ alert: message => alerts.push(message) }),
+    getUi: () => ({
+      ButtonSet: { YES_NO: 'YES_NO' },
+      Button: { YES: 'YES' },
+      alert: (...args) => {
+        alerts.push(args[0]);
+        return args.length === 3 ? 'YES' : undefined;
+      },
+    }),
     getActiveSpreadsheet: () => ({
       getSheetByName: () => ({
         getDataRange: () => ({ getValues: () => [
@@ -112,7 +119,7 @@ test('retries an Auth-created employee by reconciling its email before public up
   };
 
   assert.deepEqual(JSON.parse(JSON.stringify(context.syncTaskTimingEmployeesToSupabase())), {
-    created: 0, updated: 1, failed: 0,
+    created: 0, updated: 1, deleted: 0, failed: 0,
   });
   assert.equal(requests.some(request => request.url === 'https://example.supabase.co/auth/v1/admin/users' && request.options.method === 'post'), false);
   const authUpdate = requests.find(request => request.url.includes('/auth/v1/admin/users/auth-existing-uuid') && request.options.method === 'put');
@@ -121,7 +128,7 @@ test('retries an Auth-created employee by reconciling its email before public up
   const publicWrite = requests.find(request => request.url.includes('/rest/v1/task_timing_employees?on_conflict='));
   assert.match(publicWrite.options.payload, /"auth_user_id":"auth-existing-uuid"/);
   assert.doesNotMatch(publicWrite.options.payload, /password/i);
-  assert.match(alerts[0], /新增 0 筆、更新 1 筆、失敗 0 筆/);
+  assert.match(alerts[0], /新增 0 筆、更新 1 筆、刪除 0 筆、失敗 0 筆/);
 });
 
 test('retries an encoded employee email despite Auth returning lowercase percent escapes', () => {
@@ -132,7 +139,11 @@ test('retries an encoded employee email despite Auth returning lowercase percent
     }),
   };
   context.SpreadsheetApp = {
-    getUi: () => ({ alert: () => {} }),
+    getUi: () => ({
+      ButtonSet: { YES_NO: 'YES_NO' },
+      Button: { YES: 'YES' },
+      alert: (...args) => args.length === 3 ? 'YES' : undefined,
+    }),
     getActiveSpreadsheet: () => ({
       getSheetByName: () => ({
         getDataRange: () => ({ getValues: () => [
@@ -179,7 +190,14 @@ test('stops before any network request when distinct employee IDs collide after 
     }),
   };
   context.SpreadsheetApp = {
-    getUi: () => ({ alert: message => alerts.push(message) }),
+    getUi: () => ({
+      ButtonSet: { YES_NO: 'YES_NO' },
+      Button: { YES: 'YES' },
+      alert: (...args) => {
+        alerts.push(args[0]);
+        return args.length === 3 ? 'YES' : undefined;
+      },
+    }),
     getActiveSpreadsheet: () => ({
       getSheetByName: () => ({
         getDataRange: () => ({ getValues: () => [
@@ -377,5 +395,283 @@ test('paginates the existing public employee roster with Range headers', () => {
   assert.equal(employees.employeeIdByAuthUserId['uuid-1000'], 'E1000');
   assert.equal(requests.length, 2);
   assert.equal(requests[0].options.headers.Range, '0-999');
+  assert.equal(requests[0].options.headers.ApiKey, 'secret');
+  assert.equal(requests[0].options.headers.apikey, undefined);
   assert.equal(requests[1].options.headers.Range, '1000-1999');
+});
+
+test('deletes employees missing from the Sheet from both the public mirror and Auth', () => {
+  const requests = [];
+  const alerts = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({
+      ButtonSet: { YES_NO: 'YES_NO' },
+      Button: { YES: 'YES' },
+      alert: (...args) => {
+        alerts.push(args[0]);
+        return args.length === 3 ? 'YES' : undefined;
+      },
+    }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['E01', '王小美', ''],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      requests.push({ url, options });
+      if (url.includes('/rest/v1/task_timing_employees?select=')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { employee_id: 'E01', auth_user_id: 'auth-e01-uuid' },
+          { employee_id: 'E02', auth_user_id: 'auth-e02-uuid' },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users?')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { id: 'auth-e01-uuid', email: 'e01@tasktiming.local', user_metadata: { employee_id: 'E01' } },
+          { id: 'auth-e02-uuid', email: 'e02@tasktiming.local', user_metadata: { employee_id: 'E02' } },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users/auth-e01-uuid') && options.method === 'put') {
+        return { getResponseCode: () => 200, getContentText: () => '{}' };
+      }
+      if (url.includes('/rest/v1/task_timing_employees?on_conflict=')) {
+        return { getResponseCode: () => 201, getContentText: () => '' };
+      }
+      if (url.includes('/rest/v1/task_timing_employees?employee_id=eq.E02') && options.method === 'delete') {
+        return { getResponseCode: () => 204, getContentText: () => '' };
+      }
+      if (url.includes('/auth/v1/admin/users/auth-e02-uuid') && options.method === 'delete') {
+        return { getResponseCode: () => 200, getContentText: () => '{}' };
+      }
+      throw new Error('Unexpected request: ' + url);
+    },
+  };
+
+  assert.deepEqual(JSON.parse(JSON.stringify(context.syncTaskTimingEmployeesToSupabase())), {
+    created: 0, updated: 1, deleted: 1, failed: 0,
+  });
+  const deletes = requests.filter(request => request.options.method === 'delete');
+  assert.equal(deletes.length, 2);
+  assert.match(deletes[0].url, /task_timing_employees\?employee_id=eq\.E02$/);
+  assert.match(deletes[1].url, /auth\/v1\/admin\/users\/auth-e02-uuid$/);
+  assert.match(alerts.at(-1), /刪除 1 筆/);
+});
+
+test('deletes an orphaned managed Auth account even when its public mirror row is already gone', () => {
+  const requests = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({
+      ButtonSet: { YES_NO: 'YES_NO' },
+      Button: { YES: 'YES' },
+      alert: (...args) => args.length === 3 ? 'YES' : undefined,
+    }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['E01', '王小美', ''],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      requests.push({ url, options });
+      if (url.includes('/rest/v1/task_timing_employees?select=')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { employee_id: 'E01', auth_user_id: 'auth-e01-uuid' },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users?')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { id: 'auth-e01-uuid', email: 'e01@tasktiming.local', user_metadata: { employee_id: 'E01' } },
+          { id: 'auth-e02-uuid', email: 'e02@tasktiming.local', user_metadata: { employee_id: 'E02' } },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users/auth-e01-uuid') && options.method === 'put') {
+        return { getResponseCode: () => 200, getContentText: () => '{}' };
+      }
+      if (url.includes('/rest/v1/task_timing_employees?on_conflict=')) {
+        return { getResponseCode: () => 201, getContentText: () => '' };
+      }
+      if (url.includes('/rest/v1/task_timing_employees?employee_id=eq.E02') && options.method === 'delete') {
+        return { getResponseCode: () => 204, getContentText: () => '' };
+      }
+      if (url.includes('/auth/v1/admin/users/auth-e02-uuid') && options.method === 'delete') {
+        return { getResponseCode: () => 200, getContentText: () => '{}' };
+      }
+      throw new Error('Unexpected request: ' + url);
+    },
+  };
+
+  assert.equal(context.syncTaskTimingEmployeesToSupabase().deleted, 1);
+  assert.equal(requests.some(request => request.url.includes('/auth/v1/admin/users/auth-e02-uuid') && request.options.method === 'delete'), true);
+});
+
+test('does not delete stale employees when a source employee update fails', () => {
+  const requests = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({
+      ButtonSet: { YES_NO: 'YES_NO' },
+      Button: { YES: 'YES' },
+      alert: (...args) => args.length === 3 ? 'YES' : undefined,
+    }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['E01', '王小美', ''],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      requests.push({ url, options });
+      if (url.includes('/rest/v1/task_timing_employees?select=')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { employee_id: 'E01', auth_user_id: 'auth-e01-uuid' },
+          { employee_id: 'E02', auth_user_id: 'auth-e02-uuid' },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users?')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { id: 'auth-e01-uuid', email: 'e01@tasktiming.local', user_metadata: { employee_id: 'E01' } },
+          { id: 'auth-e02-uuid', email: 'e02@tasktiming.local', user_metadata: { employee_id: 'E02' } },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users/auth-e01-uuid') && options.method === 'put') {
+        return { getResponseCode: () => 500, getContentText: () => '{"message":"failed"}' };
+      }
+      throw new Error('Unexpected request: ' + url);
+    },
+  };
+
+  assert.throws(() => context.syncTaskTimingEmployeesToSupabase(), /員工同步失敗：E01/);
+  assert.equal(requests.some(request => request.options.method === 'delete'), false);
+});
+
+test('recreates an employee after it is added back to the Sheet with a password', () => {
+  const requests = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({ alert: () => {} }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [
+          ['員工編號', '姓名', '密碼'],
+          ['E02', '王小華', 'new-password'],
+        ] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      requests.push({ url, options });
+      if (url.includes('/rest/v1/task_timing_employees?select=') || url.includes('/auth/v1/admin/users?')) {
+        return { getResponseCode: () => 200, getContentText: () => '[]' };
+      }
+      if (url === 'https://example.supabase.co/auth/v1/admin/users' && options.method === 'post') {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ id: 'auth-new-e02-uuid' }) };
+      }
+      if (url.includes('/rest/v1/task_timing_employees?on_conflict=')) {
+        return { getResponseCode: () => 201, getContentText: () => '' };
+      }
+      throw new Error('Unexpected request: ' + url);
+    },
+  };
+
+  assert.deepEqual(JSON.parse(JSON.stringify(context.syncTaskTimingEmployeesToSupabase())), {
+    created: 1, updated: 0, deleted: 0, failed: 0,
+  });
+  assert.equal(requests.some(request => request.url === 'https://example.supabase.co/auth/v1/admin/users' && request.options.method === 'post'), true);
+});
+
+test('allows a header-only Sheet to intentionally remove every mirrored employee', () => {
+  const requests = [];
+  context.PropertiesService = {
+    getScriptProperties: () => ({
+      getProperty: key => key === 'TASK_TIMING_SUPABASE_URL' ? 'https://example.supabase.co' : 'secret',
+    }),
+  };
+  context.SpreadsheetApp = {
+    getUi: () => ({
+      ButtonSet: { YES_NO: 'YES_NO' },
+      Button: { YES: 'YES' },
+      alert: (...args) => args.length === 3 ? 'YES' : undefined,
+    }),
+    getActiveSpreadsheet: () => ({
+      getSheetByName: () => ({
+        getDataRange: () => ({ getValues: () => [['員工編號', '姓名', '密碼']] }),
+      }),
+    }),
+  };
+  context.UrlFetchApp = {
+    fetch: (url, options) => {
+      requests.push({ url, options });
+      if (url.includes('/rest/v1/task_timing_employees?select=')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { employee_id: 'E01', auth_user_id: 'auth-e01-uuid' },
+        ]) };
+      }
+      if (url.includes('/auth/v1/admin/users?')) {
+        return { getResponseCode: () => 200, getContentText: () => JSON.stringify([
+          { id: 'auth-e01-uuid', email: 'e01@tasktiming.local', user_metadata: { employee_id: 'E01' } },
+        ]) };
+      }
+      if (options.method === 'delete') {
+        return { getResponseCode: () => 204, getContentText: () => '' };
+      }
+      throw new Error('Unexpected request: ' + url);
+    },
+  };
+
+  assert.deepEqual(JSON.parse(JSON.stringify(context.syncTaskTimingEmployeesToSupabase())), {
+    created: 0, updated: 0, deleted: 1, failed: 0,
+  });
+  assert.equal(requests.filter(request => request.options.method === 'delete').length, 2);
+});
+
+test('manual employee deletion requires an explicit confirmation with the exact count', () => {
+  assert.match(employeeSyncSource, /確認刪除 Supabase 員工/);
+  assert.match(employeeSyncSource, /obsoleteEmployees\.length[\s\S]*?位員工將從登入名單/);
+  assert.match(employeeSyncSource, /ui\.ButtonSet\.YES_NO/);
+  assert.match(employeeSyncSource, /confirmation !== ui\.Button\.YES/);
+});
+
+test('employee row deletion automatically syncs without a confirmation dialog', () => {
+  const handler = employeeSyncSource.match(/function taskTimingHandleEmployeeSheetChange\(e\)\s*{[\s\S]*?\n}/)?.[0] || '';
+  assert.match(handler, /e\.changeType !== 'REMOVE_ROW'/);
+  assert.match(handler, /syncTaskTimingEmployeesToSupabase\(\{ automatic: true \}\)/);
+  assert.doesNotMatch(handler, /SpreadsheetApp\.getUi/);
+  assert.match(employeeSyncSource, /if \(!automatic && obsoleteEmployees\.length > 0\)/);
+});
+
+test('uses the configured product spreadsheet as the employee source when integrated', () => {
+  assert.match(employeeSyncSource, /typeof PRODUCTS_SS_ID !== 'undefined'/);
+  assert.match(employeeSyncSource, /SpreadsheetApp\.openById\(PRODUCTS_SS_ID\)/);
 });
