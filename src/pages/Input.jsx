@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -190,6 +190,51 @@ export default function Input() {
     const [startTime, setStartTime] = useState("");
     const [endTime, setEndTime] = useState("");
     const [remarks, setRemarks] = useState("");
+    const [fieldError, setFieldError] = useState(null);
+    const [keyboardOpen, setKeyboardOpen] = useState(false);
+    const [footerHeight, setFooterHeight] = useState(196);
+    const footerRef = useRef(null);
+    const startRef = useRef(null);
+    const endRef = useRef(null);
+    const quantityRef = useRef(null);
+
+    useEffect(() => {
+        const footer = footerRef.current;
+        if (!footer) return;
+        const observer = new ResizeObserver(() => {
+            const height = footer.getBoundingClientRect().height;
+            if (height > 0) setFooterHeight(height);
+        });
+        observer.observe(footer);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        const viewport = window.visualViewport;
+        if (!viewport) return;
+        let baseline = viewport.height;
+        const update = () => {
+            const active = document.activeElement;
+            const editing = active?.matches('input:not([readonly]), textarea, [contenteditable="true"]');
+            if (!editing) baseline = Math.max(baseline, viewport.height);
+            setKeyboardOpen(Boolean(editing && viewport.scale === 1 && baseline - viewport.height > 140));
+        };
+        viewport.addEventListener('resize', update);
+        document.addEventListener('focusin', update);
+        document.addEventListener('focusout', update);
+        return () => {
+            viewport.removeEventListener('resize', update);
+            document.removeEventListener('focusin', update);
+            document.removeEventListener('focusout', update);
+        };
+    }, []);
+
+    const showFieldError = (field, ref) => {
+        setFieldError(field);
+        ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        ref.current?.querySelector('input, button')?.focus({ preventScroll: true });
+    };
+
 
     // Date state
     const [workDate, setWorkDate] = useState(() => {
@@ -238,14 +283,19 @@ export default function Input() {
         const goodL = parseInt(goodCountL) || 0;
 
         if (isDual && goodR + totalScrapR + goodL + totalScrapL === 0) {
-            alert(t('dual_both_zero'));
+            showFieldError('quantity', quantityRef);
             return;
         }
 
-        if (!startTime || !endTime) {
-            alert("請填入開始時間與結束時間後再上傳！");
+        if (!startTime) {
+            showFieldError('start', startRef);
             return;
         }
+        if (!endTime) {
+            showFieldError('end', endRef);
+            return;
+        }
+        setFieldError(null);
 
         const totalTime = calculateDuration(startTime, endTime);
 
@@ -301,7 +351,7 @@ export default function Input() {
         : '#137fec'; // primary
 
     return (
-        <div className="bg-background-light dark:bg-background-dark text-[#1e293b] dark:text-white min-h-screen flex flex-col pb-40">
+        <div className="bg-background-light dark:bg-background-dark text-[#1e293b] dark:text-white min-h-screen flex flex-col" style={{ paddingBottom: footerHeight + 24 }}>
             {/* Company Banner */}
             <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-2 px-4 text-center font-bold text-[11px] border-b border-slate-200 dark:border-slate-800 z-[60] relative tracking-[0.3em] uppercase">
                 瑞全企業股份有限公司
@@ -402,45 +452,48 @@ export default function Input() {
                             />
                         </div>
                         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-primary space-y-4">
-                            <div className="space-y-2">
+                            <div ref={startRef} className="space-y-2 scroll-mt-28">
+                                {fieldError === 'start' && <p role="alert" className="text-base font-bold text-danger">{t('input_missing_start')}</p>}
                                 <label className="block text-sm font-black text-slate-500">
                                     {t('start_time')} <span className="text-red-500">*</span>
                                 </label>
                                 {isAndroid() ? (
                                     <AndroidTimePicker
                                         value={startTime}
-                                        onChange={setStartTime}
+                                        onChange={(value) => { setStartTime(value); setFieldError(null); }}
                                     />
                                 ) : (
                                     <input
                                         className="time-input"
                                         type="time"
                                         value={startTime}
-                                        onChange={(e) => setStartTime(e.target.value)}
+                                        onChange={(e) => { setStartTime(e.target.value); setFieldError(null); }}
                                     />
                                 )}
                             </div>
-                            <div className="space-y-2">
+                            <div ref={endRef} className="space-y-2 scroll-mt-28">
+                                {fieldError === 'end' && <p role="alert" className="text-base font-bold text-danger">{t('input_missing_end')}</p>}
                                 <label className="block text-sm font-black text-slate-500">
                                     {t('end_time')} <span className="text-red-500">*</span>
                                 </label>
                                 {isAndroid() ? (
                                     <AndroidTimePicker
                                         value={endTime}
-                                        onChange={setEndTime}
+                                        onChange={(value) => { setEndTime(value); setFieldError(null); }}
                                     />
                                 ) : (
                                     <input
                                         className="time-input"
                                         type="time"
                                         value={endTime}
-                                        onChange={(e) => setEndTime(e.target.value)}
+                                        onChange={(e) => { setEndTime(e.target.value); setFieldError(null); }}
                                     />
                                 )}
                             </div>
                         </div>
                     </section>
-                    <section className="space-y-3">
+                    <section ref={quantityRef} className="space-y-3 scroll-mt-28">
+                        {fieldError === 'quantity' && <p role="alert" className="text-base font-bold text-danger">{t('dual_both_zero')}</p>}
                         <h2 className="text-lg font-black flex items-center gap-2 px-1 text-success">
                             <span className="material-symbols-outlined text-2xl">check_circle</span>
                             {t('good_yield')} {isDual && <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full ml-2">{t('dual_mode_tag')}</span>}
@@ -763,17 +816,17 @@ export default function Input() {
                         ></textarea>
                     </section>
             </main>
-            <footer className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-t-2 border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] z-40">
+            <footer ref={footerRef} hidden={keyboardOpen} style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-t-2 border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] z-40">
                 <button
                     onClick={handleConfirm}
                     className="w-full h-[68px] rounded-xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform border-b-4 bg-success text-white border-green-800"
                 >
-                    <span className="text-2xl font-black">{t('finish_next')}</span>
+                    <span className="text-2xl font-black">{t('input_next_confirm')}</span>
                     <span className="material-symbols-outlined text-3xl font-black">arrow_forward</span>
                 </button>
                 <button
                     onClick={() => navigate('/')}
-                    className="w-full h-14 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform border-2 border-slate-300 dark:border-slate-600"
+                    className="w-full min-h-16 text-slate-500 dark:text-slate-400 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform"
                 >
                     <span className="material-symbols-outlined text-2xl font-black">check_circle</span>
                     <span className="text-lg font-bold">{t('finish_today')}</span>
