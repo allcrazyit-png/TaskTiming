@@ -17,7 +17,7 @@ test('latest information page renders an always-available expandable duty roster
 test('all supported languages label the latest information duty roster', async () => {
   const translations = await readFile(new URL('../src/i18n.js', import.meta.url), 'utf8');
 
-  assert.equal((translations.match(/"battle_report_tab": "(?:最新資訊|Thông tin mới|Info terbaru)"/g) || []).length, 3);
+  assert.equal((translations.match(/"battle_report_tab": "(?:今日看板|Bảng hôm nay|Dasbor hari ini)"/g) || []).length, 3);
   assert.equal((translations.match(/"duty_roster_title":/g) || []).length, 3);
   assert.equal((translations.match(/"duty_roster_view_full":/g) || []).length, 3);
   assert.equal((translations.match(/"duty_roster_employee_number":/g) || []).length, 3);

@@ -19,6 +19,7 @@ test('maps the aggregate RPC response to the battle-report contract', () => {
     todayRecordCount: 4,
     todayOperators: 3,
     avgEfficiency: 118.8,
+    todayDefects: null,
     liveFeed: [{
       作業者: '[21] 楊淑婷',
       品番: 'A-1',
@@ -54,4 +55,9 @@ test('battle report calls the authenticated Supabase RPC', async () => {
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test('distinguishes missing defect statistics from genuine zero counts', () => {
+  assert.equal(mapTaskTimingBattleReport({}).todayDefects, null);
+  assert.deepEqual(mapTaskTimingBattleReport({ today_defect_missing: 0, today_defect_deform: 3, today_defect_appearance: 12, today_defect_other: 2 }).todayDefects, { missing: 0, deform: 3, appearance: 12, other: 2 });
 });

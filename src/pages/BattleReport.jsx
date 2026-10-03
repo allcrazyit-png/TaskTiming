@@ -9,7 +9,7 @@ import {
     getWeeklyDutyRoster,
 } from '../utils/dutyRoster';
 import { getTaskTimingAccessToken } from '../services/taskTimingEmployees';
-import { fetchTaskTimingBattleReport } from '../services/taskTimingRecords';
+import { fetchTaskTimingBattleReport, fetchTaskTimingNotices, getTaskTimingNoticeContent } from '../services/taskTimingRecords';
 
 const MILESTONES = [10000, 50000, 100000, 500000, 1000000];
 
@@ -170,9 +170,12 @@ export default function BattleReport() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [report, setReport] = useState(null);
+    const [notices, setNotices] = useState([]);
+    const [noticeError, setNoticeError] = useState(false);
     const [error, setError] = useState(null);
     const [isRosterExpanded, setIsRosterExpanded] = useState(false);
     const todayStr = getLocalDateString();
+    const isPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'defects';
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -180,6 +183,14 @@ export default function BattleReport() {
         const load = async () => {
             try {
                 setLoading(true);
+                if (isPreview) {
+                    setNotices([
+                        { start_date: todayStr, end_date: null, content: '組裝前請確認卡扣完整。\n發現缺料請先隔離，並通知領班。', content_vi: 'Trước khi lắp ráp, hãy kiểm tra ngàm cài còn nguyên vẹn.\nNếu phát hiện thiếu liệu, hãy tách riêng sản phẩm và báo cho tổ trưởng.', content_id: 'Sebelum perakitan, periksa keutuhan kait pengunci.\nJika ditemukan bagian yang kurang bahan, pisahkan produk dan laporkan kepada kepala regu.' },
+                        { start_date: todayStr, end_date: todayStr, content: '下班前請清潔工作桌，並將工具歸位。', content_vi: 'Trước khi tan ca, hãy vệ sinh bàn làm việc và cất dụng cụ đúng chỗ.', content_id: 'Sebelum pulang, bersihkan meja kerja dan kembalikan alat ke tempatnya.' },
+                    ]);
+                    setReport({ cumulativeTotal: 488221, todayGoodCount: 1240, todayRecordCount: 8, todayOperators: 5, avgEfficiency: 102, todayDefects: { missing: 6, deform: 3, appearance: 12, other: 2 } });
+                    return;
+                }
                 const accessToken = await getTaskTimingAccessToken({ signal: controller.signal });
                 const data = await fetchTaskTimingBattleReport({
                     accessToken,
@@ -187,6 +198,12 @@ export default function BattleReport() {
                     signal: controller.signal,
                 });
                 setReport(data);
+                try {
+                    setNotices(await fetchTaskTimingNotices({ accessToken, today: todayStr, signal: controller.signal }));
+                    setNoticeError(false);
+                } catch (noticeFailure) {
+                    if (noticeFailure.name !== 'AbortError') setNoticeError(true);
+                }
             } catch (e) {
                 if (e.name !== 'AbortError') {
                     const needsLogin = /login|required|expired/i.test(e.message);
@@ -198,13 +215,15 @@ export default function BattleReport() {
         };
         load();
         return () => controller.abort();
-    }, [todayStr]);
+    }, [todayStr, isPreview]);
 
     const cumulativeTotal = report?.cumulativeTotal ?? 0;
     const todayGoodCount = report?.todayGoodCount ?? 0;
     const todayRecordCount = report?.todayRecordCount ?? 0;
     const todayOperators = report?.todayOperators ?? 0;
     const avgEfficiency = report?.avgEfficiency ?? 0;
+    const defects = report?.todayDefects;
+    const totalDefects = defects ? Object.values(defects).reduce((sum, count) => sum + count, 0) : null;
 
     // Language-aware number formatter
     const formatSmallNumber = (n) => {
@@ -255,6 +274,14 @@ export default function BattleReport() {
             </header>
 
             <main className="p-4 space-y-4 flex-1">
+                {isPreview && <p className="rounded-xl bg-amber-100 p-3 text-base font-bold text-amber-900">{t('br_defect_preview')}</p>}
+                {notices.length > 0 && <section className="rounded-2xl border-t-4 border-amber-500 bg-white p-4 shadow-md dark:bg-slate-900">
+                    <h2 className="flex items-center gap-2 text-lg font-black text-amber-700 dark:text-amber-300"><span className="material-symbols-outlined text-2xl" aria-hidden="true">sticky_note_2</span>{t('br_notice_title')}</h2>
+                    <div className="mt-4 space-y-4">{notices.map((notice, index) => <article key={index} className="rounded-xl border border-amber-100 border-l-4 border-l-amber-400 bg-amber-50/70 px-4 py-5 dark:border-amber-900 dark:border-l-amber-500 dark:bg-amber-950/30">
+                        <p className="whitespace-pre-wrap break-words text-lg font-bold leading-relaxed">{getTaskTimingNoticeContent(notice, i18n.language)}</p>
+                    </article>)}</div>
+                </section>}
+                {noticeError && <p role="status" className="text-base text-slate-500">{t('br_notice_error')}</p>}
                 <DutyRoster
                     t={t}
                     roster={dutyRoster}
@@ -280,6 +307,56 @@ export default function BattleReport() {
                 </div>
             ) : (
                 <>
+
+                    {/* === SECTION 2: Today's Efficiency === */}
+                    <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-t-4 border-blue-500 p-4 space-y-3">
+                        <h2 className="text-base font-black flex items-center gap-2 text-slate-800 dark:text-white">
+                            <span className="material-symbols-outlined text-xl text-blue-500">speed</span>
+                            {t('br_avg_efficiency')}
+                        </h2>
+
+                        <EfficiencyGauge value={avgEfficiency} />
+
+                        <div className="text-center -mt-2">
+                            <span className="text-4xl font-black" style={{ color: gaugeColor }}>
+                                {todayRecordCount > 0 ? avgEfficiency.toFixed(1) : '--'}%
+                            </span>
+                            {todayRecordCount === 0 && (
+                                <p className="text-xs text-slate-400 font-medium mt-1">{t('br_no_records')}</p>
+                            )}
+                        </div>
+
+                        {/* 3 stat cards */}
+                        <div className="grid grid-cols-3 gap-2 pt-1">
+                            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-center">
+                                <span className="material-symbols-outlined text-xl text-blue-500 block">groups</span>
+                                <span className="text-sm font-black text-slate-800 dark:text-white">{todayOperators}人</span>
+                                <span className="text-[10px] text-slate-400 block font-medium">{t('br_online_count')}</span>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-center">
+                                <span className="material-symbols-outlined text-xl text-success block">inventory_2</span>
+                                <span className="text-sm font-black text-slate-800 dark:text-white">{todayGoodCount.toLocaleString()}{t('br_unit_pcs')}</span>
+                                <span className="text-[10px] text-slate-400 block font-medium">{t('br_total_output')}</span>
+                            </div>
+                            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-center">
+                                <span className="material-symbols-outlined text-xl text-amber-500 block">fact_check</span>
+                                <span className="text-sm font-black text-slate-800 dark:text-white">{todayRecordCount}筆</span>
+                                <span className="text-[10px] text-slate-400 block font-medium">{t('br_upload_count')}</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-t-4 border-rose-500 p-4 space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <h2 className="text-lg font-black flex items-center gap-2"><span className="material-symbols-outlined text-rose-500">report_problem</span>{t('br_defect_title')}</h2>
+                            <div className="text-right"><p className="text-sm font-bold text-slate-500 dark:text-slate-400">{t('br_defect_total')}</p><p className="text-3xl font-black text-rose-600 dark:text-rose-400">{totalDefects == null ? '—' : totalDefects.toLocaleString()} <span className="text-base">{t('br_defect_unit')}</span></p></div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                            {['missing', 'deform', 'appearance'].map(key => <div key={key} className="rounded-xl border border-rose-100 bg-rose-50 px-2 py-4 text-center dark:border-rose-900 dark:bg-rose-950/30"><p className="text-base font-bold text-slate-700 dark:text-slate-200">{t(`br_defect_${key}`)}</p><p className="mt-2 text-2xl font-black text-rose-600 dark:text-rose-400">{defects ? defects[key].toLocaleString() : '—'} <span className="text-sm">{t('br_defect_unit')}</span></p></div>)}
+                        </div>
+                        {defects?.other > 0 && <p className="rounded-xl bg-slate-50 p-3 text-base font-bold dark:bg-slate-800">{t('br_defect_other')}：{defects.other.toLocaleString()} {t('br_defect_unit')}</p>}
+                        {(todayRecordCount === 0 || totalDefects === 0 || !defects) && <p className="text-base font-bold text-slate-500 dark:text-slate-400">{todayRecordCount === 0 ? t('br_no_records') : !defects ? t('br_defect_unavailable') : t('br_defect_none')}</p>}
+                    </section>
 
                     {/* === SECTION 1: Cumulative Milestone === */}
                     <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-t-4 border-primary p-4 space-y-3">
@@ -339,58 +416,7 @@ export default function BattleReport() {
                         </div>
                     </section>
 
-                    {/* === SECTION 2: Today's Efficiency === */}
-                    <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-t-4 border-blue-500 p-4 space-y-3">
-                        <h2 className="text-base font-black flex items-center gap-2 text-slate-800 dark:text-white">
-                            <span className="material-symbols-outlined text-xl text-blue-500">speed</span>
-                            {t('br_avg_efficiency')}
-                        </h2>
 
-                        <EfficiencyGauge value={avgEfficiency} />
-
-                        <div className="text-center -mt-2">
-                            <span className="text-4xl font-black" style={{ color: gaugeColor }}>
-                                {todayRecordCount > 0 ? avgEfficiency.toFixed(1) : '--'}%
-                            </span>
-                            {todayRecordCount === 0 && (
-                                <p className="text-xs text-slate-400 font-medium mt-1">{t('br_no_records')}</p>
-                            )}
-                        </div>
-
-                        {/* 3 stat cards */}
-                        <div className="grid grid-cols-3 gap-2 pt-1">
-                            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-center">
-                                <span className="material-symbols-outlined text-xl text-blue-500 block">groups</span>
-                                <span className="text-sm font-black text-slate-800 dark:text-white">{todayOperators}人</span>
-                                <span className="text-[10px] text-slate-400 block font-medium">{t('br_online_count')}</span>
-                            </div>
-                            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-center">
-                                <span className="material-symbols-outlined text-xl text-success block">inventory_2</span>
-                                <span className="text-sm font-black text-slate-800 dark:text-white">{todayGoodCount.toLocaleString()}{t('br_unit_pcs')}</span>
-                                <span className="text-[10px] text-slate-400 block font-medium">{t('br_total_output')}</span>
-                            </div>
-                            <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-center">
-                                <span className="material-symbols-outlined text-xl text-amber-500 block">fact_check</span>
-                                <span className="text-sm font-black text-slate-800 dark:text-white">{todayRecordCount}筆</span>
-                                <span className="text-[10px] text-slate-400 block font-medium">{t('br_upload_count')}</span>
-                            </div>
-                        </div>
-                    </section>
-
-                    {/* === SECTION 3: Live Feed === */}
-                    <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-t-4 border-amber-500 p-4 space-y-3">
-                        <h2 className="text-base font-black flex items-center gap-2 text-slate-800 dark:text-white">
-                            <span className="material-symbols-outlined text-xl text-amber-500">bolt</span>
-                            {t('br_live_feed')}
-                        </h2>
-
-                        <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                            <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600 mb-2 block">pending</span>
-                            <p className="text-slate-400 font-bold">{t('br_live_feed_coming_soon')}</p>
-                            <p className="text-[10px] text-slate-400/60 mt-1 font-medium">{t('br_live_feed_sub')}</p>
-                        </div>
-
-                    </section>
                 </>
             )}
             </main>

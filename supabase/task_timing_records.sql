@@ -73,6 +73,10 @@ as $$
     select
       coalesce(sum(good_count), 0)::bigint as today_good_count,
       count(*)::bigint as today_record_count,
+      coalesce(sum(defect_missing), 0)::bigint as today_defect_missing,
+      coalesce(sum(defect_deform), 0)::bigint as today_defect_deform,
+      coalesce(sum(defect_appearance), 0)::bigint as today_defect_appearance,
+      coalesce(sum(defect_other), 0)::bigint as today_defect_other,
       count(distinct operator_id)::bigint as today_operator_count,
       case
         when coalesce(sum(
@@ -123,6 +127,10 @@ as $$
     'today_record_count', today_summary.today_record_count,
     'today_operator_count', today_summary.today_operator_count,
     'avg_efficiency', today_summary.avg_efficiency,
+    'today_defect_missing', today_summary.today_defect_missing,
+    'today_defect_deform', today_summary.today_defect_deform,
+    'today_defect_appearance', today_summary.today_defect_appearance,
+    'today_defect_other', today_summary.today_defect_other,
     'live_feed', live_feed.records
   )
   from totals, today_summary, live_feed;

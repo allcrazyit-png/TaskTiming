@@ -13,6 +13,8 @@ var CACHE_TTL_SECONDS = 600; // 10 分鐘
 function onOpen() {
     SpreadsheetApp.getUi()
         .createMenu('組裝報表工具')
+        .addItem('建立今日提醒並設定自動同步', 'setupTaskTimingNoticeSync')
+        .addItem('立即同步今日提醒', 'syncTaskTimingNoticesToSupabase')
         .addItem('同步員工資料到 Supabase', 'syncTaskTimingEmployeesToSupabase')
         .addItem('設定並開始 Supabase 自動同步', 'setupTaskTimingRecordSync')
         .addItem('立即完整同步生產紀錄', 'syncAndReconcileTaskTimingRecordsToSupabase')
@@ -712,4 +714,88 @@ function getTimeGapInMinutes(e, s) {
     return x[0]*60 + x[1]; 
   }; 
   return p(s)-p(e); 
+}
+
+
+// 今日提醒 uses a full snapshot so edits, disabling, and deleted rows converge together.
+function setupTaskTimingNoticeSync() {
+    taskTimingSupabaseConfig_();
+    var ss = SpreadsheetApp.openById(RECORDS_SS_ID);
+    var sheet = ss.getSheetByName('今日提醒');
+    if (!sheet) {
+        sheet = ss.insertSheet('今日提醒');
+        sheet.getRange(1, 1, 1, 4).setValues([['開始日期', '結束日期', '提醒內容', '啟用']]);
+        sheet.setFrozenRows(1);
+        sheet.getRange(2, 1, sheet.getMaxRows() - 1, 2).setNumberFormat('yyyy/mm/dd');
+        sheet.getRange(2, 4, sheet.getMaxRows() - 1, 1).insertCheckboxes();
+        sheet.setColumnWidth(3, 420);
+        sheet.getRange(2, 3, sheet.getMaxRows() - 1, 1).setWrap(true);
+    }
+    var noticeHeaders = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 4)).getDisplayValues()[0];
+    ['越南文', '印尼文'].forEach(function (header) {
+        if (noticeHeaders.indexOf(header) === -1) {
+            var column = noticeHeaders.length + 1;
+            sheet.getRange(1, column).setValue(header);
+            sheet.setColumnWidth(column, 420);
+            noticeHeaders.push(header);
+        }
+    });
+    var handler = 'syncTaskTimingNoticesToSupabase';
+    if (!ScriptApp.getProjectTriggers().some(function (trigger) { return trigger.getHandlerFunction() === handler; })) {
+        ScriptApp.newTrigger(handler).timeBased().everyMinutes(10).create();
+    }
+    if (!ScriptApp.getProjectTriggers().some(function (trigger) { return trigger.getHandlerFunction() === 'taskTimingHandleNoticeEdit'; })) {
+        ScriptApp.newTrigger('taskTimingHandleNoticeEdit').forSpreadsheet(RECORDS_SS_ID).onEdit().create();
+    }
+    return syncTaskTimingNoticesToSupabase();
+}
+
+function taskTimingHandleNoticeEdit(e) {
+    if (e && e.range && e.range.getSheet().getName() === '今日提醒') return syncTaskTimingNoticesToSupabase();
+}
+
+function taskTimingNoticeRows_(rows, headers) {
+    headers = headers || ['開始日期', '結束日期', '提醒內容', '啟用', '越南文', '印尼文'];
+    function field(row, name) { return row[headers.indexOf(name)]; }
+    return rows.reduce(function (notices, row, index) {
+        var content = String(field(row, '提醒內容') == null ? '' : field(row, '提醒內容')).trim();
+        var enabled = field(row, '啟用') === true || /^(true|1|是)$/i.test(String(field(row, '啟用')).trim());
+        if (!enabled) return notices;
+        var start = taskTimingIsoDate_(field(row, '開始日期'));
+        var endValue = field(row, '結束日期');
+        var hasEnd = endValue != null && String(endValue).trim() !== '';
+        var end = hasEnd ? taskTimingIsoDate_(endValue) : null;
+        function validDate(value) {
+            if (!value) return false;
+            var date = new Date(value + 'T00:00:00Z');
+            return !isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+        }
+        if (!content || !validDate(start) || (hasEnd && (!validDate(end) || start > end))) {
+            throw new Error('今日提醒第 ' + (index + 2) + ' 列：請填寫有效的開始日期、提醒內容；結束日期可留空，填寫時不可早於開始日期。');
+        }
+        notices.push({ start_date: start, end_date: end, content: content, content_vi: String(field(row, '越南文') || '').trim(), content_id: String(field(row, '印尼文') || '').trim() });
+        return notices;
+    }, []);
+}
+
+function syncTaskTimingNoticesToSupabase() {
+    var lock = LockService.getScriptLock();
+    if (!lock.tryLock(30000)) throw new Error('其他同步正在執行，今日提醒將於下次重試。');
+    try {
+        var sheet = SpreadsheetApp.openById(RECORDS_SS_ID).getSheetByName('今日提醒');
+        if (!sheet) throw new Error('找不到今日提醒分頁；未覆蓋現有提醒。');
+        var columnCount = Math.max(sheet.getLastColumn(), 4);
+        var headers = sheet.getRange(1, 1, 1, columnCount).getDisplayValues()[0];
+        if (['開始日期', '結束日期', '提醒內容', '啟用'].some(function (header) { return headers.indexOf(header) === -1 || headers.indexOf(header) !== headers.lastIndexOf(header); })) throw new Error('今日提醒欄位順序不正確；未覆蓋現有提醒。');
+        var notices = taskTimingNoticeRows_(sheet.getLastRow() > 1 ? sheet.getRange(2, 1, sheet.getLastRow() - 1, columnCount).getValues() : [], headers);
+        var config = taskTimingSupabaseConfig_();
+        var response = UrlFetchApp.fetch(config.baseUrl + '/rest/v1/task_timing_notice_snapshot?on_conflict=source_sheet_id', {
+            method: 'post', contentType: 'application/json',
+            headers: { ApiKey: config.secret, Authorization: 'Bearer ' + config.secret, Prefer: 'resolution=merge-duplicates,return=minimal' },
+            payload: JSON.stringify([{ source_sheet_id: RECORDS_SS_ID, notices: notices, synced_at: new Date().toISOString() }]),
+            muteHttpExceptions: true
+        });
+        if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) throw new Error('今日提醒同步失敗：' + response.getResponseCode());
+        return { synced: notices.length };
+    } finally { lock.releaseLock(); }
 }
