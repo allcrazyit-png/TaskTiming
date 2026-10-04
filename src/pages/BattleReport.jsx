@@ -1,3 +1,4 @@
+import useNoticeInbox from '../hooks/useNoticeInbox';
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +10,7 @@ import {
     getWeeklyDutyRoster,
 } from '../utils/dutyRoster';
 import { getTaskTimingAccessToken } from '../services/taskTimingEmployees';
-import { fetchTaskTimingBattleReport, fetchTaskTimingNotices, getTaskTimingNoticeContent } from '../services/taskTimingRecords';
+import { fetchTaskTimingBattleReport, getTaskTimingNoticeContent } from '../services/taskTimingRecords';
 
 const MILESTONES = [10000, 50000, 100000, 500000, 1000000];
 
@@ -170,12 +171,15 @@ export default function BattleReport() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [report, setReport] = useState(null);
-    const [notices, setNotices] = useState([]);
-    const [noticeError, setNoticeError] = useState(false);
+    const [previewNotices, setNotices] = useState([]);
     const [error, setError] = useState(null);
     const [isRosterExpanded, setIsRosterExpanded] = useState(false);
     const todayStr = getLocalDateString();
     const isPreview = import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'defects';
+    const employeeId = localStorage.getItem('savedOperatorId') || '';
+    const inbox = useNoticeInbox(employeeId, { force: true, disabled: isPreview });
+    const notices = isPreview ? previewNotices : inbox.notices;
+    const noticeError = inbox.error;
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -198,12 +202,7 @@ export default function BattleReport() {
                     signal: controller.signal,
                 });
                 setReport(data);
-                try {
-                    setNotices(await fetchTaskTimingNotices({ accessToken, today: todayStr, signal: controller.signal }));
-                    setNoticeError(false);
-                } catch (noticeFailure) {
-                    if (noticeFailure.name !== 'AbortError') setNoticeError(true);
-                }
+
             } catch (e) {
                 if (e.name !== 'AbortError') {
                     const needsLogin = /login|required|expired/i.test(e.message);
@@ -278,7 +277,9 @@ export default function BattleReport() {
                 {notices.length > 0 && <section className="rounded-2xl border-t-4 border-amber-500 bg-white p-4 shadow-md dark:bg-slate-900">
                     <h2 className="flex items-center gap-2 text-lg font-black text-amber-700 dark:text-amber-300"><span className="material-symbols-outlined text-2xl" aria-hidden="true">sticky_note_2</span>{t('br_notice_title')}</h2>
                     <div className="mt-4 space-y-4">{notices.map((notice, index) => <article key={index} className="rounded-xl border border-amber-100 border-l-4 border-l-amber-400 bg-amber-50/70 px-4 py-5 dark:border-amber-900 dark:border-l-amber-500 dark:bg-amber-950/30">
+                        {inbox.isUnread(notice) && <span className="mb-3 inline-block rounded-full bg-red-600 px-3 py-1 text-sm font-bold text-white">{t('br_unread')}</span>}
                         <p className="whitespace-pre-wrap break-words text-lg font-bold leading-relaxed">{getTaskTimingNoticeContent(notice, i18n.language)}</p>
+                        {inbox.isUnread(notice) && <button disabled={!employeeId} onClick={() => inbox.markRead(notice)} className="mt-4 min-h-16 w-full rounded-xl bg-primary px-4 text-lg font-bold text-white disabled:opacity-50">{t('br_mark_read')}</button>}
                     </article>)}</div>
                 </section>}
                 {noticeError && <p role="status" className="text-base text-slate-500">{t('br_notice_error')}</p>}
@@ -442,9 +443,10 @@ export default function BattleReport() {
                         </div>
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{t('history_tab')}</span>
                     </button>
-                    <button className="flex flex-col items-center gap-1">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
+                    <button className="min-h-16 min-w-16 flex flex-col items-center gap-1">
+                        <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md">
                             <span className="material-symbols-outlined text-2xl">campaign</span>
+                            {inbox.unreadCount > 0 && <span aria-label={t('br_unread_count', { count: inbox.unreadCount })} className="absolute -right-2 -top-2 flex min-h-6 min-w-6 items-center justify-center rounded-full bg-red-600 px-1 text-sm font-black text-white ring-2 ring-white dark:ring-slate-900">{inbox.unreadCount > 9 ? '9+' : inbox.unreadCount}</span>}
                         </div>
                         <span className="text-xs font-bold text-primary">{t('battle_report_tab')}</span>
                     </button>

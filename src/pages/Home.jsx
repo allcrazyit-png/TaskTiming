@@ -1,3 +1,4 @@
+import useNoticeInbox from '../hooks/useNoticeInbox';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -131,7 +132,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.19.1 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.20.0 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -142,6 +143,8 @@ export default function Home() {
 
     const [employees, setEmployees] = useState(() => readCache(CACHE_KEY_EMPLOYEES) || []);
     const [selectedOperator, setSelectedOperator] = useState('');
+    const noticeEmployeeId = selectedOperator.match(/\[(.*?)\]/)?.[1] || '';
+    const { unreadCount } = useNoticeInbox(noticeEmployeeId);
     const [operatorHistory, setOperatorHistory] = useState([]); // Added state for today's history
     const [favoriteProducts, setFavoriteProducts] = useState([]); // Store array of favorite `品番`
     const [favoriteToRemove, setFavoriteToRemove] = useState(null);
@@ -1196,10 +1199,11 @@ export default function Home() {
                     </button>
                     <button
                         onClick={() => navigate('/battle')}
-                        className="flex flex-col items-center gap-1 group active:scale-95 transition-transform"
+                        className="min-h-16 min-w-16 flex flex-col items-center gap-1 group active:scale-95 transition-transform"
                     >
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <div className="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                             <span className="material-symbols-outlined text-2xl">bar_chart</span>
+                            {unreadCount > 0 && <span aria-label={t('br_unread_count', { count: unreadCount })} className="absolute -right-2 -top-2 flex min-h-6 min-w-6 items-center justify-center rounded-full bg-red-600 px-1 text-sm font-black text-white ring-2 ring-white dark:ring-slate-900">{unreadCount > 9 ? '9+' : unreadCount}</span>}
                         </div>
                         <span className="text-xs font-bold text-slate-600 dark:text-slate-400">{t('battle_report_tab')}</span>
                     </button>
@@ -1350,7 +1354,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.19.1
+                                    Version 1.20.0
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
