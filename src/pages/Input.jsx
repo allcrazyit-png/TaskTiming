@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
-const MobileTimePicker = ({ value, onChange }) => {
+const AndroidTimePicker = ({ value, onChange }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [tempHour, setTempHour] = useState(() => {
         const now = new Date();
@@ -49,7 +49,7 @@ const MobileTimePicker = ({ value, onChange }) => {
             {/* 顯示當前時間的輸入框 */}
             <button
                 onClick={handleOpenPicker}
-                className="w-full min-h-16 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-center text-2xl font-black text-primary hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                className="w-full bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-center text-2xl font-black text-primary hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
                 {h}:{m}
             </button>
@@ -66,7 +66,7 @@ const MobileTimePicker = ({ value, onChange }) => {
                                 <div className="flex flex-col items-center gap-3">
                                     <button
                                         onClick={handleHourUp}
-                                        className="w-16 h-16 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
+                                        className="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
                                     >
                                         +
                                     </button>
@@ -75,7 +75,7 @@ const MobileTimePicker = ({ value, onChange }) => {
                                     </div>
                                     <button
                                         onClick={handleHourDown}
-                                        className="w-16 h-16 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
+                                        className="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
                                     >
                                         −
                                     </button>
@@ -89,7 +89,7 @@ const MobileTimePicker = ({ value, onChange }) => {
                                 <div className="flex flex-col items-center gap-3">
                                     <button
                                         onClick={handleMinuteUp}
-                                        className="w-16 h-16 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
+                                        className="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
                                     >
                                         +
                                     </button>
@@ -98,7 +98,7 @@ const MobileTimePicker = ({ value, onChange }) => {
                                     </div>
                                     <button
                                         onClick={handleMinuteDown}
-                                        className="w-16 h-16 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
+                                        className="w-12 h-12 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center active:scale-90 transition-transform border border-slate-300 dark:border-slate-600 shadow-sm text-2xl font-black text-slate-600 dark:text-slate-300"
                                     >
                                         −
                                     </button>
@@ -118,13 +118,13 @@ const MobileTimePicker = ({ value, onChange }) => {
                         <div className="flex gap-4 p-5 bg-slate-50 dark:bg-slate-800">
                             <button
                                 onClick={() => setIsOpen(false)}
-                                className="flex-1 min-h-16 py-4 bg-slate-600 dark:bg-slate-700 text-white rounded-full font-black text-lg active:scale-95 transition-transform shadow-md"
+                                className="flex-1 py-4 bg-slate-600 dark:bg-slate-700 text-white rounded-full font-black text-lg active:scale-95 transition-transform shadow-md"
                             >
                                 取消
                             </button>
                             <button
                                 onClick={handleConfirm}
-                                className="flex-1 min-h-16 py-4 bg-primary text-white rounded-full font-black text-lg active:scale-95 transition-transform shadow-lg"
+                                className="flex-1 py-4 bg-primary text-white rounded-full font-black text-lg active:scale-95 transition-transform shadow-lg"
                             >
                                 確定
                             </button>
@@ -141,9 +141,9 @@ export default function Input() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Mobile devices use our fixed 24-hour picker, including iPads with desktop user agents.
-    const usesMobileTimePicker = () => /Android|iPhone|iPad|iPod/.test(navigator.userAgent)
-        || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+    // Detect if device is Android (only Android uses custom TimePicker)
+    // All other devices (iOS, Mac, Windows) use native time input
+    const isAndroid = () => /Android/.test(navigator.userAgent);
     // Default values for testing
     const { productName, partNumber, carModel, standardTime, operator, productImage, category } = location.state || {
         productName: "鋁合金散熱片 A-204",
@@ -457,8 +457,8 @@ export default function Input() {
                                 <label className="block text-sm font-black text-slate-500">
                                     {t('start_time')} <span className="text-red-500">*</span>
                                 </label>
-                                {usesMobileTimePicker() ? (
-                                    <MobileTimePicker
+                                {isAndroid() ? (
+                                    <AndroidTimePicker
                                         value={startTime}
                                         onChange={(value) => { setStartTime(value); setFieldError(null); }}
                                     />
@@ -476,8 +476,8 @@ export default function Input() {
                                 <label className="block text-sm font-black text-slate-500">
                                     {t('end_time')} <span className="text-red-500">*</span>
                                 </label>
-                                {usesMobileTimePicker() ? (
-                                    <MobileTimePicker
+                                {isAndroid() ? (
+                                    <AndroidTimePicker
                                         value={endTime}
                                         onChange={(value) => { setEndTime(value); setFieldError(null); }}
                                     />
