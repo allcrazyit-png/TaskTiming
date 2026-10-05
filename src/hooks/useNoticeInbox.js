@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { sortNotices } from '../utils/noticePresentation';
 import { getTaskTimingAccessToken } from '../services/taskTimingEmployees';
 import { fetchTaskTimingNotices, getActiveTaskTimingNotices } from '../services/taskTimingRecords';
 
@@ -28,6 +29,12 @@ export default function useNoticeInbox(employeeId, { force = false, disabled = f
     const notices = getActiveTaskTimingNotices(cache?.notices, today());
     const rawRead = stored(readKey(employeeId), []);
     const readIds = Array.isArray(rawRead) ? rawRead : [];
+    // Capture read status on entry so marking a notice read does not move it.
+    const entryReadIds = useMemo(() => {
+        const ids = stored(readKey(employeeId), []);
+        return Array.isArray(ids) ? ids : [];
+    }, [employeeId]);
+    const orderedNotices = sortNotices(notices, notice => !entryReadIds.includes(noticeIdentity(notice)));
     const isUnread = notice => !readIds.includes(noticeIdentity(notice));
     useEffect(() => {
         if (!employeeId || disabled) return;
@@ -62,5 +69,5 @@ export default function useNoticeInbox(employeeId, { force = false, disabled = f
         write(readKey(employeeId), [...new Set([...readIds, noticeIdentity(notice)])]);
         setRevision(value => value + 1);
     };
-    return { notices: employeeId ? notices : [], error, isUnread, markRead, unreadCount: employeeId ? notices.filter(isUnread).length : 0 };
+    return { notices: employeeId ? orderedNotices : [], error, isUnread, markRead, unreadCount: employeeId ? notices.filter(isUnread).length : 0 };
 }
