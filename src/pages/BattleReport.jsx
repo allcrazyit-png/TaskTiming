@@ -13,6 +13,8 @@ import {
 import { getTaskTimingAccessToken } from '../services/taskTimingEmployees';
 import { fetchTaskTimingBattleReport, getTaskTimingNoticeContent } from '../services/taskTimingRecords';
 
+import { efficiencyGaugePoint } from '../utils/efficiencyGauge';
+
 const MILESTONES = [10000, 50000, 100000, 500000, 1000000];
 
 
@@ -21,33 +23,39 @@ function getLocalDateString() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-// Semi-circle gauge
-function EfficiencyGauge({ value }) {
-    const clamped = Math.max(0, Math.min(150, value));
-    const angle = (clamped / 150) * 180 - 90;
-    const rad = (angle * Math.PI) / 180;
-    const cx = 90, cy = 88, r = 72;
-    const nx = cx + r * Math.cos(rad);
-    const ny = cy + r * Math.sin(rad);
-    let color = '#ef4444';
-    if (value >= 90) color = '#f59e0b';
-    if (value >= 100) color = '#22c55e';
-    if (value >= 110) color = '#0d9488';
-
+// 0% starts at the left; 150% ends at the right, entirely within the upper semicircle.
+function EfficiencyGauge({ value, hasRecords }) {
+    const needle = efficiencyGaugePoint(value, 58);
+    const bands = [
+        { from: 0, to: 90, color: '#ef4444' },
+        { from: 90, to: 100, color: '#f59e0b' },
+        { from: 100, to: 110, color: '#22c55e' },
+        { from: 110, to: 150, color: '#0d9488' },
+    ];
+    const color = bands.find(band => value < band.to)?.color ?? '#0d9488';
     return (
-        <svg viewBox="0 0 180 100" className="w-52 mx-auto">
-            <defs>
-                <linearGradient id="gr" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="#ef4444" />
-                    <stop offset="45%" stopColor="#f59e0b" />
-                    <stop offset="75%" stopColor="#22c55e" />
-                    <stop offset="100%" stopColor="#0d9488" />
-                </linearGradient>
-            </defs>
-            <path d="M 18 88 A 72 72 0 0 1 162 88" fill="none" stroke="#e2e8f0" className="dark:stroke-slate-700" strokeWidth="12" strokeLinecap="round" />
-            <path d="M 18 88 A 72 72 0 0 1 162 88" fill="none" stroke="url(#gr)" strokeWidth="10" strokeLinecap="round" />
-            <line x1={cx} y1={cy} x2={nx} y2={ny} stroke={color} strokeWidth="3" strokeLinecap="round" />
-            <circle cx={cx} cy={cy} r="5" fill={color} />
+        <svg viewBox="0 0 180 115" className="w-64 max-w-full mx-auto" aria-hidden="true">
+            <path d="M 18 88 A 72 72 0 0 1 162 88" fill="none" stroke="#e2e8f0" className="dark:stroke-slate-700" strokeWidth="10" strokeLinecap="round" />
+            {hasRecords && bands.map(band => {
+                const start = efficiencyGaugePoint(band.from);
+                const end = efficiencyGaugePoint(band.to);
+                return <path key={band.from} d={`M ${start.x} ${start.y} A 72 72 0 0 1 ${end.x} ${end.y}`} fill="none" stroke={band.color} strokeWidth="10" />;
+            })}
+            {[0, 50, 100, 150].map(mark => {
+                const outer = efficiencyGaugePoint(mark, 62);
+                const inner = efficiencyGaugePoint(mark, 57);
+                return <line key={mark} x1={outer.x} y1={outer.y} x2={inner.x} y2={inner.y} className="stroke-slate-400 dark:stroke-slate-500" strokeWidth="1.5" />;
+            })}
+            {hasRecords && <>
+                <line x1="90" y1="88" x2={needle.x} y2={needle.y} stroke={color} strokeWidth="4" strokeLinecap="round" />
+                <circle cx="90" cy="88" r="6" fill={color} />
+                <circle cx="90" cy="88" r="2" fill="white" />
+            </>}
+            <g className="fill-slate-500 dark:fill-slate-400" fontSize="11" fontWeight="700">
+                <text x="18" y="108" textAnchor="middle">0%</text>
+                <text x="162" y="108" textAnchor="middle">150%</text>
+                <text x="135" y="13" textAnchor="middle">100%</text>
+            </g>
         </svg>
     );
 }
@@ -318,7 +326,7 @@ export default function BattleReport() {
                             {t('br_avg_efficiency')}
                         </h2>
 
-                        <EfficiencyGauge value={avgEfficiency} />
+                        <EfficiencyGauge value={avgEfficiency} hasRecords={todayRecordCount > 0} />
 
                         <div className="text-center -mt-2">
                             <span className="text-4xl font-black" style={{ color: gaugeColor }}>
