@@ -7,7 +7,8 @@ const sql = await readFile(new URL('../supabase/task_timing_records.sql', import
 test('production records use a stable source identity and keep raw records private', () => {
   assert.match(sql, /create table if not exists public\.task_timing_records/i);
   assert.match(sql, /record_id text primary key/i);
-  assert.match(sql, /unique\s*\(source_sheet_id, source_sheet_name, source_row\)/i);
+  assert.doesNotMatch(sql, /unique\s*\(source_sheet_id, source_sheet_name, source_row\)/i);
+  assert.match(sql, /drop constraint if exists task_timing_records_source_sheet_id_source_sheet_name_sourc_key/i);
   assert.match(sql, /enable row level security/i);
   assert.match(sql, /revoke all on table public\.task_timing_records from anon, authenticated/i);
   assert.match(sql, /grant select on public\.task_timing_records to authenticated/i);

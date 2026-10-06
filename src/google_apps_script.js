@@ -236,7 +236,7 @@ function taskTimingDeleteRecordIds_(recordIds) {
     }
 }
 
-function taskTimingScheduleContinuation_() {
+function taskTimingClearContinuation_() {
     var handler = 'continueTaskTimingRecordSync';
     // A one-shot trigger is still visible to getProjectTriggers() while its
     // handler is running (and may remain listed as disabled afterward). Remove
@@ -245,7 +245,11 @@ function taskTimingScheduleContinuation_() {
     ScriptApp.getProjectTriggers().forEach(function (trigger) {
         if (trigger.getHandlerFunction() === handler) ScriptApp.deleteTrigger(trigger);
     });
-    ScriptApp.newTrigger(handler).timeBased().after(60 * 1000).create();
+}
+
+function taskTimingScheduleContinuation_() {
+    taskTimingClearContinuation_();
+    ScriptApp.newTrigger('continueTaskTimingRecordSync').timeBased().after(60 * 1000).create();
 }
 
 function continueTaskTimingRecordSync() {
@@ -281,6 +285,7 @@ function syncTaskTimingRecordsToSupabase() {
     var lock = LockService.getScriptLock();
     lock.waitLock(10000);
     try {
+        taskTimingClearContinuation_();
         var sheet = taskTimingRecordSheet_();
         var columns = taskTimingEnsureSyncColumns_(sheet);
         var lastRow = sheet.getLastRow();
@@ -318,6 +323,9 @@ function syncTaskTimingRecordsToSupabase() {
                     failed++;
                 });
                 console.error(error);
+                // Leave failed rows for the regular ten-minute retry. A failed
+                // batch must not create an endless one-minute continuation loop.
+                break;
             }
         }
 
@@ -329,7 +337,7 @@ function syncTaskTimingRecordsToSupabase() {
         var remaining = Math.max(0, rows.filter(function (row) {
             return String(row[columns.status - 1] || '') !== '已同步';
         }).length);
-        if (remaining > 0) taskTimingScheduleContinuation_();
+        if (remaining > 0 && failed === 0) taskTimingScheduleContinuation_();
         return { synced: synced, failed: failed, remaining: remaining };
     } finally {
         lock.releaseLock();
@@ -623,7 +631,7 @@ function doPost(e) {
         } catch (syncError) {
             sheet.getRange(rowNumber, columns.status).setValue('待重試');
             console.error(syncError);
-            taskTimingScheduleContinuation_();
+            // The regular sync retries this row; do not accelerate failures.
         }
 
         return ContentService.createTextOutput(JSON.stringify({

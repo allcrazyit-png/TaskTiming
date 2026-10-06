@@ -87,3 +87,55 @@ test('manual reconciliation asks for confirmation with the exact delete count', 
   assert.match(source, /ui\.ButtonSet\.YES_NO/);
   assert.match(source, /confirmation !== ui\.Button\.YES/);
 });
+
+function runSync({ fail = false, count = 1001 } = {}) {
+  const rows = Array.from({ length: count }, (_, index) => {
+    const row = Array(24).fill('');
+    row[22] = `record-${index}`;
+    row[23] = '待同步';
+    return row;
+  });
+  let scheduled = 0;
+  let cleared = 0;
+  let requests = 0;
+  const sheet = {
+    getLastRow: () => rows.length + 1,
+    getLastColumn: () => 24,
+    getName: () => '工作表1',
+    getRange: () => ({ getValues: () => rows, setValues: () => {} }),
+  };
+  const isolated = vm.createContext({ console: { error() {} } });
+  vm.runInContext(source, isolated);
+  isolated.LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
+  isolated.taskTimingRecordSheet_ = () => sheet;
+  isolated.taskTimingEnsureSyncColumns_ = () => ({ id: 23, status: 24 });
+  isolated.taskTimingClearContinuation_ = () => { cleared++; };
+  isolated.taskTimingScheduleContinuation_ = () => { scheduled++; };
+  isolated.taskTimingUpsertRecords_ = () => {
+    requests++;
+    if (fail) throw new Error('Supabase 409: duplicate key');
+  };
+  return { result: isolated.syncTaskTimingRecordsToSupabase(), rows, scheduled, cleared, requests };
+}
+
+test('conflicting backfill stops after the first failed batch without scheduling rapid retries', () => {
+  const state = runSync({ fail: true });
+  assert.equal(state.requests, 1);
+  assert.equal(state.scheduled, 0);
+  assert.equal(state.cleared, 1);
+  assert.equal(state.result.failed, 200);
+  assert.equal(state.result.remaining, 1001);
+  assert.equal(state.rows[0][23], '待重試');
+  assert.equal(state.rows[200][23], '待同步');
+});
+
+test('successful backfill continues until all pending records are synced', () => {
+  const state = runSync();
+  assert.equal(state.requests, 5);
+  assert.equal(state.scheduled, 1);
+  assert.equal(state.result.synced, 1000);
+  assert.equal(state.result.remaining, 1);
+  const complete = runSync({ count: 3 });
+  assert.equal(complete.result.remaining, 0);
+  assert.equal(complete.scheduled, 0);
+});

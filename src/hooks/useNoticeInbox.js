@@ -40,9 +40,10 @@ export default function useNoticeInbox(employeeId, { force = false, disabled = f
         if (!employeeId || disabled) return;
         const controller = new AbortController();
         let pending = false;
+        let loginExpired = false;
         const refresh = async (mustRefresh = false) => {
             const previous = stored(cacheKey(employeeId), null);
-            if (pending || (!mustRefresh && Date.now() - (previous?.fetchedAt ?? 0) < TTL)) return;
+            if (loginExpired || pending || (!mustRefresh && Date.now() - (previous?.fetchedAt ?? 0) < TTL)) return;
             pending = true;
             try {
                 const accessToken = await getTaskTimingAccessToken({ signal: controller.signal });
@@ -55,6 +56,7 @@ export default function useNoticeInbox(employeeId, { force = false, disabled = f
                 setError(false);
                 setRevision(value => value + 1);
             } catch (failure) {
+                if (failure.message === 'Employee login expired' || failure.message === 'Employee login required') loginExpired = true;
                 if (failure.name !== 'AbortError') setError(true);
             } finally { pending = false; }
         };

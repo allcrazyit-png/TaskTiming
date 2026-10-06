@@ -29,9 +29,13 @@ create table if not exists public.task_timing_records (
   efficiency_ratio numeric not null default 0,
   satisfaction numeric not null default 0,
   source_updated_at timestamptz,
-  synced_at timestamptz not null default now(),
-  unique (source_sheet_id, source_sheet_name, source_row)
+  synced_at timestamptz not null default now()
 );
+
+-- Sheet row numbers move when rows are deleted or sorted. The stable record_id
+-- is the identity; source_row is only the last observed position.
+alter table public.task_timing_records
+drop constraint if exists task_timing_records_source_sheet_id_source_sheet_name_sourc_key;
 
 alter table public.task_timing_records enable row level security;
 revoke all on table public.task_timing_records from anon, authenticated;
