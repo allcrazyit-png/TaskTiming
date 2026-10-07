@@ -157,7 +157,14 @@ export async function getTaskTimingAccessToken({
         && Number(changed.expiresAt) > nowSeconds + 60) {
         return changed.accessToken;
       }
-      if ([400, 401, 403].includes(response.status)) throw new Error('Employee login expired');
+      if ([400, 401, 403].includes(response.status)) {
+        // Clear only the rejected credentials. Never erase a newer login that
+        // another tab saved while this request was in flight.
+        if (changed?.employeeId === latest.employeeId && changed.refreshToken === latest.refreshToken) {
+          clearTaskTimingSession(storage);
+        }
+        throw new Error('Employee login expired');
+      }
       throw new Error('Employee login temporarily unavailable');
     }
 

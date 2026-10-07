@@ -237,19 +237,28 @@ test('keeps the saved session after a temporary refresh failure so it can retry'
   }
 });
 
-test('a rejected refresh does not erase the selected employee session', async () => {
+test('a rejected refresh clears only auth credentials and stops future requests', async () => {
   const originalFetch = globalThis.fetch;
   const storage = createStorage();
   const session = {
     employeeId: 'E01', accessToken: 'expired', refreshToken: 'refresh-token', expiresAt: 1,
   };
   saveTaskTimingSession(session, storage);
-  globalThis.fetch = async () => ({ ok: false, status: 400 });
+  storage.setItem('savedOperatorId', 'E01');
+  storage.setItem('draft', 'unfinished work');
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; return { ok: false, status: 400 }; };
   try {
     await assert.rejects(() => getTaskTimingAccessToken({
       storage, nowSeconds: 100, supabaseUrl: 'https://example.supabase.co', publishableKey: 'test-key',
     }), /Employee login expired/);
-    assert.deepEqual(readTaskTimingSession(storage), session);
+    assert.equal(readTaskTimingSession(storage), null);
+    assert.equal(storage.getItem('savedOperatorId'), 'E01');
+    assert.equal(storage.getItem('draft'), 'unfinished work');
+    await assert.rejects(() => getTaskTimingAccessToken({
+      storage, nowSeconds: 100, supabaseUrl: 'https://example.supabase.co', publishableKey: 'test-key',
+    }), /Employee login required/);
+    assert.equal(calls, 1);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -291,4 +300,21 @@ test('Home shows local upload status without requesting GAS records', async () =
   assert.match(home, /setLatestUploadStatus\(formatLatestLocalUpload\(existingHistory\)\)/);
   assert.doesNotMatch(home, /action=records/);
   assert.doesNotMatch(home, /missingWorkDays/);
+});
+
+test('a rejected old refresh preserves a newer login saved during the request', async () => {
+  const originalFetch = globalThis.fetch;
+  const storage = createStorage();
+  saveTaskTimingSession({ employeeId: 'E01', accessToken: 'old', refreshToken: 'old', expiresAt: 1 }, storage);
+  const replacement = { employeeId: 'E02', accessToken: 'new', refreshToken: 'new', expiresAt: 1000 };
+  globalThis.fetch = async () => {
+    saveTaskTimingSession(replacement, storage);
+    return { ok: false, status: 400 };
+  };
+  try {
+    await assert.rejects(() => getTaskTimingAccessToken({
+      storage, nowSeconds: 100, supabaseUrl: 'https://example.supabase.co', publishableKey: 'test-key',
+    }), /Employee login expired/);
+    assert.deepEqual(readTaskTimingSession(storage), replacement);
+  } finally { globalThis.fetch = originalFetch; }
 });
