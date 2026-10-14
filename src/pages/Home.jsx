@@ -584,8 +584,8 @@ export default function Home() {
                 className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 rounded-2xl p-3 shadow-md active:scale-[0.98] transition-transform"
                 onClick={() => handleStartWork(product)}
             >
-                <div className="flex items-center gap-4">
-                    <div className="shrink-0 w-24 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="shrink-0 w-28 h-24 sm:w-36 sm:h-28 rounded-xl overflow-hidden bg-white">
                         {product['產品圖片'] ? (
                             <button
                                 type="button"
