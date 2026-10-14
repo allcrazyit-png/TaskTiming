@@ -1,3 +1,4 @@
+import ProductImagePreview from '../components/ProductImagePreview';
 import useNoticeInbox from '../hooks/useNoticeInbox';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -148,6 +149,7 @@ export default function Home() {
     const [operatorHistory, setOperatorHistory] = useState([]); // Added state for today's history
     const [favoriteProducts, setFavoriteProducts] = useState([]); // Store array of favorite `品番`
     const [favoriteToRemove, setFavoriteToRemove] = useState(null);
+    const [imagePreview, setImagePreview] = useState(null);
     const [weather, setWeather] = useState(null); // Local weather state
 
     // Custom Product Entry State
@@ -585,13 +587,20 @@ export default function Home() {
                 <div className="flex items-center gap-4">
                     <div className="shrink-0 w-24 h-16 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                         {product['產品圖片'] ? (
-                            <img
+                            <button
+                                type="button"
+                                className="block h-full min-h-16 w-full cursor-zoom-in focus-visible:ring-4 focus-visible:ring-primary"
+                                aria-label={t('enlarge_photo', { name: product['品名'] })}
+                                onClick={(event) => { event.stopPropagation(); setImagePreview(product); }}
+                                >
+                                <img
                                 alt={product['品名']}
                                 className="w-full h-full object-contain"
                                 loading="lazy"
                                 src={getImageUrl(product['產品圖片'])}
                                 onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/80x80?text=?'; }}
                             />
+                                </button>
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400">
                                 <span className="material-symbols-outlined text-3xl">image_not_supported</span>
@@ -666,7 +675,13 @@ export default function Home() {
             <div key={`product-${product['品番']}-${index}`} className="overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg transition-transform active:scale-[0.98]">
                 <div className="aspect-video w-full bg-slate-200 relative overflow-hidden">
                     {product['產品圖片'] ? (
-                        <img
+                        <button
+                            type="button"
+                            className="block h-full min-h-16 w-full cursor-zoom-in focus-visible:ring-4 focus-visible:ring-primary"
+                            aria-label={t('enlarge_photo', { name: product['品名'] })}
+                            onClick={(event) => { event.stopPropagation(); setImagePreview(product); }}
+                            >
+                            <img
                             alt={product['品名']}
                             className="h-full w-full object-cover"
                             loading="lazy"
@@ -676,6 +691,7 @@ export default function Home() {
                                 e.target.src = 'https://placehold.co/600x400?text=No+Image';
                             }}
                         />
+                            </button>
                     ) : (
                         <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400">
                             <span className="material-symbols-outlined text-4xl">image_not_supported</span>
@@ -1366,6 +1382,8 @@ export default function Home() {
                     </div>
                 </div>
             )}
+
+            {imagePreview && <ProductImagePreview src={getImageUrl(imagePreview['產品圖片'])} name={imagePreview['品名']} onClose={() => setImagePreview(null)} />}
 
             {/* Custom Work Modal */}
             {showCustomModal && selectedOperator && (

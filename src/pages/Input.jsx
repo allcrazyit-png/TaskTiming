@@ -1,3 +1,4 @@
+import ProductImagePreview from '../components/ProductImagePreview';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -162,6 +163,7 @@ export default function Input() {
         return import.meta.env.BASE_URL + url.replace(/^\/+/, '');
     };
 
+    const [showImagePreview, setShowImagePreview] = useState(false);
     const displayProductImage = getImageUrl(productImage);
 
     // Scroll to top on mount
@@ -367,6 +369,7 @@ export default function Input() {
                     早班
                 </div>
             </div>
+            {showImagePreview && <ProductImagePreview src={displayProductImage} name={productName} onClose={() => setShowImagePreview(false)} />}
             <header
                 style={{ borderLeftColor: catLeftBorderColor }}
                 className={`sticky top-0 z-20 backdrop-blur-sm border-b-2 border-l-4 px-4 py-3 flex items-center shadow-sm transition-colors ${catColor === 'amber' ? 'bg-amber-50/95 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800' :
@@ -383,6 +386,7 @@ export default function Input() {
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                     <div className="shrink-0">
                         {displayProductImage ? (
+                            <button type="button" onClick={() => setShowImagePreview(true)} aria-label={t('enlarge_photo', { name: productName })} className="block min-h-16 rounded-xl cursor-zoom-in focus-visible:ring-4 focus-visible:ring-primary">
                             <img alt={productName} className={`w-20 h-16 rounded-xl border object-contain shadow-md bg-white ${catColor === 'amber' ? 'border-amber-500' :
                                 catColor === 'slate' ? 'border-slate-500' :
                                     catColor === 'emerald' ? 'border-emerald-500' :
@@ -394,6 +398,7 @@ export default function Input() {
                                     e.target.src = 'https://placehold.co/150x150?text=No+Photo';
                                 }}
                             />
+                            </button>
                         ) : (
                             <div className="flex h-16 w-20 items-center justify-center rounded-xl border border-slate-300 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800">
                                 <span className="material-symbols-outlined text-2xl">image_not_supported</span>
