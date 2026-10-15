@@ -496,7 +496,7 @@ export default function Input() {
                             {t('good_yield')} {isDual && <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full ml-2">{t('dual_mode_tag')}</span>}
                         </h2>
                         {isDual && (
-                            <p className="px-1 text-base font-bold text-slate-500 dark:text-slate-400">{t('dual_zero_hint')}</p>
+                            <p className="px-1 text-base font-bold text-slate-600 dark:text-slate-300">{t('dual_zero_hint')}</p>
                         )}
 
                         {!isDual && (
@@ -534,74 +534,20 @@ export default function Input() {
                         )}
 
                         {isDual && (
-                            <div className="space-y-4">
-                                {/* R Side */}
-                                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 border-l-4 border-l-blue-500 relative">
-                                    <div className="absolute top-0 right-0 bg-blue-500 text-white font-black px-3 py-1 rounded-bl-xl rounded-tr-xl text-sm shadow-sm">R 邊</div>
-                                    <div className="flex items-center justify-between gap-3 pt-2">
-                                        <button
-                                            onClick={() => setGoodCountR(Math.max(0, (parseInt(goodCountR) || 0) - 1))}
-                                            className="w-[45px] h-[45px] rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-transform border-2 border-slate-300 dark:border-slate-700"
-                                        >
-                                            <span className="material-symbols-outlined text-2xl font-black text-slate-600 dark:text-slate-300">remove</span>
-                                        </button>
-                                        <div className="flex-1 text-center">
-                                            <input
-                                                className="counter-input text-blue-600 focus:outline-none"
-                                                type="number"
-                                                value={goodCountR}
-                                                onChange={(e) => setGoodCountR(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
-                                                inputMode="numeric"
-                                                pattern="[0-9]*"
-                                            />
-                                            <p className="text-xs font-black text-slate-400 mt-0 tracking-widest uppercase">Pcs</p>
+                            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-700">
+                                {[{ side: 'R', value: goodCountR, update: setGoodCountR }, { side: 'L', value: goodCountL, update: setGoodCountL }].map(({ side, value, update }) => (
+                                    <div key={side} className="py-3 first:pt-0 last:pb-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`shrink-0 rounded-lg px-2 py-2 text-base font-black ${side === 'R' ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200' : 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-200'}`}>{t(side === 'R' ? 'side_r' : 'side_l')}</span>
+                                            <button type="button" aria-label={`${t(side === 'R' ? 'side_r' : 'side_l')} −1`} onClick={() => update(Math.max(0, (parseInt(value) || 0) - 1))} className="h-16 w-16 shrink-0 rounded-xl bg-slate-100 text-3xl font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">−</button>
+                                            <input aria-label={`${t(side === 'R' ? 'side_r' : 'side_l')} ${t('good_yield')}`} className="min-w-0 w-full h-16 bg-transparent text-center text-[40px] font-black text-slate-800 dark:text-slate-100" type="number" min="0" inputMode="numeric" value={value} onChange={(event) => update(event.target.value === '' ? '' : Math.max(0, parseInt(event.target.value) || 0))} />
+                                            <button type="button" aria-label={`${t(side === 'R' ? 'side_r' : 'side_l')} +1`} onClick={() => update((parseInt(value) || 0) + 1)} className="h-16 w-16 shrink-0 rounded-xl bg-success text-3xl font-bold text-white">+</button>
                                         </div>
-                                        <button
-                                            onClick={() => setGoodCountR((parseInt(goodCountR) || 0) + 1)}
-                                            className="w-[45px] h-[45px] rounded-xl bg-blue-500 text-white flex items-center justify-center active:scale-90 transition-transform border-2 border-blue-600 shadow-md"
-                                        >
-                                            <span className="material-symbols-outlined text-2xl font-black">add</span>
-                                        </button>
-                                    </div>
-                                    <div className="mt-3 grid grid-cols-2 gap-3">
-                                        <button onClick={() => setGoodCountR((parseInt(goodCountR) || 0) + 10)} className="py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200 font-bold text-slate-700 dark:text-slate-300">+ 10</button>
-                                        <button onClick={() => setGoodCountR((parseInt(goodCountR) || 0) + 50)} className="py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200 font-bold text-slate-700 dark:text-slate-300">+ 50</button>
-                                    </div>
-                                </div>
-
-                                {/* L Side */}
-                                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 border-l-4 border-l-purple-500 relative">
-                                    <div className="absolute top-0 right-0 bg-purple-500 text-white font-black px-3 py-1 rounded-bl-xl rounded-tr-xl text-sm shadow-sm">L 邊</div>
-                                    <div className="flex items-center justify-between gap-3 pt-2">
-                                        <button
-                                            onClick={() => setGoodCountL(Math.max(0, (parseInt(goodCountL) || 0) - 1))}
-                                            className="w-[45px] h-[45px] rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center active:scale-90 transition-transform border-2 border-slate-300 dark:border-slate-700"
-                                        >
-                                            <span className="material-symbols-outlined text-2xl font-black text-slate-600 dark:text-slate-300">remove</span>
-                                        </button>
-                                        <div className="flex-1 text-center">
-                                            <input
-                                                className="counter-input text-purple-600 focus:outline-none"
-                                                type="number"
-                                                value={goodCountL}
-                                                onChange={(e) => setGoodCountL(e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
-                                                inputMode="numeric"
-                                                pattern="[0-9]*"
-                                            />
-                                            <p className="text-xs font-black text-slate-400 mt-0 tracking-widest uppercase">Pcs</p>
+                                        <div className="mt-2 grid grid-cols-2 gap-2">
+                                            {[10, 50].map(amount => <button type="button" key={amount} onClick={() => update((parseInt(value) || 0) + amount)} className="min-h-16 rounded-xl bg-slate-100 text-lg font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">+ {amount}</button>)}
                                         </div>
-                                        <button
-                                            onClick={() => setGoodCountL((parseInt(goodCountL) || 0) + 1)}
-                                            className="w-[45px] h-[45px] rounded-xl bg-purple-500 text-white flex items-center justify-center active:scale-90 transition-transform border-2 border-purple-600 shadow-md"
-                                        >
-                                            <span className="material-symbols-outlined text-2xl font-black">add</span>
-                                        </button>
                                     </div>
-                                    <div className="mt-3 grid grid-cols-2 gap-3">
-                                        <button onClick={() => setGoodCountL((parseInt(goodCountL) || 0) + 10)} className="py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200 font-bold text-slate-700 dark:text-slate-300">+ 10</button>
-                                        <button onClick={() => setGoodCountL((parseInt(goodCountL) || 0) + 50)} className="py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-2 border-slate-300 dark:border-slate-700 active:bg-slate-200 font-bold text-slate-700 dark:text-slate-300">+ 50</button>
-                                    </div>
-                                </div>
+                                ))}
                             </div>
                         )}
                     </section>
@@ -611,46 +557,44 @@ export default function Input() {
                             {t('scrap_report')}
                         </h2>
                         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
-                            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border-2 border-red-200 dark:border-red-800 flex items-center justify-between">
+                            <div className="mb-3 pb-3 border-b border-slate-200 dark:border-slate-700 flex flex-wrap gap-2 items-center justify-between">
                                 <div>
                                     <p className="text-sm font-black text-danger uppercase tracking-wider">{t('total_scrap')}</p>
-                                    <p className="text-xs text-slate-500 font-bold">Total Scrap</p>
+                                    {isDual && <p className="text-sm text-slate-600 dark:text-slate-300 font-bold">{t('side_r')} {Object.values(scrapsR).reduce((sum, value) => sum + (Number(value) || 0), 0)} · {t('side_l')} {Object.values(scrapsL).reduce((sum, value) => sum + (Number(value) || 0), 0)}</p>}
                                 </div>
                                 <div className="flex items-baseline gap-1">
-                                    <span className="text-3xl font-black text-danger">{totalScrap}</span>
+                                    <span className={`text-3xl font-black ${totalScrap > 0 ? "text-danger" : "text-slate-700 dark:text-slate-200"}`}>{totalScrap}</span>
                                     <span className="text-base font-bold text-danger/60">Pcs</span>
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 {/* 1. Missing Material */}
-                                <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                    <div className="flex-1 w-full text-center sm:text-left">
+                                <div className={`scrap-row flex flex-col gap-2 ${isDual ? "!bg-transparent !border-0 !rounded-none border-b" : "sm:flex-row items-stretch sm:items-center"}`}>
+                                    <div className="flex-1 w-full text-left">
                                         <p className="text-base font-black text-slate-700 dark:text-slate-300">{t('scrap_missing')}</p>
-                                        <p className="text-xs font-bold text-slate-400">{t('scrap_missing_desc')}</p>
+                                        <p className="text-base font-bold text-slate-600 dark:text-slate-300">{t('scrap_missing_desc')}</p>
                                     </div>
                                     {isDual ? (
-                                        <div className="flex flex-col items-center justify-center gap-3 w-full mt-2 sm:mt-0 xl:flex-row xl:justify-end">
+                                        <div className="flex flex-col gap-2 w-full mt-2">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
-                                                <button onClick={() => handleScrapChangeR('missing', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                <span className="text-base font-black text-slate-700 dark:text-slate-200 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
+                                                <button onClick={() => handleScrapChangeR('missing', -1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsR.missing} readOnly />
-                                                <button onClick={() => handleScrapChangeR('missing', 1)} className="circle-btn bg-slate-500 text-white">
+                                                <input className={`min-w-0 flex-1 w-full h-16 bg-transparent text-3xl font-black text-center ${scrapsR.missing > 0 ? "text-danger" : "text-slate-700 dark:text-slate-200"}`} inputMode="numeric" type="number" value={scrapsR.missing} readOnly />
+                                                <button onClick={() => handleScrapChangeR('missing', 1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
-                                                <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_r')}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
-                                                <button onClick={() => handleScrapChangeL('missing', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                <span className="text-base font-black text-slate-700 dark:text-slate-200 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
+                                                <button onClick={() => handleScrapChangeL('missing', -1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsL.missing} readOnly />
-                                                <button onClick={() => handleScrapChangeL('missing', 1)} className="circle-btn bg-slate-500 text-white">
+                                                <input className={`min-w-0 flex-1 w-full h-16 bg-transparent text-3xl font-black text-center ${scrapsL.missing > 0 ? "text-danger" : "text-slate-700 dark:text-slate-200"}`} inputMode="numeric" type="number" value={scrapsL.missing} readOnly />
+                                                <button onClick={() => handleScrapChangeL('missing', 1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
-                                                <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_l')}</span>
                                             </div>
                                         </div>
                                     ) : (
@@ -667,34 +611,32 @@ export default function Input() {
                                 </div>
 
                                 {/* 2. Deform/Sink Mark */}
-                                <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                    <div className="flex-1 w-full text-center sm:text-left">
+                                <div className={`scrap-row flex flex-col gap-2 ${isDual ? "!bg-transparent !border-0 !rounded-none border-b" : "sm:flex-row items-stretch sm:items-center"}`}>
+                                    <div className="flex-1 w-full text-left">
                                         <p className="text-base font-black text-slate-700 dark:text-slate-300">{t('scrap_deform')}</p>
-                                        <p className="text-xs font-bold text-slate-400">{t('scrap_deform_desc')}</p>
+                                        <p className="text-base font-bold text-slate-600 dark:text-slate-300">{t('scrap_deform_desc')}</p>
                                     </div>
                                     {isDual ? (
-                                        <div className="flex flex-col items-center justify-center gap-3 w-full mt-2 sm:mt-0 xl:flex-row xl:justify-end">
+                                        <div className="flex flex-col gap-2 w-full mt-2">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
-                                                <button onClick={() => handleScrapChangeR('deform', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                <span className="text-base font-black text-slate-700 dark:text-slate-200 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
+                                                <button onClick={() => handleScrapChangeR('deform', -1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsR.deform} readOnly />
-                                                <button onClick={() => handleScrapChangeR('deform', 1)} className="circle-btn bg-slate-500 text-white">
+                                                <input className={`min-w-0 flex-1 w-full h-16 bg-transparent text-3xl font-black text-center ${scrapsR.deform > 0 ? "text-danger" : "text-slate-700 dark:text-slate-200"}`} inputMode="numeric" type="number" value={scrapsR.deform} readOnly />
+                                                <button onClick={() => handleScrapChangeR('deform', 1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
-                                                <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_r')}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
-                                                <button onClick={() => handleScrapChangeL('deform', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                <span className="text-base font-black text-slate-700 dark:text-slate-200 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
+                                                <button onClick={() => handleScrapChangeL('deform', -1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsL.deform} readOnly />
-                                                <button onClick={() => handleScrapChangeL('deform', 1)} className="circle-btn bg-slate-500 text-white">
+                                                <input className={`min-w-0 flex-1 w-full h-16 bg-transparent text-3xl font-black text-center ${scrapsL.deform > 0 ? "text-danger" : "text-slate-700 dark:text-slate-200"}`} inputMode="numeric" type="number" value={scrapsL.deform} readOnly />
+                                                <button onClick={() => handleScrapChangeL('deform', 1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
-                                                <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_l')}</span>
                                             </div>
                                         </div>
                                     ) : (
@@ -711,34 +653,32 @@ export default function Input() {
                                 </div>
 
                                 {/* 3. Appearance Defect */}
-                                <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                    <div className="flex-1 w-full text-center sm:text-left">
+                                <div className={`scrap-row flex flex-col gap-2 ${isDual ? "!bg-transparent !border-0 !rounded-none border-b" : "sm:flex-row items-stretch sm:items-center"}`}>
+                                    <div className="flex-1 w-full text-left">
                                         <p className="text-base font-black text-slate-700 dark:text-slate-300">{t('scrap_appearance')}</p>
-                                        <p className="text-xs font-bold text-slate-400">{t('scrap_appearance_desc')}</p>
+                                        <p className="text-base font-bold text-slate-600 dark:text-slate-300">{t('scrap_appearance_desc')}</p>
                                     </div>
                                     {isDual ? (
-                                        <div className="flex flex-col items-center justify-center gap-3 w-full mt-2 sm:mt-0 xl:flex-row xl:justify-end">
+                                        <div className="flex flex-col gap-2 w-full mt-2">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
-                                                <button onClick={() => handleScrapChangeR('appearance', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                <span className="text-base font-black text-slate-700 dark:text-slate-200 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
+                                                <button onClick={() => handleScrapChangeR('appearance', -1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsR.appearance} readOnly />
-                                                <button onClick={() => handleScrapChangeR('appearance', 1)} className="circle-btn bg-slate-500 text-white">
+                                                <input className={`min-w-0 flex-1 w-full h-16 bg-transparent text-3xl font-black text-center ${scrapsR.appearance > 0 ? "text-danger" : "text-slate-700 dark:text-slate-200"}`} inputMode="numeric" type="number" value={scrapsR.appearance} readOnly />
+                                                <button onClick={() => handleScrapChangeR('appearance', 1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
-                                                <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_r')}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
-                                                <button onClick={() => handleScrapChangeL('appearance', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                <span className="text-base font-black text-slate-700 dark:text-slate-200 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
+                                                <button onClick={() => handleScrapChangeL('appearance', -1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsL.appearance} readOnly />
-                                                <button onClick={() => handleScrapChangeL('appearance', 1)} className="circle-btn bg-slate-500 text-white">
+                                                <input className={`min-w-0 flex-1 w-full h-16 bg-transparent text-3xl font-black text-center ${scrapsL.appearance > 0 ? "text-danger" : "text-slate-700 dark:text-slate-200"}`} inputMode="numeric" type="number" value={scrapsL.appearance} readOnly />
+                                                <button onClick={() => handleScrapChangeL('appearance', 1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
-                                                <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_l')}</span>
                                             </div>
                                         </div>
                                     ) : (
@@ -755,34 +695,32 @@ export default function Input() {
                                 </div>
 
                                 {/* 4. Others */}
-                                <div className="scrap-row flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                                    <div className="flex-1 w-full text-center sm:text-left">
+                                <div className={`scrap-row flex flex-col gap-2 ${isDual ? "!bg-transparent !border-0 !rounded-none border-b" : "sm:flex-row items-stretch sm:items-center"}`}>
+                                    <div className="flex-1 w-full text-left">
                                         <p className="text-base font-black text-slate-600 dark:text-slate-300">{t('scrap_others')}</p>
-                                        <p className="text-xs font-bold text-slate-400">Others</p>
+                                        <p className="text-base font-bold text-slate-600 dark:text-slate-300">Others</p>
                                     </div>
                                     {isDual ? (
-                                        <div className="flex flex-col items-center justify-center gap-3 w-full mt-2 sm:mt-0 xl:flex-row xl:justify-end">
+                                        <div className="flex flex-col gap-2 w-full mt-2">
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
-                                                <button onClick={() => handleScrapChangeR('others', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                <span className="text-base font-black text-slate-700 dark:text-slate-200 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_r')}</span>
+                                                <button onClick={() => handleScrapChangeR('others', -1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsR.others} readOnly />
-                                                <button onClick={() => handleScrapChangeR('others', 1)} className="circle-btn bg-slate-500 text-white">
+                                                <input className={`min-w-0 flex-1 w-full h-16 bg-transparent text-3xl font-black text-center ${scrapsR.others > 0 ? "text-danger" : "text-slate-700 dark:text-slate-200"}`} inputMode="numeric" type="number" value={scrapsR.others} readOnly />
+                                                <button onClick={() => handleScrapChangeR('others', 1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
-                                                <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_r')}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
-                                                <span className="text-sm font-black text-slate-600 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
-                                                <button onClick={() => handleScrapChangeL('others', -1)} className="circle-btn bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                                <span className="text-base font-black text-slate-700 dark:text-slate-200 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg whitespace-nowrap min-w-[3rem] text-center">{t('side_l')}</span>
+                                                <button onClick={() => handleScrapChangeL('others', -1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                                                     <span className="material-symbols-outlined text-xl font-black">remove</span>
                                                 </button>
-                                                <input className="reason-input text-slate-700 dark:text-slate-200 text-center" inputMode="numeric" type="number" value={scrapsL.others} readOnly />
-                                                <button onClick={() => handleScrapChangeL('others', 1)} className="circle-btn bg-slate-500 text-white">
+                                                <input className={`min-w-0 flex-1 w-full h-16 bg-transparent text-3xl font-black text-center ${scrapsL.others > 0 ? "text-danger" : "text-slate-700 dark:text-slate-200"}`} inputMode="numeric" type="number" value={scrapsL.others} readOnly />
+                                                <button onClick={() => handleScrapChangeL('others', 1)} className="!w-16 !h-16 shrink-0 rounded-xl flex items-center justify-center bg-slate-500 text-white">
                                                     <span className="material-symbols-outlined text-xl font-black">add</span>
                                                 </button>
-                                                <span className="text-sm font-black px-2 py-1 rounded-lg whitespace-nowrap min-w-[3rem] text-center invisible pointer-events-none" aria-hidden="true">{t('side_l')}</span>
                                             </div>
                                         </div>
                                     ) : (
