@@ -383,11 +383,11 @@ export default function Input() {
                 >
                     <span className="material-symbols-outlined text-3xl font-black">arrow_back</span>
                 </button>
-                <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                     <div className="shrink-0">
                         {displayProductImage ? (
                             <button type="button" onClick={() => setShowImagePreview(true)} aria-label={t('enlarge_photo', { name: productName })} className="block min-h-16 rounded-xl cursor-zoom-in focus-visible:ring-4 focus-visible:ring-primary">
-                            <img alt={productName} className={`w-20 h-16 rounded-xl border object-contain shadow-md bg-white ${catColor === 'amber' ? 'border-amber-500' :
+                            <img alt={productName} className={`w-24 sm:w-28 h-16 rounded-xl border object-contain shadow-md bg-white ${catColor === 'amber' ? 'border-amber-500' :
                                 catColor === 'slate' ? 'border-slate-500' :
                                     catColor === 'emerald' ? 'border-emerald-500' :
                                         catColor === 'purple' ? 'border-purple-500' :
