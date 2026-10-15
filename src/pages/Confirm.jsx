@@ -13,7 +13,6 @@ export default function Confirm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [isUploaded, setIsUploaded] = useState(false);
-    const [satisfaction, setSatisfaction] = useState(0);
 
     const {
         productName,
@@ -58,6 +57,12 @@ export default function Confirm() {
     const hasR = goodCountR + sumScraps(location.state?.scrapsR) > 0;
     const hasL = goodCountL + sumScraps(location.state?.scrapsL) > 0;
     const onlySide = isDual && hasR !== hasL ? (hasR ? 'side_r' : 'side_l') : null;
+    const durationParts = String(totalTime || '').split(':').map(Number);
+    const readableDuration = durationParts.length === 3 && durationParts.every(Number.isFinite)
+        ? [durationParts[0] > 0 && t('confirm_hours', { count: durationParts[0] }), durationParts[1] > 0 && t('confirm_minutes', { count: durationParts[1] }), (durationParts[2] > 0 || durationParts.every(value => value === 0)) && t('confirm_seconds', { count: durationParts[2] })].filter(Boolean).join(' ')
+        : totalTime;
+    const uploadCount = isDual ? Number(hasR) + Number(hasL) : 1;
+
 
     const getScrapLabel = (key) => {
         const labels = {
@@ -115,7 +120,6 @@ export default function Confirm() {
             const match = pn.match(/^(.*?)_(\d+)(.*)$/);
             if (match) {
                 const prefixBase = match[1];
-                const underscoreDigit = match[2];
                 const suffix = match[3] || "";
 
                 // Extract the trailing numbers of prefixBase
@@ -213,7 +217,6 @@ export default function Confirm() {
             const totalOutput = goodCount + totalScrap;
             const totalGood = goodCountR + goodCountL;
             const ratioR = totalGood > 0 ? (goodCountR / totalGood) : 0.5;
-            const ratioL = totalGood > 0 ? (goodCountL / totalGood) : 0.5;
 
             const secondsR = Math.round(totalSeconds * ratioR);
             const secondsL = totalSeconds - secondsR;
@@ -276,7 +279,7 @@ export default function Confirm() {
                 others: finalScrapsR.others,
                 totalScrap: scrapR,
                 remarks: remarks,
-                satisfaction: satisfaction,
+                satisfaction: 0,
                 scrapRate: metricsR.scrapRate + "%",
                 yieldRate: metricsR.yieldRate + "%",
                 efficiency: metricsR.efficiency + "%"
@@ -302,7 +305,7 @@ export default function Confirm() {
                 others: finalScrapsL.others,
                 totalScrap: scrapL,
                 remarks: remarks,
-                satisfaction: satisfaction,
+                satisfaction: 0,
                 scrapRate: metricsL.scrapRate + "%",
                 yieldRate: metricsL.yieldRate + "%",
                 efficiency: metricsL.efficiency + "%"
@@ -331,7 +334,7 @@ export default function Confirm() {
                 others: scraps?.others || 0,
                 totalScrap: totalScrap,
                 remarks: remarks,
-                satisfaction: satisfaction,
+                satisfaction: 0,
                 scrapRate: metrics.scrapRate + "%",
                 yieldRate: metrics.yieldRate + "%",
                 efficiency: metrics.efficiency + "%"
@@ -387,76 +390,57 @@ export default function Confirm() {
                 </div>
             </div>
             <main className="flex-1 flex flex-col px-4 py-4 max-w-md mx-auto w-full space-y-4">
-                <div className="flex justify-center">
-                    <div className="bg-slate-200 dark:bg-slate-800 px-4 py-2 rounded-full border-2 border-slate-300 dark:border-slate-700 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-lg text-slate-600 dark:text-slate-400">account_circle</span>
-                        <span className="text-sm font-bold text-slate-800 dark:text-slate-100">員工: <span className="text-blue-600 dark:text-blue-400">{operator}</span></span>
-                    </div>
-                </div>
-                <header className="text-center">
-                    <h1 className="text-2xl font-extrabold leading-tight text-slate-900 dark:text-white">
-                        {t('confirm_desc')}
-                    </h1>
-                </header>
-                {onlySide && (
-                    <div className="bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-400 rounded-xl p-4 flex items-center gap-3">
-                        <span className="material-symbols-outlined text-3xl text-amber-600">info</span>
-                        <p className="text-xl font-black text-amber-800 dark:text-amber-300">{t('only_upload_side', { side: t(onlySide) })}</p>
-                    </div>
-                )}
-                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-100 dark:border-slate-800 p-4 space-y-4">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
-                            <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 text-xl">schedule</span>
-                        </div>
-                        <div>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('work_time')}</p>
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-                                <span className="text-sm font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md border border-blue-200 dark:border-blue-800 self-start sm:self-auto mb-1 sm:mb-0">
-                                    {workDate}
-                                </span>
-                                <p className="text-xl font-bold">{startTime} - {endTime} <span className="text-sm text-slate-400 font-normal">({totalTime})</span></p>
-                            </div>
-                        </div>
-                    </div>
+                <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800 p-4 space-y-4">
+                    <p className="text-base font-bold text-slate-700 dark:text-slate-200">{t('operator_label')} {operator}</p>
                     <hr className="border-slate-100 dark:border-slate-800" />
-                    <div className="flex items-center gap-3">
-                        <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg">
-                            <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 text-xl">inventory_2</span>
+                    <section className="min-w-0 space-y-2">
+                        <h2 className="text-base font-bold text-slate-600 dark:text-slate-300">{t('product_name_label')}</h2>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <p className="min-w-0 break-words text-xl font-bold text-slate-900 dark:text-slate-100">{productName}</p>
+                            {category && <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-sm font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-200">{t(`cat_${category}`, category)}</span>}
                         </div>
-                        <div>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">{t('product_name_label')}</p>
-                            <p className="text-xl font-bold">
-                                {productName}
-                                {category && (
-                                    <span className="ml-2 bg-success/10 text-success text-[10px] px-2 py-0.5 rounded-full font-black border border-success/20 align-middle">
-                                        {t(`cat_${category}`, category)}
-                                    </span>
-                                )}
-                            </p>
-                            <p className="text-sm font-medium text-slate-500">{carModel} / {partNumber}</p>
+                        <div className="space-y-1 text-base font-medium text-slate-600 dark:text-slate-300">
+                            <p>{t('car_model_label')} {carModel}</p>
+                            <p className="break-all">{t('part_number_input_label')} {partNumber}</p>
                         </div>
-                    </div>
+                    </section>
+                    <hr className="border-slate-100 dark:border-slate-800" />
+                    <section className="space-y-2">
+                        <h2 className="text-base font-bold text-slate-600 dark:text-slate-300">{t('work_time')}</h2>
+                        <p className="text-xl font-bold text-slate-700 dark:text-slate-200">{workDate}</p>
+                        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                            <p className="text-xl font-bold text-slate-900 dark:text-slate-100">{startTime} – {endTime}</p>
+                            <p className="text-base text-slate-600 dark:text-slate-300">{t('confirm_duration', { duration: readableDuration })}</p>
+                        </div>
+                    </section>
                     <hr className="border-slate-100 dark:border-slate-800" />
                     <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-primary/10 dark:bg-primary/5 p-3 rounded-xl border border-primary/20 flex flex-col justify-center gap-1">
+                        <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col justify-center gap-1">
                             <p className="text-xs font-bold text-emerald-800 dark:text-primary uppercase tracking-wider">{t('good_qty_label')}</p>
                             {isDual ? (
                                 <div>
-                                    <p className="text-2xl font-extrabold text-emerald-600 dark:text-primary tracking-tight">
-                                        <span className="text-blue-600 text-lg">R:</span>{goodCountR} <span className="text-purple-600 text-lg ml-1">L:</span>{goodCountL}
-                                    </p>
+                                    <div className="space-y-2 text-xl font-bold text-slate-800 dark:text-slate-100">
+                                        <p><span className="text-blue-700 dark:text-blue-300">{t('side_r')}</span>：{goodCountR}</p>
+                                        <p><span className="text-purple-700 dark:text-purple-300">{t('side_l')}</span>：{goodCountL}</p>
+                                    </div>
                                     <p className="text-xs font-bold text-slate-500 mt-0.5">{t('total')}: {goodCount} Pcs</p>
                                 </div>
                             ) : (
                                 <p className="text-3xl font-extrabold text-emerald-600 dark:text-primary">{goodCount}</p>
                             )}
                         </div>
-                        <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-xl border border-red-100 dark:border-red-900/30 flex flex-col justify-center gap-1">
+                        <div className={`p-3 rounded-xl border flex flex-col justify-center gap-1 ${totalScrap > 0 ? "bg-red-50 dark:bg-red-950/20 border-red-100 dark:border-red-900/30" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"}`}>
                             <p className="text-xs font-bold text-red-800 dark:text-red-400 uppercase tracking-wider">{t('scrap_qty_label')}</p>
-                            <p className="text-3xl font-extrabold text-red-600 dark:text-red-500">{totalScrap}</p>
+                            <p className={`text-3xl font-extrabold ${totalScrap > 0 ? "text-red-600 dark:text-red-400" : "text-slate-800 dark:text-slate-100"}`}>{totalScrap}</p>
                         </div>
                     </div>
+                {onlySide && (
+                    <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 flex items-center gap-3">
+                        <span className="material-symbols-outlined text-xl text-slate-600">info</span>
+                        <p className="text-base font-bold text-slate-700 dark:text-slate-200">{t('only_upload_side', { side: t(onlySide) })}</p>
+                    </div>
+                )}
+                    {totalScrap > 0 ? (<>
                     <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl">
                         <div className="flex items-center gap-2 mb-2">
                             <span className="material-symbols-outlined text-slate-400 text-sm">report_problem</span>
@@ -487,6 +471,8 @@ export default function Confirm() {
                             )}
                         </div>
                     </div>
+                    </>) : <p className="text-base text-slate-600 dark:text-slate-300">{t('scrap_reason_label')}：{t('remarks_none')}</p>}
+                    {remarks?.trim() && !['無', t('remarks_none')].includes(remarks.trim()) ? (<>
                     <div className="bg-blue-50/50 dark:bg-blue-900/20 p-3 rounded-xl border-l-4 border-blue-500">
                         <div className="flex items-center gap-2 mb-1">
                             <span className="material-symbols-outlined text-blue-500 text-sm">sticky_note_2</span>
@@ -497,37 +483,18 @@ export default function Confirm() {
                         </p>
                     </div>
 
-                    {/* Quality Satisfaction Survey - Integrated inside the main card */}
-                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/50 mt-2">
-                        <div className="flex items-center justify-between gap-4">
-                            <p className="text-xs font-black text-slate-500 dark:text-slate-400 tracking-tight flex-shrink-0">
-                                {t('quality_satisfaction_label')}
-                            </p>
-                            <div className="flex gap-1">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                        key={star}
-                                        onClick={() => setSatisfaction(satisfaction === star ? star - 1 : star)}
-                                        disabled={isUploaded}
-                                        className="focus:outline-none transition-transform active:scale-95"
-                                    >
-                                        <span className={`material-symbols-outlined text-3xl transition-colors ${star <= satisfaction ? 'text-yellow-400 fill-1' : 'text-slate-300 dark:text-slate-700/50 fill-0'}`}>
-                                            star
-                                        </span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+                    </>) : <p className="text-base text-slate-600 dark:text-slate-300">{t('remarks_content_label')}：{t('remarks_none')}</p>}
+
                 </div>
                 <div className="text-center mb-2">
                     <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">{t('is_correct')}</h3>
+                    {!isUploaded && <p className="mt-2 text-base font-bold text-slate-600 dark:text-slate-300">{t('confirm_upload_count', { count: uploadCount })}{isDual && ` (${[hasR && t('side_r'), hasL && t('side_l')].filter(Boolean).join(' / ')})`}</p>}
                 </div>
                 <div className="flex flex-col gap-3 mt-auto mb-4">
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting || isUploaded}
-                        className={`w-full bg-primary hover:bg-primary/90 text-slate-900 h-14 rounded-xl font-black text-xl flex items-center justify-center gap-3 transition-transform active:scale-95 shadow-md shadow-primary/30 border-b-4 border-emerald-600 ${isSubmitting || isUploaded ? 'opacity-50 cursor-not-allowed bg-slate-400 border-slate-500 shadow-none' : ''}`}
+                        className={`w-full bg-success hover:bg-success/90 text-white min-h-16 rounded-xl font-black text-xl flex items-center justify-center gap-3 transition-transform active:scale-95 shadow-sm border-b-4 border-emerald-600 ${isSubmitting || isUploaded ? 'opacity-50 cursor-not-allowed bg-slate-400 border-slate-500 shadow-none' : ''}`}
                     >
                         {isSubmitting ? (
                             <>
@@ -548,7 +515,7 @@ export default function Confirm() {
                     </button>
                     <button
                         onClick={() => isUploaded ? navigate('/') : navigate(-1)}
-                        className="w-full bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 h-12 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors active:scale-95 border-b-4 border-slate-300 dark:border-slate-950"
+                        className="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 min-h-16 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors active:scale-95 border border-slate-300 dark:border-slate-700"
                     >
                         <span className="material-symbols-outlined text-xl">{isUploaded ? 'home' : 'edit'}</span>
                         {isUploaded ? t('back_home') : t('back_edit')}
