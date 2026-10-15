@@ -418,18 +418,10 @@ export default function Input() {
                         )}
                         <div className="min-w-0">
                             <span className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-0.5">
-                                {t('car_model_label')} <span className={catColor === 'amber' ? 'text-amber-600' :
-                                    catColor === 'slate' ? 'text-slate-600' :
-                                        catColor === 'emerald' ? 'text-emerald-600' :
-                                            catColor === 'purple' ? 'text-purple-600' :
-                                                'text-primary'}>{carModel}</span>
+                                {t('car_model_label')} <span className="text-slate-800 dark:text-slate-100">{carModel}</span>
                             </span>
                             <span className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-0.5">
-                                {t('part_number_input_label')} <span className={`break-all ${catColor === 'amber' ? 'text-amber-600' :
-                                    catColor === 'slate' ? 'text-slate-600' :
-                                        catColor === 'emerald' ? 'text-emerald-600' :
-                                            catColor === 'purple' ? 'text-purple-600' :
-                                                'text-primary'}`}>{partNumber}</span>
+                                {t('part_number_input_label')} <span className="break-all text-slate-800 dark:text-slate-100">{partNumber}</span>
                             </span>
                             <span className={`product-name-badge mt-0.5 max-w-full break-words ${catColor === 'amber' ? 'bg-amber-500' :
                                 catColor === 'slate' ? 'bg-slate-600' :
@@ -445,7 +437,7 @@ export default function Input() {
             <main className="flex-1 p-4 space-y-6">
                     <section className="space-y-3">
                         <div className="flex justify-between items-end px-1">
-                            <h2 className="text-lg font-black flex items-center gap-2 text-primary">
+                            <h2 className="text-lg font-black flex items-center gap-2 text-slate-800 dark:text-slate-100">
                                 <span className="material-symbols-outlined text-2xl">schedule</span>
                                 {t('work_time')}
                             </h2>
@@ -453,10 +445,10 @@ export default function Input() {
                                 type="date"
                                 value={workDate}
                                 onChange={(e) => setWorkDate(e.target.value)}
-                                className="text-base font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-4 py-3 rounded-xl border-2 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer min-h-[48px]"
+                                className="text-base font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-primary focus:border-primary outline-none cursor-pointer min-h-16"
                             />
                         </div>
-                        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-primary space-y-4">
+                        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
                             <div ref={startRef} className="space-y-2 scroll-mt-28">
                                 {fieldError === 'start' && <p role="alert" className="text-base font-bold text-danger">{t('input_missing_start')}</p>}
                                 <label className="block text-sm font-black text-slate-500">
@@ -499,7 +491,7 @@ export default function Input() {
                     </section>
                     <section ref={quantityRef} className="space-y-3 scroll-mt-28">
                         {fieldError === 'quantity' && <p role="alert" className="text-base font-bold text-danger">{t('dual_both_zero')}</p>}
-                        <h2 className="text-lg font-black flex items-center gap-2 px-1 text-success">
+                        <h2 className="text-lg font-black flex items-center gap-2 px-1 text-slate-800 dark:text-slate-100">
                             <span className="material-symbols-outlined text-2xl">check_circle</span>
                             {t('good_yield')} {isDual && <span className="text-xs bg-success/20 text-success px-2 py-1 rounded-full ml-2">{t('dual_mode_tag')}</span>}
                         </h2>
@@ -508,7 +500,7 @@ export default function Input() {
                         )}
 
                         {!isDual && (
-                            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-success">
+                            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                                 <div className="flex items-center justify-between gap-3">
                                     <button
                                         onClick={() => setGoodCount(Math.max(0, (parseInt(goodCount) || 0) - 1))}
@@ -544,7 +536,7 @@ export default function Input() {
                         {isDual && (
                             <div className="space-y-4">
                                 {/* R Side */}
-                                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-success border-l-4 border-l-blue-500 relative">
+                                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 border-l-4 border-l-blue-500 relative">
                                     <div className="absolute top-0 right-0 bg-blue-500 text-white font-black px-3 py-1 rounded-bl-xl rounded-tr-xl text-sm shadow-sm">R 邊</div>
                                     <div className="flex items-center justify-between gap-3 pt-2">
                                         <button
@@ -578,7 +570,7 @@ export default function Input() {
                                 </div>
 
                                 {/* L Side */}
-                                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-success border-l-4 border-l-purple-500 relative">
+                                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 border-l-4 border-l-purple-500 relative">
                                     <div className="absolute top-0 right-0 bg-purple-500 text-white font-black px-3 py-1 rounded-bl-xl rounded-tr-xl text-sm shadow-sm">L 邊</div>
                                     <div className="flex items-center justify-between gap-3 pt-2">
                                         <button
@@ -618,7 +610,7 @@ export default function Input() {
                             <span className="material-symbols-outlined text-2xl">cancel</span>
                             {t('scrap_report')}
                         </h2>
-                        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-md border-t-4 border-danger">
+                        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
                             <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border-2 border-red-200 dark:border-red-800 flex items-center justify-between">
                                 <div>
                                     <p className="text-sm font-black text-danger uppercase tracking-wider">{t('total_scrap')}</p>
@@ -814,17 +806,17 @@ export default function Input() {
                             {t('remarks_title')}
                         </h2>
                         <textarea
-                            className="w-full h-32 p-4 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 text-lg font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all outline-none resize-none shadow-sm"
+                            className="w-full h-32 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-lg font-medium focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all outline-none resize-none shadow-none"
                             placeholder={t('remarks_placeholder')}
                             value={remarks}
                             onChange={(e) => setRemarks(e.target.value)}
                         ></textarea>
                     </section>
             </main>
-            <footer ref={footerRef} hidden={keyboardOpen} style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-t-2 border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-[0_-10px_30px_rgba(0,0,0,0.1)] z-40">
+            <footer ref={footerRef} hidden={keyboardOpen} style={{ paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }} className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-background-dark/95 backdrop-blur-md border-t-2 border-slate-200 dark:border-slate-800 p-4 space-y-3 shadow-[0_-4px_16px_rgba(0,0,0,0.05)] z-40">
                 <button
                     onClick={handleConfirm}
-                    className="w-full h-[68px] rounded-xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform border-b-4 bg-success text-white border-green-800"
+                    className="w-full h-[68px] rounded-xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform border-b-4 bg-primary text-white border-blue-800"
                 >
                     <span className="text-2xl font-black">{t('input_next_confirm')}</span>
                     <span className="material-symbols-outlined text-3xl font-black">arrow_forward</span>
