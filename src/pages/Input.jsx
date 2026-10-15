@@ -376,7 +376,7 @@ export default function Input() {
                 catColor === 'slate' ? 'bg-slate-50/95 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800' :
                     catColor === 'emerald' ? 'bg-emerald-50/95 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800' :
                         catColor === 'purple' ? 'bg-purple-50/95 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800' :
-                            'bg-white/95 dark:bg-background-dark/95 border-slate-200 dark:border-slate-800'}`}>
+                            'bg-blue-50/95 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800'}`}>
                 <button
                     onClick={() => navigate(-1)}
                     className="flex items-center justify-center p-2 rounded-xl active:bg-slate-200 dark:active:bg-slate-700 transition-colors mr-2"
@@ -412,7 +412,7 @@ export default function Input() {
                                     catColor === 'slate' ? 'bg-slate-600' :
                                         catColor === 'emerald' ? 'bg-emerald-600' :
                                             catColor === 'purple' ? 'bg-purple-600' :
-                                                'bg-slate-700'}`}>
+                                                'bg-blue-600'}`}>
                                 {t(`cat_${category}`, category)}
                             </span>
                         )}
