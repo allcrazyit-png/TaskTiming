@@ -190,3 +190,34 @@ export async function getTaskTimingAccessToken({
     if (refreshFlights.get(storage) === flight) refreshFlights.delete(storage);
   }
 }
+
+// Demographic fields stay out of the anonymous employee catalogue and cache.
+export async function fetchTaskTimingEmployeeProfile(employeeId, {
+  signal,
+  accessToken,
+  supabaseUrl = SUPABASE_URL,
+  publishableKey = SUPABASE_PUBLISHABLE_KEY,
+} = {}) {
+  if (!supabaseUrl || !publishableKey) throw new Error('Missing Supabase configuration');
+  const id = String(employeeId ?? '').trim();
+  if (!id) throw new Error('Employee ID is required');
+  const token = accessToken || await getTaskTimingAccessToken();
+  if (!token) throw new Error('Employee login expired');
+  const query = new URLSearchParams({
+    select: 'employee_id,gender,nationality,hire_date,source_updated_at',
+    employee_id: `eq.${id}`,
+  });
+  const response = await fetch(`${supabaseUrl}/rest/v1/task_timing_employee_profiles?${query}`, {
+    headers: { apikey: publishableKey, Authorization: `Bearer ${token}` },
+    signal,
+    cache: 'no-store',
+  });
+  if (!response.ok) throw new Error(`Employee profile unavailable (${response.status})`);
+  const rows = await response.json();
+  const row = rows.find(item => String(item.employee_id) === id);
+  return row ? {
+    '性別': row.gender || '',
+    '國籍': row.nationality || '',
+    '到職日': row.hire_date || '',
+  } : null;
+}

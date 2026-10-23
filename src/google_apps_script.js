@@ -430,7 +430,7 @@ function doGet(e) {
     var cacheable = (e.parameter.action !== 'records') && !e.parameter.nocache;
 
     // 用完整的查詢參數當快取鍵，不同的篩選條件各自快取
-    var cacheKey = 'v1_' + JSON.stringify(e.parameter);
+    var cacheKey = 'v2_employee_public_' + JSON.stringify(e.parameter);
     var cache = CacheService.getScriptCache();
 
     if (cacheable) {
@@ -508,6 +508,19 @@ function buildPayload(e) {
         data = [headerRow].concat(body);
     } else {
         data = sheet.getDataRange().getValues();
+    }
+    // Legacy public URLs may select the employee sheet by name or index.
+    // Project before filtering/pruning so private values cannot be inferred
+    // through includeCol/filterVal or leaked by old cached responses.
+    if (sheet.getName() === '員工資料') {
+        var publicEmployeeIndexes = [];
+        data[0].forEach(function (header, index) {
+            var name = String(header).replace(/\[.*?\]/g, '').trim();
+            if (name === '員工編號' || name === '姓名') publicEmployeeIndexes.push(index);
+        });
+        data = data.map(function (row) {
+            return publicEmployeeIndexes.map(function (index) { return row[index]; });
+        });
     }
     var headers = data[0];
     var jsonArray = [];

@@ -139,3 +139,23 @@ test('successful backfill continues until all pending records are synced', () =>
   assert.equal(complete.result.remaining, 0);
   assert.equal(complete.scheduled, 0);
 });
+
+test('legacy employee API by name or index exposes only ID and name, even with private filters', () => {
+  const ctx = vm.createContext({ Date, JSON, String, Object, Array, Math, console, parseInt });
+  vm.runInContext(source, ctx);
+  const sheet = {
+    getName: () => '員工資料',
+    getLastRow: () => 2,
+    getDataRange: () => ({ getValues: () => [
+      ['員工編號', '姓名', '密碼', '性別', '國籍', '到職日'],
+      ['E01', '王小美', 'do-not-expose', '女', '越南', new Date('2020-03-15')],
+    ] }),
+  };
+  ctx.SpreadsheetApp = { openById: () => ({ getSheetByName: () => sheet, getSheets: () => [{}, sheet] }) };
+  for (const parameter of [{ sheet: '員工資料' }, { index: '1' }, { sheet: '員工資料', includeCol: '性別', filterVal: '男' }]) {
+    const result = JSON.parse(ctx.buildPayload({ parameter }));
+    assert.deepEqual(result, [{ '員工編號': 'E01', '姓名': '王小美' }]);
+  }
+  const pruned = JSON.parse(ctx.buildPayload({ parameter: { sheet: '員工資料', prune: '密碼|性別|國籍|到職日' } }));
+  assert.deepEqual(pruned.detected_headers, ['員工編號', '姓名']);
+});

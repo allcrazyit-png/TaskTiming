@@ -1,3 +1,4 @@
+import FactoryBuddy from '../components/FactoryBuddy';
 import ProductImagePreview from '../components/ProductImagePreview';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -358,15 +359,16 @@ export default function Input() {
             <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-2 px-4 text-center font-bold text-[11px] border-b border-slate-200 dark:border-slate-800 z-[60] relative tracking-[0.3em] uppercase">
                 瑞全企業股份有限公司
             </div>
-            <div className="bg-white dark:bg-slate-900 border-b-2 border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between z-20">
-                <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-3xl text-primary">account_circle</span>
-                    <div className="text-sm font-extrabold text-slate-800 dark:text-white">
+            <div className="bg-white dark:bg-slate-900 border-b-2 border-slate-200 dark:border-slate-800 px-4 min-h-16 flex items-center justify-between gap-2 relative z-30">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <span className="material-symbols-outlined shrink-0 text-3xl text-primary">account_circle</span>
+                    <div className="min-w-0 break-words text-sm font-extrabold text-slate-800 dark:text-white">
                         員工: <span className="text-primary">{operator}</span>
                     </div>
                 </div>
-                <div className="bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full text-sm font-bold text-slate-500">
-                    早班
+                <div className="flex shrink-0 items-center gap-1">
+                    <span className="whitespace-nowrap rounded-full bg-slate-100 px-2 py-1 text-sm font-bold text-slate-500 dark:bg-slate-800">早班</span>
+                    <FactoryBuddy />
                 </div>
             </div>
             {showImagePreview && <ProductImagePreview src={displayProductImage} name={productName} onClose={() => setShowImagePreview(false)} />}

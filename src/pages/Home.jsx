@@ -1,3 +1,5 @@
+import EmployeeProfile from '../components/EmployeeProfile';
+import FactoryBuddy from '../components/FactoryBuddy';
 import ProductImagePreview from '../components/ProductImagePreview';
 import useNoticeInbox from '../hooks/useNoticeInbox';
 import React, { useState, useEffect, useMemo } from 'react';
@@ -110,20 +112,23 @@ function WeatherSvgIcon({ code }) {
 }
 
 function WeatherInfo({ weather }) {
+    const { t, i18n } = useTranslation();
     const today = new Date();
-    const dateText = `${today.toLocaleDateString('zh-TW')} (${['日', '一', '二', '三', '四', '五', '六'][today.getDay()]})`;
+    const locale = { zh: 'zh-TW', vi: 'vi-VN', id: 'id-ID' }[i18n.resolvedLanguage] || 'zh-TW';
+    const dateText = today.toLocaleDateString(locale, { month: 'numeric', day: 'numeric', weekday: 'short' });
+    const code = weather?.code;
+    const weatherKey = code === 0 ? 'weather_clear'
+        : code <= 3 ? 'weather_partly_cloudy'
+            : code <= 48 ? 'weather_fog'
+                : code >= 95 ? 'weather_storm'
+                    : code <= 67 || (code >= 80 && code <= 82) ? 'weather_rain' : 'weather_cloudy';
 
     return (
         <div className="home-weather-strip">
-            <WeatherSvgIcon code={weather?.code} />
-            <div className="min-w-0 flex-1">
-                <div className="text-sm font-black leading-tight text-slate-800 dark:text-slate-100">彰化埔鹽</div>
-                <div className="mt-0.5 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
-                    {weather ? `${weather.desc} · ${dateText}` : `天氣載入中 · ${dateText}`}
-                </div>
-            </div>
-            <div className="shrink-0 rounded-2xl bg-white px-3 py-1.5 text-xl font-black tabular-nums text-slate-900 shadow-sm dark:bg-slate-800 dark:text-slate-50">
-                {weather ? `${weather.temp}°C` : '--°C'}
+            <time dateTime={`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`} className="text-sm font-normal text-slate-600 dark:text-slate-300">{dateText}</time>
+            <div className="flex min-w-0 items-center gap-1.5 text-sm font-normal text-slate-600 dark:text-slate-300" role="img" aria-label={weather ? `${t('weather_place')} · ${t(weatherKey)} · ${weather.temp}°C` : t('weather_loading')}>
+                {weather && <WeatherSvgIcon code={weather.code} />}
+                <span>{t('weather_place')} · {weather ? `${weather.temp}°C` : t('weather_loading')}</span>
             </div>
         </div>
     );
@@ -133,7 +138,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.21.6 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.22.0 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -991,56 +996,46 @@ export default function Home() {
             )}
 
             {/* Company Banner */}
-            <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-2 px-4 text-center font-bold text-[11px] border-b border-slate-200 dark:border-slate-800 z-[60] relative tracking-[0.3em] uppercase">
+            <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-1.5 px-4 text-center font-medium text-[11px] border-b border-slate-200 dark:border-slate-800 z-[60] relative tracking-[0.12em]">
                 瑞全企業股份有限公司
             </div>
             {/* Header Section */}
-            <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shadow-sm relative z-40">
+            <header className="bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 relative z-40">
                 {/* Combined Operator Selector & Personalized Greeting Card */}
-                <div className={`transition-all duration-300 ${selectedOperator ? 'bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-900 border-b-2 border-primary/20' : ''} px-4 py-3`}>
-                    <div className="flex flex-col gap-3">
+                <div className="px-4 pt-1 pb-0">
+                    <div className="flex flex-col">
                         {/* Row 1: Greeting & Operator Dropdown */}
-                        <div className="flex justify-between items-start">
-                            <div className="flex-1 mt-1">
-                                {(() => {
-                                    if (!selectedOperator) {
-                                        return <h2 className="text-lg font-black text-slate-400 dark:text-slate-500 mb-1 tracking-wide">{t('login_operator')}</h2>;
-                                    }
-                                    const hour = new Date().getHours();
-                                    const match = selectedOperator.match(/\]\s*(.*)$/);
-                                    const name = match ? match[1] : '';
-                                    let greetingTitle = '';
-                                    let greetingSub = '';
-                                    if (hour < 12) {
-                                        greetingTitle = t('good_morning', { name });
-                                        greetingSub = t('good_morning_sub');
-                                    } else if (hour < 18) {
-                                        greetingTitle = t('good_afternoon', { name });
-                                        greetingSub = t('good_afternoon_sub');
-                                    } else {
-                                        greetingTitle = t('good_evening', { name });
-                                        greetingSub = t('good_evening_sub');
-                                    }
-                                    // 在這裡才組字串，切換語言時最近上傳時間才會跟著翻譯。
-                                    const uploadText = latestUploadStatus
-                                        ? t(latestUploadStatus.isToday ? 'latest_upload_today' : 'latest_upload_day', latestUploadStatus)
-                                        : greetingSub;
-                                    return (
-                                        <>
-                                            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-0.5 tracking-wide">{greetingTitle}</h2>
-                                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400">{uploadText}</p>
-                                        </>
-                                    );
-                                })()}
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex min-w-0 flex-1 items-center gap-1">
+                                {selectedOperator && <FactoryBuddy align="start" />}
+                                <div className="min-w-0">
+                                    {(() => {
+                                        if (!selectedOperator) {
+                                            return <h2 className="text-lg font-black text-slate-400 dark:text-slate-500 tracking-wide">{t('login_operator')}</h2>;
+                                        }
+                                        const hour = new Date().getHours();
+                                        const greetingKey = hour < 12 ? 'buddy_home_morning' : hour < 18 ? 'buddy_home_afternoon' : 'buddy_home_evening';
+                                        return (
+                                            <>
+                                                <h2 className="break-words text-base font-bold text-slate-800 dark:text-slate-100">{t(greetingKey)}</h2>
+                                                {latestUploadStatus && (
+                                                    <p className="mt-0.5 break-words text-sm font-bold text-slate-500 dark:text-slate-400">
+                                                        {t(latestUploadStatus.isToday ? 'latest_upload_today' : 'latest_upload_day', latestUploadStatus)}
+                                                    </p>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </div>
                             </div>
 
                             {/* Operator Selector Dropdown */}
-                            <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm shrink-0 transition-colors ${selectedOperator ? 'bg-white/80 dark:bg-slate-800/80 border-white/50 dark:border-slate-700/50' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
-                                <span className={`material-symbols-outlined text-lg ${selectedOperator ? 'text-primary' : 'text-slate-500'}`}>person</span>
+                            <div className="min-w-0 max-w-[48%] shrink-0">
                                 <select
+                                    aria-label={t('select_operator')}
                                     value={selectedOperator}
                                     onChange={handleOperatorChange}
-                                    className={`text-sm font-bold bg-transparent border-none focus:ring-0 p-0 cursor-pointer outline-none ${selectedOperator ? 'text-primary' : 'text-slate-500'}`}
+                                    className={`min-h-16 min-w-0 w-full rounded-xl px-1 text-sm font-bold bg-transparent border-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer outline-none ${selectedOperator ? 'text-primary' : 'text-slate-500'}`}
                                 >
                                     <option value="">{t('select_operator')}</option>
                                     {employees.map((emp, idx) => (
@@ -1054,7 +1049,7 @@ export default function Home() {
 
                         {/* Row 2: Date and Weather info (Only show when operator is selected to maintain focus) */}
                         {selectedOperator && (
-                            <div className="mt-1 border-t border-slate-200/50 pt-3 dark:border-slate-700/50">
+                            <div className="border-t border-slate-200/60 dark:border-slate-700/60">
                                 <WeatherInfo weather={weather} />
                             </div>
                         )}
@@ -1273,6 +1268,8 @@ export default function Home() {
                                 </div>
                             </div>
 
+                            <EmployeeProfile key={selectedOperator} employeeId={selectedOperator.match(/\[(.*?)\]/)?.[1] || ''} />
+
                             {/* Appearance Preferences */}
                             <div className="space-y-4">
                                 <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1 border-b border-slate-200 dark:border-slate-700 pb-2">
@@ -1371,7 +1368,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.21.6
+                                    Version 1.22.0
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity

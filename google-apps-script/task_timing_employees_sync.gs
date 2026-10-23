@@ -13,7 +13,27 @@ function normalizeTaskTimingHeaders_(headers) {
   });
 }
 
-function employeeRowToTaskTimingEmployee_(headers, row) {
+// Date-only values must use the Sheet timezone, never UTC serialization.
+function taskTimingEmployeeHireDate_(value, timezone) {
+  if (value === '' || value === null || value === undefined) return null;
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    if (isNaN(value.getTime())) throw new Error('到職日格式不正確');
+    value = Utilities.formatDate(value, timezone || 'Asia/Taipei', 'yyyy-MM-dd');
+  }
+  if (!String(value).trim()) return null;
+  var match = String(value).trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+  if (!match) throw new Error('到職日請使用西元年月日');
+  var year = Number(match[1]);
+  var month = Number(match[2]);
+  var day = Number(match[3]);
+  var parsed = new Date(Date.UTC(year, month - 1, day));
+  if (year < 1900 || parsed.getUTCFullYear() !== year || parsed.getUTCMonth() + 1 !== month || parsed.getUTCDate() !== day) {
+    throw new Error('到職日不是有效日期');
+  }
+  return match[1] + '-' + ('0' + month).slice(-2) + '-' + ('0' + day).slice(-2);
+}
+
+function employeeRowToTaskTimingEmployee_(headers, row, timezone) {
   var source = {};
   headers.forEach(function (header, index) {
     source[String(header).trim()] = row[index];
@@ -25,11 +45,25 @@ function employeeRowToTaskTimingEmployee_(headers, row) {
   var employeeName = String(rawEmployeeName === null || rawEmployeeName === undefined ? '' : rawEmployeeName).trim();
   if (!employeeId || !employeeName) return null;
 
-  return {
+  var employee = {
     employee_id: employeeId,
     employee_name: employeeName,
     password: String(source['密碼'] || ''),
   };
+  // Older sheets without the new columns keep their existing sync behavior.
+  var profileHeaders = ['性別', '國籍', '到職日'];
+  var profileHeaderCount = profileHeaders.filter(function (header) { return headers.indexOf(header) !== -1; }).length;
+  if (profileHeaderCount && profileHeaderCount !== profileHeaders.length) {
+    throw new Error('員工資料需同時包含性別、國籍、到職日欄位');
+  }
+  if (profileHeaderCount) {
+    var gender = String(source['性別'] || '').trim();
+    if (gender && ['男', '女', '未填'].indexOf(gender) === -1) throw new Error('員工 ' + employeeId + ' 的性別欄位無效');
+    employee.gender = gender || null;
+    employee.nationality = String(source['國籍'] || '').trim() || null;
+    employee.hire_date = taskTimingEmployeeHireDate_(source['到職日'], timezone);
+  }
+  return employee;
 }
 
 // Must remain byte-for-byte compatible in behavior with the browser helper.
@@ -199,6 +233,19 @@ function taskTimingUpsertEmployeeBatch_(baseUrl, secret, rows) {
   );
 }
 
+function taskTimingUpsertEmployeeProfiles_(baseUrl, secret, rows) {
+  if (!rows.length) return;
+  taskTimingSupabaseRequest_(
+    baseUrl + '/rest/v1/task_timing_employee_profiles?on_conflict=employee_id',
+    {
+      method: 'post', contentType: 'application/json',
+      headers: { ApiKey: secret, Authorization: 'Bearer ' + secret, Prefer: 'resolution=merge-duplicates,return=minimal' },
+      payload: JSON.stringify(rows), muteHttpExceptions: true,
+    },
+    '寫入員工基本資料',
+  );
+}
+
 function taskTimingEmployeeSourceSpreadsheet_() {
   // When this file is merged into the main Web App project, PRODUCTS_SS_ID is
   // the spreadsheet that contains the employee master. Keep the active-sheet
@@ -297,7 +344,7 @@ function syncTaskTimingEmployeesToSupabase(options) {
     if (headers.indexOf('姓名') === -1) throw new Error('員工資料缺少必要欄位：姓名');
 
     var employees = data.slice(1).map(function (row) {
-      return employeeRowToTaskTimingEmployee_(headers, row);
+      return employeeRowToTaskTimingEmployee_(headers, row, typeof spreadsheet.getSpreadsheetTimeZone === 'function' ? spreadsheet.getSpreadsheetTimeZone() : 'Asia/Taipei');
     }).filter(function (employee) {
       return employee !== null;
     });
@@ -401,6 +448,14 @@ function syncTaskTimingEmployeesToSupabase(options) {
           auth_user_id: provisioned.auth_user_id,
           source_updated_at: new Date().toISOString(),
           created: provisioned.created,
+          profile: Object.prototype.hasOwnProperty.call(employee, 'hire_date') ? {
+            employee_id: employee.employee_id,
+            auth_user_id: provisioned.auth_user_id,
+            gender: employee.gender,
+            nationality: employee.nationality,
+            hire_date: employee.hire_date,
+            source_updated_at: new Date().toISOString(),
+          } : null,
         });
       } catch (error) {
         failures.push(employee.employee_id + '（' + taskTimingEmployeeSyncErrorMessage_(error) + '）');
@@ -419,6 +474,9 @@ function syncTaskTimingEmployeesToSupabase(options) {
           };
         });
         taskTimingUpsertEmployeeBatch_(baseUrl, secret, mirrorRows);
+        // Keep HR fields out of the publicly readable employee list. A profile
+        // failure counts as a sync failure and blocks the deletion phase.
+        taskTimingUpsertEmployeeProfiles_(baseUrl, secret, batch.map(function (row) { return row.profile; }).filter(Boolean));
         batch.forEach(function (row) {
           if (row.created) created += 1;
           else updated += 1;
@@ -501,4 +559,41 @@ function syncTaskTimingEmployeesToSupabase(options) {
 function taskTimingHandleEmployeeSheetChange(e) {
   if (!e || e.changeType !== 'REMOVE_ROW') return;
   return syncTaskTimingEmployeesToSupabase({ automatic: true });
+}
+
+// Backfill only the new private fields. Never creates/deletes Auth users or
+// touches passwords, so initial rollout cannot disturb existing logins.
+function syncTaskTimingEmployeeProfilesToSupabase() {
+  var properties = PropertiesService.getScriptProperties();
+  var baseUrl = String(properties.getProperty('TASK_TIMING_SUPABASE_URL') || '').trim().replace(/\/$/, '');
+  var secret = String(properties.getProperty('TASK_TIMING_SUPABASE_SECRET_KEY') || '').trim();
+  if (!baseUrl || !secret) throw new Error('缺少 Supabase 同步設定');
+  var spreadsheet = taskTimingEmployeeSourceSpreadsheet_();
+  var sheet = spreadsheet && spreadsheet.getSheetByName('員工資料');
+  if (!sheet) throw new Error('找不到工作表：員工資料');
+  var data = sheet.getDataRange().getValues();
+  var headers = normalizeTaskTimingHeaders_(data[0] || []);
+  ['員工編號', '姓名', '性別', '國籍', '到職日'].forEach(function (header) {
+    if (headers.indexOf(header) === -1) throw new Error('員工資料缺少欄位：' + header);
+  });
+  var timezone = typeof spreadsheet.getSpreadsheetTimeZone === 'function' ? spreadsheet.getSpreadsheetTimeZone() : 'Asia/Taipei';
+  var employees = data.slice(1).map(function (row) { return employeeRowToTaskTimingEmployee_(headers, row, timezone); }).filter(Boolean);
+  var existing = taskTimingExistingEmployees_(baseUrl, secret);
+  var seen = {};
+  var rows = employees.map(function (employee) {
+    if (seen[employee.employee_id]) throw new Error('員工編號重複：' + employee.employee_id);
+    seen[employee.employee_id] = true;
+    var authUserId = existing.byEmployeeId[employee.employee_id];
+    if (!authUserId) throw new Error('員工尚未建立登入帳號：' + employee.employee_id);
+    return {
+      employee_id: employee.employee_id, auth_user_id: authUserId,
+      gender: employee.gender, nationality: employee.nationality,
+      hire_date: employee.hire_date, source_updated_at: new Date().toISOString(),
+    };
+  });
+  for (var start = 0; start < rows.length; start += TASK_TIMING_EMPLOYEE_SYNC_BATCH_SIZE) {
+    taskTimingUpsertEmployeeProfiles_(baseUrl, secret, rows.slice(start, start + TASK_TIMING_EMPLOYEE_SYNC_BATCH_SIZE));
+  }
+  console.log('員工基本資料同步完成：' + rows.length + ' 筆；未變更登入帳號與密碼。');
+  return { updated: rows.length };
 }

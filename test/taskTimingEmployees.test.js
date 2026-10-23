@@ -318,3 +318,29 @@ test('a rejected old refresh preserves a newer login saved during the request', 
     assert.deepEqual(readTaskTimingSession(storage), replacement);
   } finally { globalThis.fetch = originalFetch; }
 });
+
+test('private profile request carries login token and maps only the requested employee', async () => {
+  const { fetchTaskTimingEmployeeProfile } = await import('../src/services/taskTimingEmployees.js');
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    assert.match(url, /task_timing_employee_profiles/);
+    assert.equal(new URL(url).searchParams.get('employee_id'), 'eq.E/01');
+    assert.equal(options.headers.Authorization, 'Bearer employee-token');
+    assert.equal(options.cache, 'no-store');
+    return { ok: true, json: async () => [{ employee_id: 'E/01', gender: '女', nationality: '越南', hire_date: '2020-03-15' }] };
+  };
+  try {
+    const fields = await fetchTaskTimingEmployeeProfile('E/01', {
+      accessToken: 'employee-token', supabaseUrl: 'https://example.supabase.co', publishableKey: 'test-key',
+    });
+    assert.deepEqual(fields, { '性別': '女', '國籍': '越南', '到職日': '2020-03-15' });
+    globalThis.fetch = async () => ({ ok: true, json: async () => [{ employee_id: 'OTHER', gender: '男' }] });
+    assert.equal(await fetchTaskTimingEmployeeProfile('E/01', {
+      accessToken: 'employee-token', supabaseUrl: 'https://example.supabase.co', publishableKey: 'test-key',
+    }), null);
+    globalThis.fetch = async () => ({ ok: false, status: 403 });
+    await assert.rejects(fetchTaskTimingEmployeeProfile('E/01', {
+      accessToken: 'employee-token', supabaseUrl: 'https://example.supabase.co', publishableKey: 'test-key',
+    }), /403/);
+  } finally { globalThis.fetch = originalFetch; }
+});

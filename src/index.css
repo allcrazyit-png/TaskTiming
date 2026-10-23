@@ -122,25 +122,17 @@ html.text-large {
 
 .home-weather-strip {
   display: flex;
-  min-height: 58px;
+  min-height: 40px;
   align-items: center;
-  gap: 10px;
-  border-radius: 18px;
-  border: 1px solid rgb(255 255 255 / 0.55);
-  background: rgb(255 255 255 / 0.72);
-  padding: 8px 10px;
-  box-shadow: 0 8px 22px rgb(15 23 42 / 0.06);
-  backdrop-filter: blur(10px);
-}
-
-.dark .home-weather-strip {
-  border-color: rgb(255 255 255 / 0.08);
-  background: rgb(15 23 42 / 0.48);
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 6px 0;
 }
 
 .home-weather-icon {
-  width: 42px;
-  height: 42px;
+  width: 26px;
+  height: 26px;
   flex: 0 0 auto;
 }
 

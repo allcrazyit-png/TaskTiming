@@ -714,3 +714,77 @@ test('uses the configured product spreadsheet as the employee source when integr
   assert.match(employeeSyncSource, /typeof PRODUCTS_SS_ID !== 'undefined'/);
   assert.match(employeeSyncSource, /SpreadsheetApp\.openById\(PRODUCTS_SS_ID\)/);
 });
+
+test('maps optional HR fields privately and preserves unknown values as null', () => {
+  const headers = ['員工編號', '姓名', '密碼', '性別', '國籍', '到職日'];
+  const employee = context.employeeRowToTaskTimingEmployee_(headers, ['E01', '王小美', '', '女', '越南', '2020/3/15']);
+  assert.deepEqual(JSON.parse(JSON.stringify(employee)), {
+    employee_id: 'E01', employee_name: '王小美', password: '', gender: '女', nationality: '越南', hire_date: '2020-03-15',
+  });
+  const empty = context.employeeRowToTaskTimingEmployee_(headers, ['E01', '王小美', '', '', '', '']);
+  assert.equal(empty.gender, null);
+  assert.equal(empty.nationality, null);
+  assert.equal(empty.hire_date, null);
+});
+
+test('rejects partial profile headers and invalid dates before synchronization', () => {
+  assert.throws(() => context.employeeRowToTaskTimingEmployee_(['員工編號', '姓名', '性別'], ['E01', '王小美', '女']), /需同時包含/);
+  assert.equal(context.taskTimingEmployeeHireDate_('2024-02-29'), '2024-02-29');
+  assert.equal(context.taskTimingEmployeeHireDate_('   '), null);
+  for (const date of ['2023-02-29', '2024-04-31', '112/03/15', '2020-13-01']) {
+    assert.throws(() => context.taskTimingEmployeeHireDate_(date), /到職日/);
+  }
+});
+
+test('uses Taipei calendar day for a Sheets Date rather than its UTC day', () => {
+  context.Utilities.formatDate = (date, timezone, pattern) => {
+    assert.equal(timezone, 'Asia/Taipei');
+    assert.equal(pattern, 'yyyy-MM-dd');
+    return new Intl.DateTimeFormat('sv-SE', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+  };
+  assert.equal(context.taskTimingEmployeeHireDate_(new Date('2020-03-14T16:00:00.000Z'), 'Asia/Taipei'), '2020-03-15');
+});
+
+test('profile sync uses the private table and never sends passwords', () => {
+  const requests = [];
+  context.UrlFetchApp = { fetch: (url, options) => {
+    requests.push({ url, options });
+    return { getResponseCode: () => 201, getContentText: () => '' };
+  } };
+  const rows = [{ employee_id: 'E01', auth_user_id: 'auth-e01', gender: '女', nationality: '越南', hire_date: '2020-03-15' }];
+  context.taskTimingUpsertEmployeeProfiles_('https://example.supabase.co', 'secret', rows);
+  assert.match(requests[0].url, /task_timing_employee_profiles\?on_conflict=employee_id$/);
+  assert.doesNotMatch(requests[0].options.payload, /password/);
+  context.taskTimingUpsertEmployeeProfiles_('https://example.supabase.co', 'secret', []);
+  assert.equal(requests.length, 1);
+});
+
+test('profile schema enables owner-only RLS and does not grant anonymous read', async () => {
+  const sql = await readFile(new URL('../supabase/migrations/20261023_employee_profiles.sql', import.meta.url), 'utf8');
+  assert.match(sql, /enable row level security/i);
+  assert.match(sql, /revoke all on table public\.task_timing_employee_profiles from anon, authenticated/i);
+  assert.doesNotMatch(sql, /grant select[\s\S]*?to anon\b/i);
+  assert.match(sql, /for select to authenticated[\s\S]*auth\.uid\(\)[\s\S]*auth_user_id/i);
+  assert.match(sql, /on delete cascade/i);
+});
+
+test('profile-only backfill cannot create, delete, or reset login accounts', () => {
+  const isolated = vm.createContext({ Date, JSON, String, Object, encodeURIComponent, console: { log() {} } });
+  vm.runInContext(employeeSyncSource, isolated);
+  const requests = [];
+  isolated.PropertiesService = { getScriptProperties: () => createScriptProperties() };
+  isolated.SpreadsheetApp = { getActiveSpreadsheet: () => ({ getSheetByName: () => ({ getDataRange: () => ({ getValues: () => [
+    ['員工編號', '姓名', '密碼', '性別', '國籍', '到職日'],
+    ['E01', '王小美', 'do-not-send', '女', '越南', '2020-03-15'],
+  ] }) }) }) };
+  isolated.UrlFetchApp = { fetch: (url, options) => {
+    requests.push({ url, options });
+    return { getResponseCode: () => 200, getContentText: () => options.method === 'get' ? JSON.stringify([{ employee_id: 'E01', auth_user_id: 'auth-e01' }]) : '' };
+  } };
+  assert.equal(isolated.syncTaskTimingEmployeeProfilesToSupabase().updated, 1);
+  assert.equal(requests.length, 2);
+  assert.ok(requests.every(request => !request.url.includes('/auth/') && request.options.method !== 'delete'));
+  const post = requests.find(request => request.options.method === 'post');
+  assert.match(post.url, /task_timing_employee_profiles/);
+  assert.doesNotMatch(post.options.payload, /do-not-send|password/);
+});
