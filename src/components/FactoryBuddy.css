@@ -50,3 +50,10 @@
 .soft-body{transform:translate(0,-9px) scale(.86);transform-origin:160px 209px}
 .bear-head{transform-origin:160px 195px;animation:bear-nod 3s ease-in-out both}.penguin-head{transform-origin:160px 205px;animation:penguin-sway 3s ease-in-out both}.penguin-body{transform-origin:160px 264px;animation:penguin-sway 3s ease-in-out both}@keyframes bear-nod{0%,25%,70%,100%{transform:rotate(0)}45%{transform:rotate(5deg)}55%{transform:rotate(-2deg)}}@keyframes penguin-sway{0%,20%,85%,100%{transform:rotate(0)}40%{transform:rotate(-4deg)}65%{transform:rotate(4deg)}}
 @media(prefers-reduced-motion:reduce){.bear-head,.penguin-head,.penguin-body{animation:none}}
+.buddy-speech{position:absolute;top:100%;z-index:50;width:max-content;max-width:min(17rem,calc(100vw - 48px));margin-top:8px;padding:12px 16px;border:1px solid #e2e8f0;border-radius:16px;background:#fff;color:#334155;font-size:1rem;font-weight:600;line-height:1.6;overflow-wrap:anywhere;box-shadow:0 6px 20px #0f172a1a;pointer-events:none;opacity:0;transform:translateY(-4px);transition:opacity .18s ease,transform .18s ease;isolation:isolate}
+.buddy-speech-start{left:0}.buddy-speech-end{right:0}
+.buddy-speech:before{content:'';position:absolute;top:-6px;width:10px;height:10px;background:inherit;border-top:inherit;border-left:inherit;transform:rotate(45deg)}
+.buddy-speech-start:before{left:26px}.buddy-speech-end:before{right:26px}
+.buddy-speech-visible{opacity:1;transform:translateY(0)}
+.dark .buddy-speech{background:#1e293b;color:#e2e8f0;border-color:#475569}
+@media(prefers-reduced-motion:reduce){.buddy-speech{transition:none;transform:none}}

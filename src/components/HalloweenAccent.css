@@ -8,7 +8,9 @@
 .dark .halloween-header{background:linear-gradient(110deg,#29251f,#30291f 65%,#382b22)}
 .theme-halloween,.dark .theme-halloween{background:linear-gradient(110deg,#15131c,#21182d 65%,#302036);border-color:#4e355a}
 .theme-halloween .home-header-content .text-slate-500,.theme-halloween .home-header-content .text-slate-400{color:#d4c3df}
-.theme-halloween .home-header-content .text-slate-700,.theme-halloween .home-header-content .text-slate-800{color:#fff2df}
+.theme-halloween .home-header-content .text-slate-700:not(.buddy-speech),.theme-halloween .home-header-content .text-slate-800{color:#fff2df}
+.theme-halloween .home-header-content .buddy-speech{color:#334155;background:#fff}
+.dark .theme-halloween .home-header-content .buddy-speech{color:#e2e8f0;background:#1e293b}
 .theme-halloween .halloween-pumpkin{width:27px;height:26px;filter:drop-shadow(0 0 5px #f6a54088)}
 .halloween-night-sky{position:absolute;inset:0;width:100%;height:100%}
 .theme-halloween .halloween-ghost{left:60%;top:auto;bottom:-7px;width:30px;height:35px;filter:drop-shadow(0 0 4px #d4b7ef55);animation:halloween-rise 12s ease-in-out infinite}
