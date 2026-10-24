@@ -65,7 +65,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.23.1 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.23.2 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -109,9 +109,6 @@ export default function Home() {
     const [showFilter, setShowFilter] = useState(false);
 
     const [latestUploadStatus, setLatestUploadStatus] = useState(null);
-    const [masterRefresh, setMasterRefresh] = useState(0);
-    const [masterRefreshing, setMasterRefreshing] = useState(false);
-    const [masterRefreshFailed, setMasterRefreshFailed] = useState(false);
 
     // Apply Theme
     useEffect(() => {
@@ -148,22 +145,21 @@ export default function Home() {
         const employeeController = new AbortController();
         const productController = new AbortController();
         const refresh = (key, fetcher, setter, controller) => {
-            if (!masterRefresh && isCacheFresh(key)) return Promise.resolve();
+            if (isCacheFresh(key)) return Promise.resolve();
             return fetcher({ signal: controller.signal }).then(data => {
                 if (!active) return;
                 setter(data);
                 writeCache(key, data);
             });
         };
-        setMasterRefreshing(true);
-        setMasterRefreshFailed(false);
         Promise.allSettled([
             refresh(CACHE_KEY_EMPLOYEES, fetchTaskTimingEmployees, setEmployees, employeeController),
             refresh(CACHE_KEY_PRODUCTS, fetchTaskTimingProducts, setProducts, productController),
         ]).then(results => {
             if (!active) return;
-            setMasterRefreshFailed(results.some(result => result.status === 'rejected'));
-            setMasterRefreshing(false);
+            results.forEach(result => {
+                if (result.status === 'rejected') console.warn('Master data refresh failed; retaining cache.', result.reason);
+            });
             setLoading(false);
         });
         return () => {
@@ -171,7 +167,7 @@ export default function Home() {
             employeeController.abort();
             productController.abort();
         };
-    }, [masterRefresh]);
+    }, []);
 
     // 必須宣告在下面的 useEffect 之前，否則會有 TDZ 問題
     const loadOperatorHistory = (id) => {
@@ -1163,10 +1159,6 @@ export default function Home() {
                             {/* Profile Section */}
                             <TenureHonor hireDate={employeeProfile.data?.['到職日']} name={selectedOperator} />
 
-                            <button type="button" disabled={masterRefreshing} onClick={() => setMasterRefresh(value => value + 1)} className="min-h-16 w-full rounded-xl border border-slate-300 dark:border-slate-600 text-primary font-bold disabled:opacity-50">
-                                {t(masterRefreshing ? 'master_refreshing' : 'master_refresh')}
-                            </button>
-                            {masterRefreshFailed && <p role="status" className="text-slate-500">{t('master_refresh_failed')}</p>}
                             <BuddyPicker employeeId={noticeEmployeeId} />
 
                             {/* Appearance Preferences */}
@@ -1267,7 +1259,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.23.1
+                                    Version 1.23.2
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
