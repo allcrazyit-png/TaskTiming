@@ -1,4 +1,7 @@
 import BuddyPicker from '../components/BuddyPicker';
+import HeaderThemePicker from '../components/HeaderThemePicker';
+import useHeaderTheme from '../hooks/useHeaderTheme';
+import HalloweenAccent, { PumpkinAccent } from '../components/HalloweenAccent';
 import TenureHonor from '../components/TenureHonor';
 import useEmployeeProfile from '../hooks/useEmployeeProfile';
 import FactoryBuddy from '../components/FactoryBuddy';
@@ -62,10 +65,11 @@ function HomeDate() {
 }
 
 export default function Home() {
+    const { theme: headerTheme, animated: headerAnimated } = useHeaderTheme();
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.24.1 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.25.0 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -905,14 +909,15 @@ export default function Home() {
             )}
 
             {/* Header Section */}
-            <header className="bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 relative z-40">
+            <header className={`${headerTheme !== 'classic' ? `halloween-header theme-${headerTheme}` : ''} bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 relative z-40`}>
+                {selectedOperator && headerTheme !== 'classic' && headerAnimated && <HalloweenAccent theme={headerTheme} />}
                 {/* Combined Operator Selector & Personalized Greeting Card */}
                 <div className="home-header-content px-4 py-2">
                     <div className="flex flex-col">
                         {/* Row 1: Greeting & Operator Dropdown */}
                         <div className="flex items-center justify-between gap-2">
                             <div className="home-greeting-group flex min-w-0 flex-1 items-center gap-1">
-                                {selectedOperator && <FactoryBuddy align="start" employeeId={noticeEmployeeId} />}
+                                {selectedOperator && <div className="halloween-buddy"><FactoryBuddy align="start" employeeId={noticeEmployeeId} />{headerTheme !== 'classic' && <PumpkinAccent theme={headerTheme} />}</div>}
                                 <div className="min-w-0">
                                     <p className="mb-1 text-[11px] font-medium leading-snug tracking-wide text-slate-500 dark:text-slate-400">瑞全企業股份有限公司</p>
                                     {(() => {
@@ -1172,6 +1177,7 @@ export default function Home() {
                             <TenureHonor hireDate={employeeProfile.data?.['到職日']} name={selectedOperator} />
 
                             <BuddyPicker employeeId={noticeEmployeeId} />
+                            <HeaderThemePicker />
 
                             {/* Appearance Preferences */}
                             <div className="space-y-4">
@@ -1277,7 +1283,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.24.1
+                                    Version 1.25.0
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
