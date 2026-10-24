@@ -17,7 +17,7 @@ export default function FactoryBuddy({ align = 'end', employeeId }) {
     }, [replay]);
 
     const greet = () => {
-        const choices = ['buddy_greeting', 'buddy_joke_alarm', 'buddy_joke_fridge', 'buddy_joke_power'].filter(key => key !== messageKey);
+        const choices = ['buddy_greeting', 'buddy_joke_alarm', 'buddy_joke_fridge', 'buddy_joke_power', 'buddy_joke_leftovers', 'buddy_joke_shower', 'buddy_joke_full_fridge', 'buddy_joke_directions', 'buddy_joke_storage', 'buddy_joke_bedtime_phone'].filter(key => key !== messageKey);
         setMessageKey(choices[Math.floor(Math.random() * choices.length)]);
         setGreetingVisible(true);
         setReplay(value => value + 1);
