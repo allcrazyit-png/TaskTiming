@@ -196,6 +196,7 @@ export default function BattleReport() {
         const load = async () => {
             try {
                 setLoading(true);
+                setError('');
                 if (isPreview) {
                     setNotices([
                         { start_date: todayStr, end_date: null, content: '組裝前請確認卡扣完整。\n發現缺料請先隔離，並通知領班。', content_vi: 'Trước khi lắp ráp, hãy kiểm tra ngàm cài còn nguyên vẹn.\nNếu phát hiện thiếu liệu, hãy tách riêng sản phẩm và báo cho tổ trưởng.', content_id: 'Sebelum perakitan, periksa keutuhan kait pengunci.\nJika ditemukan bagian yang kurang bahan, pisahkan produk dan laporkan kepada kepala regu.' },
@@ -274,10 +275,6 @@ export default function BattleReport() {
                         <h1 className="text-lg font-black leading-tight">{t('br_title')}</h1>
                         <p className="text-xs text-slate-400 font-medium">{todayStr.replace(/\//g, ' / ')}</p>
                     </div>
-                </div>
-                <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 px-3 py-1.5 rounded-full">
-                    <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">{t('br_live_indicator')}</span>
                 </div>
             </header>
 

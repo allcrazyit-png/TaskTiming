@@ -30,6 +30,10 @@ const resources = {
             "honor_diamond": "鑽石夥伴",
             "honor_years": "到職滿 {{count}} 年",
             "honor_years_zero": "到職未滿 1 年",
+            "data_refresh": "重新載入資料",
+            "data_refreshing": "更新中…",
+            "data_refresh_done": "資料已更新",
+            "data_refresh_failed": "部分資料更新失敗，請稍後重試。",
             "honor_refresh": "更新資料",
 
             "profile_master_hint": "資料由公司維護；如需更正，請聯絡管理人員。",
@@ -267,6 +271,10 @@ const resources = {
             "honor_diamond": "Huy hiệu kim cương",
             "honor_years": "Đã gắn bó {{count}} năm",
             "honor_years_zero": "Gắn bó chưa đầy 1 năm",
+            "data_refresh": "Tải lại dữ liệu",
+            "data_refreshing": "Đang cập nhật…",
+            "data_refresh_done": "Đã cập nhật dữ liệu",
+            "data_refresh_failed": "Một phần dữ liệu chưa cập nhật được. Vui lòng thử lại.",
             "honor_refresh": "Cập nhật thông tin",
 
             "profile_master_hint": "Công ty quản lý thông tin này. Vui lòng liên hệ quản lý để sửa đổi.",
@@ -504,6 +512,10 @@ const resources = {
             "honor_diamond": "Lencana berlian",
             "honor_years": "Masa kerja {{count}} tahun",
             "honor_years_zero": "Masa kerja kurang dari 1 tahun",
+            "data_refresh": "Muat ulang data",
+            "data_refreshing": "Memperbarui…",
+            "data_refresh_done": "Data diperbarui",
+            "data_refresh_failed": "Sebagian data gagal diperbarui. Coba lagi nanti.",
             "honor_refresh": "Perbarui data",
 
             "profile_master_hint": "Data dikelola perusahaan. Hubungi pengelola untuk koreksi.",

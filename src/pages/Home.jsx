@@ -65,7 +65,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.23.2 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.23.3 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -109,6 +109,9 @@ export default function Home() {
     const [showFilter, setShowFilter] = useState(false);
 
     const [latestUploadStatus, setLatestUploadStatus] = useState(null);
+    const [masterRefresh, setMasterRefresh] = useState(0);
+    const [masterBusy, setMasterBusy] = useState(false);
+    const [masterStatus, setMasterStatus] = useState('');
 
     // Apply Theme
     useEffect(() => {
@@ -145,13 +148,15 @@ export default function Home() {
         const employeeController = new AbortController();
         const productController = new AbortController();
         const refresh = (key, fetcher, setter, controller) => {
-            if (isCacheFresh(key)) return Promise.resolve();
+            if (!masterRefresh && isCacheFresh(key)) return Promise.resolve();
             return fetcher({ signal: controller.signal }).then(data => {
                 if (!active) return;
                 setter(data);
                 writeCache(key, data);
             });
         };
+        setMasterBusy(true);
+        setMasterStatus('');
         Promise.allSettled([
             refresh(CACHE_KEY_EMPLOYEES, fetchTaskTimingEmployees, setEmployees, employeeController),
             refresh(CACHE_KEY_PRODUCTS, fetchTaskTimingProducts, setProducts, productController),
@@ -160,6 +165,8 @@ export default function Home() {
             results.forEach(result => {
                 if (result.status === 'rejected') console.warn('Master data refresh failed; retaining cache.', result.reason);
             });
+            setMasterStatus(results.some(result => result.status === 'rejected') ? 'data_refresh_failed' : 'data_refresh_done');
+            setMasterBusy(false);
             setLoading(false);
         });
         return () => {
@@ -167,7 +174,7 @@ export default function Home() {
             employeeController.abort();
             productController.abort();
         };
-    }, []);
+    }, [masterRefresh]);
 
     // 必須宣告在下面的 useEffect 之前，否則會有 TDZ 問題
     const loadOperatorHistory = (id) => {
@@ -1238,6 +1245,13 @@ export default function Home() {
                                 </div>
                             </div>
 
+                            <div className="space-y-2">
+                                <button type="button" disabled={masterBusy || (masterRefresh > 0 && employeeProfile.status === 'loading')} onClick={() => { setMasterRefresh(value => value + 1); if (noticeEmployeeId) employeeProfile.refresh(); }} className="min-h-16 w-full rounded-xl border border-slate-300 px-4 text-base font-bold text-primary dark:border-slate-600 disabled:opacity-50">
+                        {t(masterBusy || (masterRefresh > 0 && employeeProfile.status === 'loading') ? 'data_refreshing' : 'data_refresh')}
+                    </button>
+                                {masterRefresh > 0 && !masterBusy && employeeProfile.status !== 'loading' && <p role="status" className="text-sm text-slate-500">{t(employeeProfile.status === 'error' && noticeEmployeeId ? 'data_refresh_failed' : masterStatus || 'data_refresh_done')}</p>}
+                            </div>
+
                             {/* Danger Zone */}
                             <div className="space-y-4 pt-4 mt-2 border-t-2 border-dashed border-slate-200 dark:border-slate-700">
                                 <h3 className="text-sm font-bold text-red-500 flex items-center gap-1">
@@ -1259,7 +1273,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.23.2
+                                    Version 1.23.3
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
