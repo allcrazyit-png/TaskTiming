@@ -288,7 +288,7 @@ test('Home delegates employee loading and password validation to the employee se
   assert.match(home, /fetchTaskTimingEmployees,/);
   assert.match(home, /verifyTaskTimingEmployeePassword,/);
   assert.match(home, /from '\.\.\/services\/taskTimingEmployees';/);
-  assert.match(home, /fetchTaskTimingEmployees\(\{ signal: employeeController\.signal \}\)/);
+  assert.match(home, /refresh\(CACHE_KEY_EMPLOYEES, fetchTaskTimingEmployees, setEmployees, employeeController\)/);
   assert.match(home, /await verifyTaskTimingEmployeePassword\(\{/);
   assert.match(home, /saveTaskTimingSession\(session\)/);
   assert.doesNotMatch(home, /const correctPassword = String\(tempOperator\['密碼'\]/);

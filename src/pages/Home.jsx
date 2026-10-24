@@ -20,18 +20,24 @@ import { formatLatestLocalUpload } from '../utils/localUploadStatus';
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwHcmD5yIdsLeDjE9b3O5zTW-Uygh_RdM6LdFG4gRdgqawouUNQJeq-La8zUJbltpHHYA/exec";
 
-// GAS 實測：員工清單只有 684 bytes，卻要 1.7～62 秒，而且五次裡會失敗三次。
-// 所以永遠不讓畫面等網路 —— 只要本機存過資料就直接畫出來，網路在背景慢慢更新。
-// 刻意不設過期時間：員工名單幾個月才變一次，讓作業員每天早上重等一次 60 秒是最糟的選擇。
 const CACHE_KEY_PRODUCTS = 'cache_products_v1';
 const CACHE_KEY_EMPLOYEES = 'cache_employees_v1';
+const MASTER_CACHE_TTL = 10 * 60 * 1000;
+
+function isCacheFresh(key) {
+    try {
+        const { at, data } = JSON.parse(localStorage.getItem(key) || 'null') || {};
+        const age = Date.now() - at;
+        return Array.isArray(data) && Number.isFinite(at) && age >= 0 && age < MASTER_CACHE_TTL;
+    } catch { return false; }
+}
 
 function readCache(key) {
     try {
         const raw = localStorage.getItem(key);
         if (!raw) return null;
         const { data } = JSON.parse(raw);
-        if (!Array.isArray(data) || data.length === 0) return null;
+        if (!Array.isArray(data)) return null;
         return data;
     } catch {
         return null;
@@ -59,7 +65,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.23.0 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.23.1 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -103,6 +109,9 @@ export default function Home() {
     const [showFilter, setShowFilter] = useState(false);
 
     const [latestUploadStatus, setLatestUploadStatus] = useState(null);
+    const [masterRefresh, setMasterRefresh] = useState(0);
+    const [masterRefreshing, setMasterRefreshing] = useState(false);
+    const [masterRefreshFailed, setMasterRefreshFailed] = useState(false);
 
     // Apply Theme
     useEffect(() => {
@@ -133,36 +142,36 @@ export default function Home() {
         localStorage.setItem('appFontSize', fontSize);
     }, [fontSize]);
 
-    // Fetch homepage data
-    // 三個來源各自獨立更新畫面，不互相等待：
-    // 員工清單只有幾百 bytes，但產品表在 GAS 上要 10～30 秒。
-    // 先前用 Promise.all 一起等，導致「請選擇您的名字」被最慢的產品請求卡住。
+    // Fresh local master data avoids a request on every return from reporting.
     useEffect(() => {
-        // 1. 員工清單：由 Supabase 鏡像讀取。失敗時保留目前的 localStorage 快取。
+        let active = true;
         const employeeController = new AbortController();
-        fetchTaskTimingEmployees({ signal: employeeController.signal })
-            .then(employeeData => {
-                setEmployees(employeeData);
-                writeCache(CACHE_KEY_EMPLOYEES, employeeData);
-            })
-            .catch(error => console.warn('Supabase employee load failed; retaining local cache.', error));
-
-        // 2. 產品表：由 Supabase 鏡像讀取。失敗時保留目前的 localStorage 快取。
         const productController = new AbortController();
-        fetchTaskTimingProducts({ signal: productController.signal })
-            .then(productData => {
-                setProducts(productData);
-                writeCache(CACHE_KEY_PRODUCTS, productData);
-                console.log('Products loaded from Supabase:', productData.length);
-            })
-            .catch(error => console.warn('Supabase product load failed; retaining local cache.', error))
-            .finally(() => setLoading(false));
-
+        const refresh = (key, fetcher, setter, controller) => {
+            if (!masterRefresh && isCacheFresh(key)) return Promise.resolve();
+            return fetcher({ signal: controller.signal }).then(data => {
+                if (!active) return;
+                setter(data);
+                writeCache(key, data);
+            });
+        };
+        setMasterRefreshing(true);
+        setMasterRefreshFailed(false);
+        Promise.allSettled([
+            refresh(CACHE_KEY_EMPLOYEES, fetchTaskTimingEmployees, setEmployees, employeeController),
+            refresh(CACHE_KEY_PRODUCTS, fetchTaskTimingProducts, setProducts, productController),
+        ]).then(results => {
+            if (!active) return;
+            setMasterRefreshFailed(results.some(result => result.status === 'rejected'));
+            setMasterRefreshing(false);
+            setLoading(false);
+        });
         return () => {
+            active = false;
             employeeController.abort();
             productController.abort();
         };
-    }, []);
+    }, [masterRefresh]);
 
     // 必須宣告在下面的 useEffect 之前，否則會有 TDZ 問題
     const loadOperatorHistory = (id) => {
@@ -1154,6 +1163,10 @@ export default function Home() {
                             {/* Profile Section */}
                             <TenureHonor hireDate={employeeProfile.data?.['到職日']} name={selectedOperator} />
 
+                            <button type="button" disabled={masterRefreshing} onClick={() => setMasterRefresh(value => value + 1)} className="min-h-16 w-full rounded-xl border border-slate-300 dark:border-slate-600 text-primary font-bold disabled:opacity-50">
+                                {t(masterRefreshing ? 'master_refreshing' : 'master_refresh')}
+                            </button>
+                            {masterRefreshFailed && <p role="status" className="text-slate-500">{t('master_refresh_failed')}</p>}
                             <BuddyPicker employeeId={noticeEmployeeId} />
 
                             {/* Appearance Preferences */}
@@ -1254,7 +1267,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.23.0
+                                    Version 1.23.1
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity

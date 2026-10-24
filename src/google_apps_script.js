@@ -810,6 +810,11 @@ function syncTaskTimingNoticesToSupabase() {
         if (['開始日期', '結束日期', '提醒內容', '啟用'].some(function (header) { return headers.indexOf(header) === -1 || headers.indexOf(header) !== headers.lastIndexOf(header); })) throw new Error('今日提醒欄位順序不正確；未覆蓋現有提醒。');
         var notices = taskTimingNoticeRows_(sheet.getLastRow() > 1 ? sheet.getRange(2, 1, sheet.getLastRow() - 1, columnCount).getValues() : [], headers);
         var config = taskTimingSupabaseConfig_();
+        // Remember only successful content, scoped to this Sheet and destination.
+        var properties = PropertiesService.getScriptProperties();
+        var digestKey = 'TASK_TIMING_NOTICE_DIGEST_' + RECORDS_SS_ID + '_' + config.baseUrl;
+        var digest = Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify(notices), Utilities.Charset.UTF_8));
+        if (properties.getProperty(digestKey) === digest) return { synced: 0, unchanged: true };
         var response = UrlFetchApp.fetch(config.baseUrl + '/rest/v1/task_timing_notice_snapshot?on_conflict=source_sheet_id', {
             method: 'post', contentType: 'application/json',
             headers: { ApiKey: config.secret, Authorization: 'Bearer ' + config.secret, Prefer: 'resolution=merge-duplicates,return=minimal' },
@@ -817,6 +822,7 @@ function syncTaskTimingNoticesToSupabase() {
             muteHttpExceptions: true
         });
         if (response.getResponseCode() < 200 || response.getResponseCode() >= 300) throw new Error('今日提醒同步失敗：' + response.getResponseCode());
+        properties.setProperty(digestKey, digest);
         return { synced: notices.length };
     } finally { lock.releaseLock(); }
 }
