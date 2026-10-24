@@ -7,8 +7,10 @@ return (<svg className="factory-buddy-art" viewBox="76 42 210 245" aria-hidden="
 <path d="M128 192Q110 212 113 247Q115 269 137 267L181 267Q204 270 207 248Q213 217 191 192" fill="var(--fur)"/>
 <ellipse cx="138" cy="264" rx="17" ry="11" fill="var(--milk)"/>
 <ellipse cx="184" cy="264" rx="17" ry="11" fill="var(--milk)"/>
-<path d="M133 198L136 228Q160 242 187 228L190 199" fill="#a9c4c2"/>
-<path d="M150 222h23v16q-11 8-23 0z" fill="#d9e7df" strokeWidth="2.5"/>
+<path d="M130 200h13l2 21h31l2-21h13l3 50q-14 9-32 9t-34-9Z" fill="#a9c4c2"/>
+<path d="M162 245v14" fill="none" strokeWidth="2.5"/>
+<circle cx="141" cy="224" r="3" fill="#fff8e8" stroke="none"/>
+<circle cx="180" cy="224" r="3" fill="#fff8e8" stroke="none"/>
 <ellipse cx="118" cy="228" rx="10" ry="15" transform="rotate(16 118 228)" fill="var(--fur)"/>
 <g className="paw">
 <path d="M197 230C201 226 206 220 211 216C216 211 224 213 227 219C231 227 219 236 212 241C203 247 193 239 197 230Z" fill="var(--fur)"/>
