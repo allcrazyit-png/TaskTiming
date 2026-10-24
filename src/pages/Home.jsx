@@ -69,7 +69,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.25.0 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.25.1 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -910,7 +910,7 @@ export default function Home() {
 
             {/* Header Section */}
             <header className={`${headerTheme !== 'classic' ? `halloween-header theme-${headerTheme}` : ''} bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 relative z-40`}>
-                {selectedOperator && headerTheme !== 'classic' && headerAnimated && <HalloweenAccent theme={headerTheme} />}
+                {selectedOperator && headerTheme !== 'classic' && <HalloweenAccent theme={headerTheme} animated={headerAnimated} />}
                 {/* Combined Operator Selector & Personalized Greeting Card */}
                 <div className="home-header-content px-4 py-2">
                     <div className="flex flex-col">
@@ -1283,7 +1283,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.25.0
+                                    Version 1.25.1
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
