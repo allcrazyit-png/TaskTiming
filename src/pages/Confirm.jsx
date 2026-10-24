@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { submitTaskTimingBatch } from '../services/submitTaskTimingRecord';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import confetti from 'canvas-confetti';
@@ -13,6 +14,10 @@ export default function Confirm() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [isUploaded, setIsUploaded] = useState(false);
+    const [uploadUnconfirmed, setUploadUnconfirmed] = useState(false);
+    const submittingRef = useRef(false);
+    const successTimer = useRef(null);
+    useEffect(() => () => clearTimeout(successTimer.current), []);
 
     const {
         productName,
@@ -148,27 +153,19 @@ export default function Confirm() {
         return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        if (submittingRef.current || isUploaded || uploadUnconfirmed) return;
         if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("YOUR_GOOGLE_SCRIPT_URL")) {
             alert("錯誤: Google Script URL 未設定!");
             return;
         }
 
+        submittingRef.current = true;
         setIsSubmitting(true);
 
-        const submitPayload = (payload) => {
-            const recordId = payload.recordId
-                || globalThis.crypto?.randomUUID?.()
-                || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-            const payloadWithId = { ...payload, recordId };
-            fetch(GOOGLE_SCRIPT_URL, {
-                method: "POST",
-                mode: "no-cors",
-                keepalive: true,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payloadWithId),
-            }).catch(err => console.error(err));
-
+        const payloads = [];
+        const submitPayload = payload => payloads.push({ ...payload, recordId: globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}` });
+        const saveConfirmedHistory = (payloadWithId) => {
             // Save to LocalStorage History
             try {
                 // Extract Operator ID from "[ID] Name" format
@@ -342,18 +339,22 @@ export default function Confirm() {
             submitPayload(payload);
         }
 
-        // Simulate UX delay for "Uploading..." feel
-        setTimeout(() => {
-            setIsSubmitting(false);
-            setShowSuccess(true);
+        try {
+            // Sequentially acknowledge both sides. Save only confirmed records,
+            // and never report full success when one side is still uncertain.
+            await submitTaskTimingBatch(GOOGLE_SCRIPT_URL, payloads, { onConfirmed: saveConfirmedHistory });
             setIsUploaded(true);
+            setShowSuccess(true);
             confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 }, colors: ['#137fec', '#2e7d32', '#f59e0b', '#ec4899'] });
-
-            // STAY on the page, just hide the success overlay after animation
-            setTimeout(() => {
-                setShowSuccess(false);
-            }, 2000);
-        }, 800);
+            successTimer.current = setTimeout(() => setShowSuccess(false), 2000);
+        } catch {
+            // A missing response can mean the Sheet accepted the write but the
+            // reply was lost. Do not retry automatically or label it as failed.
+            setUploadUnconfirmed(true);
+        } finally {
+            setIsSubmitting(false);
+            submittingRef.current = false;
+        }
     };
 
     return (
@@ -491,12 +492,13 @@ export default function Confirm() {
                     {!isUploaded && <p className="mt-2 text-base font-bold text-slate-600 dark:text-slate-300">{t('confirm_upload_count', { count: uploadCount })}{isDual && ` (${[hasR && t('side_r'), hasL && t('side_l')].filter(Boolean).join(' / ')})`}</p>}
                 </div>
                 <div className="flex flex-col gap-3 mt-auto mb-4">
+                    {uploadUnconfirmed && <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-base font-bold text-amber-900 dark:bg-amber-950 dark:text-amber-100">{t('upload_unconfirmed_hint')}</p>}
                     <button
                         onClick={handleSubmit}
-                        disabled={isSubmitting || isUploaded}
-                        className={`w-full bg-success hover:bg-success/90 text-white min-h-16 rounded-xl font-black text-xl flex items-center justify-center gap-3 transition-transform active:scale-95 shadow-sm border-b-4 border-emerald-600 ${isSubmitting || isUploaded ? 'opacity-50 cursor-not-allowed bg-slate-400 border-slate-500 shadow-none' : ''}`}
+                        disabled={isSubmitting || isUploaded || uploadUnconfirmed}
+                        className={`w-full bg-success hover:bg-success/90 text-white min-h-16 rounded-xl font-black text-xl flex items-center justify-center gap-3 transition-transform active:scale-95 shadow-sm border-b-4 border-emerald-600 ${isSubmitting || isUploaded || uploadUnconfirmed ? 'opacity-50 cursor-not-allowed bg-slate-400 border-slate-500 shadow-none' : ''}`}
                     >
-                        {isSubmitting ? (
+                        {uploadUnconfirmed ? t('upload_unconfirmed') : isSubmitting ? (
                             <>
                                 <span className="material-symbols-outlined animate-spin text-2xl">progress_activity</span>
                                 <span className="text-xl font-bold">{t('uploading')}</span>
@@ -514,11 +516,12 @@ export default function Confirm() {
                         )}
                     </button>
                     <button
-                        onClick={() => isUploaded ? navigate('/') : navigate(-1)}
+                        disabled={isSubmitting}
+                        onClick={() => (isUploaded || uploadUnconfirmed) ? navigate('/') : navigate(-1)}
                         className="w-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 min-h-16 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors active:scale-95 border border-slate-300 dark:border-slate-700"
                     >
-                        <span className="material-symbols-outlined text-xl">{isUploaded ? 'home' : 'edit'}</span>
-                        {isUploaded ? t('back_home') : t('back_edit')}
+                        <span className="material-symbols-outlined text-xl">{isUploaded || uploadUnconfirmed ? 'home' : 'edit'}</span>
+                        {isUploaded || uploadUnconfirmed ? t('back_home') : t('back_edit')}
                     </button>
                 </div>
             </main>

@@ -1,4 +1,6 @@
-import EmployeeProfile from '../components/EmployeeProfile';
+import BuddyPicker from '../components/BuddyPicker';
+import TenureHonor from '../components/TenureHonor';
+import useEmployeeProfile from '../hooks/useEmployeeProfile';
 import FactoryBuddy from '../components/FactoryBuddy';
 import ProductImagePreview from '../components/ProductImagePreview';
 import useNoticeInbox from '../hooks/useNoticeInbox';
@@ -45,100 +47,19 @@ function writeCache(key, data) {
     }
 }
 
-function WeatherSvgIcon({ code }) {
-    if (code === 0) {
-        return (
-            <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
-                <circle className="weather-sun" cx="32" cy="32" r="13" fill="#fbbf24" />
-                <g stroke="#f59e0b" strokeWidth="4" strokeLinecap="round">
-                    <path d="M32 8v8" />
-                    <path d="M32 48v8" />
-                    <path d="M8 32h8" />
-                    <path d="M48 32h8" />
-                    <path d="M15 15l6 6" />
-                    <path d="M43 43l6 6" />
-                    <path d="M49 15l-6 6" />
-                    <path d="M21 43l-6 6" />
-                </g>
-            </svg>
-        );
-    }
-
-    if (code <= 3) {
-        return (
-            <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
-                <circle className="weather-sun" cx="24" cy="24" r="11" fill="#fbbf24" />
-                <path className="weather-cloud" d="M22 49h25c8 0 13-5 13-12s-6-12-13-12c-4-9-18-10-24-1-8 0-14 6-14 13s6 12 13 12z" fill="#dbeafe" stroke="#93c5fd" strokeWidth="3" />
-            </svg>
-        );
-    }
-
-    if (code <= 48) {
-        return (
-            <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
-                <path d="M15 23h35M9 34h47M16 45h37" fill="none" stroke="#94a3b8" strokeWidth="6" strokeLinecap="round" />
-                <path className="weather-fog" d="M8 28h46M14 39h42M8 50h34" fill="none" stroke="#cbd5e1" strokeWidth="5" strokeLinecap="round" />
-            </svg>
-        );
-    }
-
-    if (code >= 95) {
-        return (
-            <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
-                <path className="weather-cloud" d="M18 36h28c8 0 13-5 13-12s-6-12-13-12c-4-9-18-10-24-1-8 0-14 6-14 13s6 12 10 12z" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="3" />
-                <path className="weather-bolt" d="M35 35l-9 17h9l-5 10 16-20h-9l5-7z" fill="#facc15" />
-                <path className="weather-rain" d="M20 47l-4 8" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
-                <path className="weather-rain weather-rain-delay" d="M49 47l-4 8" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
-            </svg>
-        );
-    }
-
-    if (code <= 67 || (code >= 80 && code <= 82)) {
-        return (
-            <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
-                <path className="weather-cloud" d="M18 38h28c8 0 13-5 13-12s-6-12-13-12c-4-9-18-10-24-1-8 0-14 6-14 13s6 12 10 12z" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="3" />
-                <path className="weather-rain" d="M22 46l-5 9" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
-                <path className="weather-rain weather-rain-delay" d="M34 46l-5 9" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
-                <path className="weather-rain weather-rain-delay-2" d="M46 46l-5 9" stroke="#38bdf8" strokeWidth="4" strokeLinecap="round" />
-            </svg>
-        );
-    }
-
-    return (
-        <svg className="home-weather-icon" viewBox="0 0 64 64" aria-hidden="true">
-            <path className="weather-cloud" d="M18 43h28c8 0 13-5 13-12s-6-12-13-12c-4-9-18-10-24-1-8 0-14 6-14 13s6 12 10 12z" fill="#dbeafe" stroke="#93c5fd" strokeWidth="3" />
-        </svg>
-    );
-}
-
-function WeatherInfo({ weather }) {
-    const { t, i18n } = useTranslation();
-    const today = new Date();
+function HomeDate() {
+    const { i18n } = useTranslation();
     const locale = { zh: 'zh-TW', vi: 'vi-VN', id: 'id-ID' }[i18n.resolvedLanguage] || 'zh-TW';
-    const dateText = today.toLocaleDateString(locale, { month: 'numeric', day: 'numeric', weekday: 'short' });
-    const code = weather?.code;
-    const weatherKey = code === 0 ? 'weather_clear'
-        : code <= 3 ? 'weather_partly_cloudy'
-            : code <= 48 ? 'weather_fog'
-                : code >= 95 ? 'weather_storm'
-                    : code <= 67 || (code >= 80 && code <= 82) ? 'weather_rain' : 'weather_cloudy';
-
-    return (
-        <div className="home-weather-strip">
-            <time dateTime={`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`} className="text-sm font-normal text-slate-600 dark:text-slate-300">{dateText}</time>
-            <div className="flex min-w-0 items-center gap-1.5 text-sm font-normal text-slate-600 dark:text-slate-300" role="img" aria-label={weather ? `${t('weather_place')} · ${t(weatherKey)} · ${weather.temp}°C` : t('weather_loading')}>
-                {weather && <WeatherSvgIcon code={weather.code} />}
-                <span>{t('weather_place')} · {weather ? `${weather.temp}°C` : t('weather_loading')}</span>
-            </div>
-        </div>
-    );
+    const today = new Date();
+    const dateText = today.toLocaleDateString(locale, { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', weekday: 'short' });
+    return <time className="shrink-0 text-sm font-normal text-slate-500 dark:text-slate-400">{dateText}</time>;
 }
 
 export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.22.0 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.23.0 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -155,7 +76,6 @@ export default function Home() {
     const [favoriteProducts, setFavoriteProducts] = useState([]); // Store array of favorite `品番`
     const [favoriteToRemove, setFavoriteToRemove] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
-    const [weather, setWeather] = useState(null); // Local weather state
 
     // Custom Product Entry State
     const [customProductName, setCustomProductName] = useState('');
@@ -172,6 +92,7 @@ export default function Home() {
 
     // Settings Modal State
     const [showSettingsPopup, setShowSettingsPopup] = useState(false);
+    const employeeProfile = useEmployeeProfile(noticeEmployeeId, showSettingsPopup);
     const [theme, setTheme] = useState(() => localStorage.getItem('appTheme') || 'system'); // 'system', 'light', 'dark'
     const [fontSize, setFontSize] = useState(() => localStorage.getItem('appFontSize') || 'large'); // 'normal', 'large'
 
@@ -236,31 +157,6 @@ export default function Home() {
             })
             .catch(error => console.warn('Supabase product load failed; retaining local cache.', error))
             .finally(() => setLoading(false));
-
-        // 3. 天氣（純裝飾，失敗也無所謂）
-        const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=23.9972&longitude=120.4638&current=temperature_2m,weather_code&timezone=Asia%2FTaipei';
-        fetch(weatherUrl)
-            .then(res => res.ok ? res.json() : null)
-            .then(weatherData => {
-                if (weatherData && weatherData.current) {
-                    const code = weatherData.current.weather_code;
-                    let icon = '☁️';
-                    let desc = '多雲';
-                    if (code === 0) { icon = '☀️'; desc = '晴天'; }
-                    else if (code <= 3) { icon = '⛅️'; desc = '多雲時晴'; }
-                    else if (code <= 48) { icon = '🌫️'; desc = '起霧'; }
-                    else if (code <= 67 || (code >= 80 && code <= 82)) { icon = '🌧️'; desc = '下雨'; }
-                    else if (code >= 95) { icon = '⚡️'; desc = '雷雨'; }
-
-                    setWeather({
-                        temp: Math.round(weatherData.current.temperature_2m),
-                        icon,
-                        desc,
-                        code
-                    });
-                }
-            })
-            .catch(err => console.error('Weather Fetch Error:', err));
 
         return () => {
             employeeController.abort();
@@ -614,7 +510,7 @@ export default function Home() {
                     </div>
                     <div className="flex-1 min-w-0">
                         {product['類別'] && (
-                            <span className={`${getCategoryStyles(product['類別'])} text-white text-xs font-black px-2 py-0.5 rounded-full mb-1 inline-block`}>
+                            <span className={`${getCategoryStyles(product['類別'])} text-white text-sm leading-none h-5 font-bold px-2 rounded-full mb-1 inline-flex items-center`}>
                                 {t(`cat_${product['類別']}`, product['類別'])}
                             </span>
                         )}
@@ -922,7 +818,7 @@ export default function Home() {
                             </h2>
                             <button
                                 onClick={() => setShowHistoryPopup(false)}
-                                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
+                                aria-label={t('close')} className="w-16 h-16 shrink-0 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
                             >
                                 <span className="material-symbols-outlined">close</span>
                             </button>
@@ -1002,12 +898,12 @@ export default function Home() {
             {/* Header Section */}
             <header className="bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 relative z-40">
                 {/* Combined Operator Selector & Personalized Greeting Card */}
-                <div className="px-4 pt-1 pb-0">
+                <div className="home-header-content px-4 pt-1 pb-0">
                     <div className="flex flex-col">
                         {/* Row 1: Greeting & Operator Dropdown */}
                         <div className="flex items-center justify-between gap-2">
-                            <div className="flex min-w-0 flex-1 items-center gap-1">
-                                {selectedOperator && <FactoryBuddy align="start" />}
+                            <div className="home-greeting-group flex min-w-0 flex-1 items-center gap-1">
+                                {selectedOperator && <FactoryBuddy align="start" employeeId={noticeEmployeeId} />}
                                 <div className="min-w-0">
                                     {(() => {
                                         if (!selectedOperator) {
@@ -1017,7 +913,7 @@ export default function Home() {
                                         const greetingKey = hour < 12 ? 'buddy_home_morning' : hour < 18 ? 'buddy_home_afternoon' : 'buddy_home_evening';
                                         return (
                                             <>
-                                                <h2 className="break-words text-base font-bold text-slate-800 dark:text-slate-100">{t(greetingKey)}</h2>
+                                                <h2 className="home-greeting break-words text-sm font-bold text-slate-700 dark:text-slate-200">{t(greetingKey)}</h2>
                                                 {latestUploadStatus && (
                                                     <p className="mt-0.5 break-words text-sm font-bold text-slate-500 dark:text-slate-400">
                                                         {t(latestUploadStatus.isToday ? 'latest_upload_today' : 'latest_upload_day', latestUploadStatus)}
@@ -1030,12 +926,13 @@ export default function Home() {
                             </div>
 
                             {/* Operator Selector Dropdown */}
-                            <div className="min-w-0 max-w-[48%] shrink-0">
+                            <div className="relative min-w-0 max-w-[48%] shrink-0">
+                                <span className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2"><TenureHonor compact hireDate={employeeProfile.data?.['到職日']} /></span>
                                 <select
                                     aria-label={t('select_operator')}
                                     value={selectedOperator}
                                     onChange={handleOperatorChange}
-                                    className={`min-h-16 min-w-0 w-full rounded-xl px-1 text-sm font-bold bg-transparent border-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer outline-none ${selectedOperator ? 'text-primary' : 'text-slate-500'}`}
+                                    className={`min-h-16 min-w-0 w-full rounded-xl ${employeeProfile.data?.['到職日'] ? 'pl-8 pr-6' : 'pl-1 pr-6'} appearance-none text-base leading-normal font-bold bg-transparent border-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer outline-none ${selectedOperator ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500'}`}
                                 >
                                     <option value="">{t('select_operator')}</option>
                                     {employees.map((emp, idx) => (
@@ -1044,15 +941,11 @@ export default function Home() {
                                         </option>
                                     ))}
                                 </select>
+                                <svg className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
                             </div>
                         </div>
 
-                        {/* Row 2: Date and Weather info (Only show when operator is selected to maintain focus) */}
-                        {selectedOperator && (
-                            <div className="border-t border-slate-200/60 dark:border-slate-700/60">
-                                <WeatherInfo weather={weather} />
-                            </div>
-                        )}
+
                     </div>
                 </div>
             </header>
@@ -1063,10 +956,13 @@ export default function Home() {
                 {/* 常用產品（主要入口） */}
                 {favoriteProducts.length > 0 ? (
                     <section className="space-y-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                         <h2 className="text-lg font-bold border-l-4 border-red-500 pl-3 flex items-center gap-2 text-slate-800 dark:text-slate-100">
                             <span className="material-symbols-outlined text-red-500">favorite</span>
                             {t('favorites')}
                         </h2>
+                        <HomeDate />
+                        </div>
                         <div className="flex flex-col gap-4">
                             {products
                                 .filter(p => favoriteProducts.includes(`${p['品番']}|${p['類別'] || ''}`))
@@ -1248,27 +1144,17 @@ export default function Home() {
                             </h2>
                             <button
                                 onClick={() => setShowSettingsPopup(false)}
-                                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
+                                aria-label={t('close')} className="w-16 h-16 shrink-0 flex items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600"
                             >
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
-                        <div className="p-5 flex flex-col gap-6 overflow-y-auto max-h-[70vh]">
+                        <div className="p-5 flex flex-col gap-6 overflow-y-auto max-h-[70vh] [&>*]:shrink-0">
 
                             {/* Profile Section */}
-                            <div className="flex flex-col items-center bg-slate-100 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-700">
-                                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
-                                    <span className="material-symbols-outlined text-4xl text-primary">account_circle</span>
-                                </div>
-                                <div className="text-lg font-black text-slate-800 dark:text-white">
-                                    {selectedOperator}
-                                </div>
-                                <div className="text-xs font-bold text-slate-500 mt-1 bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-full">
-                                    當前登入身分
-                                </div>
-                            </div>
+                            <TenureHonor hireDate={employeeProfile.data?.['到職日']} name={selectedOperator} />
 
-                            <EmployeeProfile key={selectedOperator} employeeId={selectedOperator.match(/\[(.*?)\]/)?.[1] || ''} />
+                            <BuddyPicker employeeId={noticeEmployeeId} />
 
                             {/* Appearance Preferences */}
                             <div className="space-y-4">
@@ -1368,7 +1254,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.22.0
+                                    Version 1.23.0
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity

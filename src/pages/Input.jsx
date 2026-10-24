@@ -1,3 +1,6 @@
+import TenureHonor from '../components/TenureHonor';
+import useEmployeeProfile from '../hooks/useEmployeeProfile';
+import { employeeTenure } from '../utils/employeeTenure';
 import FactoryBuddy from '../components/FactoryBuddy';
 import ProductImagePreview from '../components/ProductImagePreview';
 import React, { useState, useEffect, useRef } from 'react';
@@ -156,6 +159,9 @@ export default function Input() {
         productImage: null,
         category: "組裝"
     };
+
+    const employeeProfile = useEmployeeProfile(operator?.match(/\[(.*?)\]/)?.[1] || '', true);
+    const hasTenure = employeeTenure(employeeProfile.data?.['到職日']);
 
     // Helper to format image URL from GitHub Pages or use default
     const getImageUrl = (url) => {
@@ -361,14 +367,14 @@ export default function Input() {
             </div>
             <div className="bg-white dark:bg-slate-900 border-b-2 border-slate-200 dark:border-slate-800 px-4 min-h-16 flex items-center justify-between gap-2 relative z-30">
                 <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <span className="material-symbols-outlined shrink-0 text-3xl text-primary">account_circle</span>
-                    <div className="min-w-0 break-words text-sm font-extrabold text-slate-800 dark:text-white">
-                        員工: <span className="text-primary">{operator}</span>
+                    {hasTenure ? <TenureHonor compact hireDate={employeeProfile.data?.['到職日']} /> : <span className="material-symbols-outlined shrink-0 text-2xl text-slate-500">account_circle</span>}
+                    <div className="min-w-0 break-words text-base font-bold text-slate-800 dark:text-slate-100">
+                        {operator}
                     </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                     <span className="whitespace-nowrap rounded-full bg-slate-100 px-2 py-1 text-sm font-bold text-slate-500 dark:bg-slate-800">早班</span>
-                    <FactoryBuddy />
+                    <FactoryBuddy employeeId={operator?.match(/\[(.*?)\]/)?.[1] || ''} />
                 </div>
             </div>
             {showImagePreview && <ProductImagePreview src={displayProductImage} name={productName} onClose={() => setShowImagePreview(false)} />}

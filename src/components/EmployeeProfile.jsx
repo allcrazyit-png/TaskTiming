@@ -1,28 +1,9 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { fetchTaskTimingEmployeeProfile } from '../services/taskTimingEmployees';
 
-export default function EmployeeProfile({ employeeId }) {
+export default function EmployeeProfile({ profile }) {
     const { t } = useTranslation();
-    const [result, setResult] = useState({ status: 'loading', data: null });
-    const [attempt, setAttempt] = useState(0);
-
-    useEffect(() => {
-        const controller = new AbortController();
-        fetchTaskTimingEmployeeProfile(employeeId, { signal: controller.signal })
-            .then(data => {
-                if (!controller.signal.aborted) setResult({ status: 'ready', data });
-            })
-            .catch(() => {
-                if (!controller.signal.aborted) setResult({ status: 'error', data: null });
-            });
-        return () => controller.abort();
-    }, [employeeId, attempt]);
-
-    const retry = () => {
-        setResult({ status: 'loading', data: null });
-        setAttempt(value => value + 1);
-    };
+    const result = profile;
+    const retry = profile.refresh;
     const fields = [
         ['profile_gender', '性別'],
         ['profile_nationality', '國籍'],
@@ -44,7 +25,7 @@ export default function EmployeeProfile({ employeeId }) {
             {result.status === 'loading' && <p role="status" className="text-base text-slate-500 dark:text-slate-400">{t('profile_loading')}</p>}
             {result.status === 'error' && (
                 <div className="space-y-2">
-                    <p role="status" className="text-base text-slate-500 dark:text-slate-400">{t('profile_unavailable')}</p>
+                    <p role="status" className="text-base text-slate-500 dark:text-slate-400">{t(result.loginRequired ? 'honor_login_required' : 'profile_unavailable')}</p>
                     <button type="button" onClick={retry} className="min-h-16 rounded-xl border border-slate-300 px-4 text-base font-bold text-primary dark:border-slate-600">{t('profile_retry')}</button>
                 </div>
             )}
@@ -58,6 +39,7 @@ export default function EmployeeProfile({ employeeId }) {
                     ))}
                 </dl>
             )}
+            {result.status === 'ready' && <button type="button" onClick={retry} className="min-h-16 px-4 rounded-xl border border-slate-300 text-base font-bold text-primary dark:border-slate-600">{t('honor_refresh')}</button>}
             <p className="text-sm text-slate-500 dark:text-slate-400">{t('profile_master_hint')}</p>
         </section>
     );

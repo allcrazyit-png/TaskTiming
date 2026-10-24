@@ -5,6 +5,33 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
     zh: {
         translation: {
+            "upload_unconfirmed": "尚未確認上傳",
+            "upload_unconfirmed_hint": "尚未收到儲存確認，資料可能已送達。請勿重複送出，請聯絡管理人員確認；雙穴作業可能僅一邊完成。",
+
+            "buddy_short_morning": "早安",
+            "buddy_short_afternoon": "午安",
+            "buddy_short_evening": "晚安",
+
+            "pet_title": "我的夥伴",
+            "pet_local_hint": "點選即儲存，僅套用這支手機。",
+            "pet_cat": "小貓",
+            "pet_dog": "小狗",
+            "pet_rabbit": "兔子",
+            "pet_robot": "小機器人",
+            "pet_none": "不顯示",
+            "buddy_greet_pet": "和{{pet}}打個招呼",
+
+            "close": "關閉",
+            "honor_login_required": "登入已失效，請重新登入後讀取資料。",
+            "honor_new": "新進夥伴",
+            "honor_bronze": "銅牌夥伴",
+            "honor_silver": "銀牌夥伴",
+            "honor_gold": "金牌夥伴",
+            "honor_diamond": "鑽石夥伴",
+            "honor_years": "到職滿 {{count}} 年",
+            "honor_years_zero": "到職未滿 1 年",
+            "honor_refresh": "更新資料",
+
             "profile_master_hint": "資料由公司維護；如需更正，請聯絡管理人員。",
             "profile_retry": "重新讀取",
             "profile_unavailable": "基本資料暫時無法讀取，請稍後重試。",
@@ -31,7 +58,7 @@ const resources = {
             "buddy_home_evening": "晚安，辛苦了",
             "buddy_home_afternoon": "午安，辛苦了",
             "buddy_home_morning": "早安，今天也加油",
-            "buddy_greeting": "一起加油，慢慢填就好。",
+            "buddy_greeting": "今天也加油，慢慢填就好。",
             "buddy_greet_label": "和小貓打個招呼",
             "app_title": "瑞全企業股份有限公司",
             "login_operator": "請登入員工",
@@ -215,6 +242,33 @@ const resources = {
     },
     vi: {
         translation: {
+            "upload_unconfirmed": "Chưa xác nhận tải lên",
+            "upload_unconfirmed_hint": "Chưa nhận được xác nhận lưu. Dữ liệu có thể đã được nhận. Không gửi lại; hãy liên hệ quản lý. Với hai bên, có thể chỉ một bên đã lưu.",
+
+            "buddy_short_morning": "Chào buổi sáng",
+            "buddy_short_afternoon": "Chào buổi chiều",
+            "buddy_short_evening": "Chào buổi tối",
+
+            "pet_title": "Bạn đồng hành",
+            "pet_local_hint": "Chạm để lưu trên điện thoại này.",
+            "pet_cat": "Mèo",
+            "pet_dog": "Chó",
+            "pet_rabbit": "Thỏ",
+            "pet_robot": "Robot",
+            "pet_none": "Ẩn",
+            "buddy_greet_pet": "Chào {{pet}}",
+
+            "close": "Đóng",
+            "honor_login_required": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+            "honor_new": "Đồng nghiệp mới",
+            "honor_bronze": "Huy hiệu đồng",
+            "honor_silver": "Huy hiệu bạc",
+            "honor_gold": "Huy hiệu vàng",
+            "honor_diamond": "Huy hiệu kim cương",
+            "honor_years": "Đã gắn bó {{count}} năm",
+            "honor_years_zero": "Gắn bó chưa đầy 1 năm",
+            "honor_refresh": "Cập nhật thông tin",
+
             "profile_master_hint": "Công ty quản lý thông tin này. Vui lòng liên hệ quản lý để sửa đổi.",
             "profile_retry": "Tải lại",
             "profile_unavailable": "Chưa thể tải thông tin. Vui lòng thử lại sau.",
@@ -425,6 +479,33 @@ const resources = {
     },
     id: {
         translation: {
+            "upload_unconfirmed": "Unggahan belum dikonfirmasi",
+            "upload_unconfirmed_hint": "Konfirmasi penyimpanan belum diterima. Data mungkin sudah masuk. Jangan kirim ulang; hubungi pengelola. Untuk dua sisi, mungkin hanya satu sisi tersimpan.",
+
+            "buddy_short_morning": "Selamat pagi",
+            "buddy_short_afternoon": "Selamat siang",
+            "buddy_short_evening": "Selamat malam",
+
+            "pet_title": "Teman saya",
+            "pet_local_hint": "Ketuk untuk menyimpan di ponsel ini.",
+            "pet_cat": "Kucing",
+            "pet_dog": "Anjing",
+            "pet_rabbit": "Kelinci",
+            "pet_robot": "Robot",
+            "pet_none": "Sembunyikan",
+            "buddy_greet_pet": "Sapa {{pet}}",
+
+            "close": "Tutup",
+            "honor_login_required": "Sesi berakhir. Silakan masuk kembali.",
+            "honor_new": "Rekan baru",
+            "honor_bronze": "Lencana perunggu",
+            "honor_silver": "Lencana perak",
+            "honor_gold": "Lencana emas",
+            "honor_diamond": "Lencana berlian",
+            "honor_years": "Masa kerja {{count}} tahun",
+            "honor_years_zero": "Masa kerja kurang dari 1 tahun",
+            "honor_refresh": "Perbarui data",
+
             "profile_master_hint": "Data dikelola perusahaan. Hubungi pengelola untuk koreksi.",
             "profile_retry": "Muat ulang",
             "profile_unavailable": "Data belum dapat dimuat. Coba lagi nanti.",
