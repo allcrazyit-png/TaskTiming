@@ -361,20 +361,20 @@ export default function Input() {
 
     return (
         <div className="bg-background-light dark:bg-background-dark text-[#1e293b] dark:text-white min-h-screen flex flex-col" style={{ paddingBottom: footerHeight + 24 }}>
-            {/* Company Banner */}
-            <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-2 px-4 text-center font-bold text-[11px] border-b border-slate-200 dark:border-slate-800 z-[60] relative tracking-[0.3em] uppercase">
-                瑞全企業股份有限公司
-            </div>
-            <div className="bg-white dark:bg-slate-900 border-b-2 border-slate-200 dark:border-slate-800 px-4 min-h-16 flex items-center justify-between gap-2 relative z-30">
-                <div className="flex min-w-0 flex-1 items-center gap-2">
-                    {hasTenure ? <TenureHonor compact hireDate={employeeProfile.data?.['到職日']} /> : <span className="material-symbols-outlined shrink-0 text-2xl text-slate-500">account_circle</span>}
-                    <div className="min-w-0 break-words text-base font-bold text-slate-800 dark:text-slate-100">
-                        {operator}
+            <div className="home-header-content bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 px-4 py-2 flex items-center justify-between gap-2 relative z-30">
+                <div className="home-greeting-group flex min-w-0 flex-1 items-center gap-2">
+                    <FactoryBuddy align="start" employeeId={operator?.match(/\[(.*?)\]/)?.[1] || ''} />
+                    <div className="min-w-0">
+                        <p className="mb-1 text-[11px] font-medium leading-snug tracking-wide text-slate-500 dark:text-slate-400">瑞全企業股份有限公司</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t('report_work')}</span>
+                            <span className="whitespace-nowrap rounded-full bg-slate-100 px-2 py-1 text-xs font-bold text-slate-500 dark:bg-slate-800">早班</span>
+                        </div>
                     </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
-                    <span className="whitespace-nowrap rounded-full bg-slate-100 px-2 py-1 text-sm font-bold text-slate-500 dark:bg-slate-800">早班</span>
-                    <FactoryBuddy employeeId={operator?.match(/\[(.*?)\]/)?.[1] || ''} />
+                <div className="flex min-h-16 min-w-0 max-w-[48%] shrink-0 items-center gap-2 px-1">
+                    {hasTenure && <TenureHonor compact hireDate={employeeProfile.data?.['到職日']} />}
+                    <span className="min-w-0 break-words text-base font-bold leading-snug text-slate-800 dark:text-slate-100">{operator?.replace(/^\[[^\]]*\]\s*/, '')}</span>
                 </div>
             </div>
             {showImagePreview && <ProductImagePreview src={displayProductImage} name={productName} onClose={() => setShowImagePreview(false)} />}

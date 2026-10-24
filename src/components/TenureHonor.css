@@ -1,4 +1,18 @@
 .tenure-honor{--honor:#6383a5;--honor-bg:#f0f6fc;color:var(--honor)}
+.tenure-honor .concept-badge{display:block;width:88px;height:94px;margin:0 auto 8px;overflow:visible;filter:drop-shadow(0 3px 2px #33445520)}
+.tenure-compact .concept-badge{width:26px;height:30px;margin:0;filter:none;flex-shrink:0}
+.tenure-card .concept-sweep{animation:honor-medal-sweep 2.8s ease-in-out 1 both}
+.tenure-card .concept-sparkles{animation:honor-medal-glint 1.4s ease-in-out 2;opacity:.6}
+.tenure-compact .concept-sweep{display:none}
+.tenure-compact .concept-sparkles{opacity:.7}
+.tenure-compact.tenure-gold .concept-sparkles,.tenure-compact.tenure-diamond .concept-sparkles{animation:honor-compact-glint 12s ease-in-out infinite}
+.tenure-compact.tenure-gold .concept-sweep,.tenure-compact.tenure-diamond .concept-sweep{display:block;animation:honor-compact-sweep 12s ease-in-out infinite}
+@keyframes honor-compact-sweep{0%{transform:translateX(-90px)}14%,100%{transform:translateX(240px)}}
+@keyframes honor-compact-glint{0%,16%,100%{opacity:.15}5%,11%{opacity:1}8%{opacity:.4}}
+.tenure-card.tenure-gold:after,.tenure-card.tenure-diamond:after{display:none}
+@keyframes honor-medal-sweep{0%,15%{transform:translateX(-90px)}100%{transform:translateX(240px)}}
+@keyframes honor-medal-glint{0%,100%{opacity:.2}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.tenure-honor .concept-sweep{display:none!important}.tenure-honor .concept-sparkles{animation:none!important}}
 .tenure-bronze{--honor:#a66b41;--honor-bg:#fbf3eb}.tenure-silver{--honor:#718397;--honor-bg:#f2f5f8}.tenure-gold{--honor:#ab7a17;--honor-bg:#fff9e8}.tenure-diamond{--honor:#397d9e;--honor-bg:#edf9ff}
 .tenure-compact{display:flex;align-items:center;flex-shrink:0}.tenure-compact .tenure-medal{width:21px;height:26px}.tenure-card{flex-shrink:0;min-height:196px;position:relative;overflow:hidden;isolation:isolate;width:100%;display:flex;flex-direction:column;align-items:center;border:1px solid color-mix(in srgb,var(--honor) 30%,transparent);border-radius:18px;padding:20px 16px;background:linear-gradient(125deg,var(--honor-bg),#fff 52%,var(--honor-bg));text-align:center}.tenure-card .tenure-medal{width:56px;height:63px;margin-bottom:8px}.tenure-name{font-size:1.2rem;font-weight:900;color:#1e293b}.tenure-label{font-size:1rem;font-weight:700;margin-top:6px}.tenure-detail{font-size:.875rem;color:#64748b;margin-top:4px}.tenure-gold.tenure-card:after,.tenure-diamond.tenure-card:after{content:'';position:absolute;inset:-80%;pointer-events:none;background:linear-gradient(110deg,transparent 43%,#fff9 50%,transparent 57%);transform:translateX(-70%);animation:tenure-shine 1.8s ease-out 1 forwards;z-index:-1}@keyframes tenure-shine{to{transform:translateX(70%)}}.dark .tenure-card{background:linear-gradient(120deg,#1e293b,#253448);border-color:var(--honor)}.dark .tenure-name{color:#f8fafc}.dark .tenure-detail{color:#cbd5e1}.dark .tenure-honor{--honor:#9ab8da}.dark .tenure-bronze{--honor:#dca374}.dark .tenure-silver{--honor:#c3d1e0}.dark .tenure-gold{--honor:#edc76b}.dark .tenure-diamond{--honor:#8bd6f2}@media(prefers-reduced-motion:reduce){.tenure-card:after{animation:none!important;display:none}}
 

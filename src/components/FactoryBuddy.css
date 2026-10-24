@@ -44,3 +44,9 @@
 [aria-labelledby="buddy-picker-title"] .factory-buddy-art { width:48px;height:56px;flex-shrink:0; }
 [aria-labelledby="buddy-picker-title"] button { min-width:0; }
 @media(prefers-reduced-motion:reduce){.pet-motion{animation:none}}
+
+/* Bear and fluffy dog share the approved preview artwork and motion. */
+.soft-head{transform:translate(0,-2px) scale(1.06);transform-origin:160px 195px}
+.soft-body{transform:translate(0,-9px) scale(.86);transform-origin:160px 209px}
+.bear-head{transform-origin:160px 195px;animation:bear-nod 3s ease-in-out both}.penguin-head{transform-origin:160px 205px;animation:penguin-sway 3s ease-in-out both}.penguin-body{transform-origin:160px 264px;animation:penguin-sway 3s ease-in-out both}@keyframes bear-nod{0%,25%,70%,100%{transform:rotate(0)}45%{transform:rotate(5deg)}55%{transform:rotate(-2deg)}}@keyframes penguin-sway{0%,20%,85%,100%{transform:rotate(0)}40%{transform:rotate(-4deg)}65%{transform:rotate(4deg)}}
+@media(prefers-reduced-motion:reduce){.bear-head,.penguin-head,.penguin-body{animation:none}}

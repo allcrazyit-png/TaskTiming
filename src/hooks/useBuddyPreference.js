@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-export const BUDDY_TYPES = ['cat', 'none'];
+export const BUDDY_TYPES = ['cat', 'bear', 'dog', 'none'];
 export function readBuddyPreference(employeeId) {
     if (!employeeId) return 'cat';
     try {

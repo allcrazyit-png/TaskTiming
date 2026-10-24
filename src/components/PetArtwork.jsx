@@ -1,4 +1,6 @@
 import CatBuddyArt from './CatBuddyArt';
-export default function PetArtwork() {
+import NewBuddyArt from './NewBuddyArt';
+export default function PetArtwork({ type = 'cat' }) {
+    if (type === 'bear' || type === 'dog') return <NewBuddyArt species={type} />;
     return <CatBuddyArt />;
 }

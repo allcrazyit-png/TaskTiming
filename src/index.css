@@ -214,9 +214,9 @@ html.text-large {
 }
 
 /* Keep greeting and context quieter than the active employee identity. */
-.home-header-content .home-greeting-group .factory-buddy-art { width: 58px; height: 58px; }
-.home-header-content .home-greeting-group .factory-buddy { margin-left: -4px; }
-.home-header-content .home-greeting-group { gap: 2px; }
+.home-header-content .home-greeting-group .factory-buddy-art { width: 48px; height: 48px; }
+.home-header-content .home-greeting-group .factory-buddy { margin-left: 0; }
+.home-header-content .home-greeting-group { gap: 8px; }
 .home-header-content .home-weather-strip { padding: 7px 0; }
 .home-header-content .home-weather-strip time,
 .home-header-content .home-weather-strip [role="img"] { font-size: .875rem; line-height: 1.5; }

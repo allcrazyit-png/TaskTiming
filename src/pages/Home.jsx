@@ -65,7 +65,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.23.3 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.24.0 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -267,6 +267,7 @@ export default function Home() {
     };
 
     const handleOperatorChange = (e) => {
+        if (selectedOperator) return;
         const value = e.target.value;
         if (!value) {
             setSelectedOperator('');
@@ -453,18 +454,18 @@ export default function Home() {
 
         const confirmLogout = window.confirm(t('confirm_logout'));
         if (confirmLogout) {
-            const match = selectedOperator.match(/\[(.*?)\]/);
-            if (match) {
-                const operatorId = match[1];
-                localStorage.removeItem(`favoriteProducts_${operatorId}`);
-            }
             localStorage.removeItem('savedOperatorId');
             clearTaskTimingSession();
             setSelectedOperator('');
             setOperatorHistory([]);
             setLatestUploadStatus(null);
             setFavoriteProducts([]);
+            setTempOperator(null);
+            setPasswordInput('');
+            setPasswordError(false);
+            setShowPasswordModal(false);
             setShowSettingsPopup(false);
+            navigate('/', { replace: true, state: null });
         }
     };
 
@@ -903,20 +904,17 @@ export default function Home() {
                 </div>
             )}
 
-            {/* Company Banner */}
-            <div className="bg-slate-50 dark:bg-black text-slate-500 dark:text-slate-400 py-1.5 px-4 text-center font-medium text-[11px] border-b border-slate-200 dark:border-slate-800 z-[60] relative tracking-[0.12em]">
-                瑞全企業股份有限公司
-            </div>
             {/* Header Section */}
             <header className="bg-background-light dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 relative z-40">
                 {/* Combined Operator Selector & Personalized Greeting Card */}
-                <div className="home-header-content px-4 pt-1 pb-0">
+                <div className="home-header-content px-4 py-2">
                     <div className="flex flex-col">
                         {/* Row 1: Greeting & Operator Dropdown */}
                         <div className="flex items-center justify-between gap-2">
                             <div className="home-greeting-group flex min-w-0 flex-1 items-center gap-1">
                                 {selectedOperator && <FactoryBuddy align="start" employeeId={noticeEmployeeId} />}
                                 <div className="min-w-0">
+                                    <p className="mb-1 text-[11px] font-medium leading-snug tracking-wide text-slate-500 dark:text-slate-400">瑞全企業股份有限公司</p>
                                     {(() => {
                                         if (!selectedOperator) {
                                             return <h2 className="text-lg font-black text-slate-400 dark:text-slate-500 tracking-wide">{t('login_operator')}</h2>;
@@ -937,8 +935,14 @@ export default function Home() {
                                 </div>
                             </div>
 
-                            {/* Operator Selector Dropdown */}
+                            {/* Operator identity and logged-out employee selection */}
                             <div className="relative min-w-0 max-w-[48%] shrink-0">
+                                {selectedOperator ? (
+                                    <button type="button" onClick={() => setShowSettingsPopup(true)} className="flex min-h-16 items-center gap-2 rounded-xl px-1 text-base font-bold text-slate-800 dark:text-slate-100 focus-visible:ring-2 focus-visible:ring-primary" aria-label={`${selectedOperator} · ${t('settings_title')}`}>
+                                        <TenureHonor compact hireDate={employeeProfile.data?.['到職日']} />
+                                        <span className="min-w-0 break-words text-left text-base font-bold leading-snug">{selectedOperator.replace(/^\[[^\]]*\]\s*/, '')}</span>
+                                    </button>
+                                ) : <>
                                 <span className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2"><TenureHonor compact hireDate={employeeProfile.data?.['到職日']} /></span>
                                 <select
                                     aria-label={t('select_operator')}
@@ -954,6 +958,7 @@ export default function Home() {
                                     ))}
                                 </select>
                                 <svg className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-slate-500 dark:text-slate-400" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                </>}
                             </div>
                         </div>
 
@@ -1254,26 +1259,25 @@ export default function Home() {
 
                             {/* Danger Zone */}
                             <div className="space-y-4 pt-4 mt-2 border-t-2 border-dashed border-slate-200 dark:border-slate-700">
-                                <h3 className="text-sm font-bold text-red-500 flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-[16px]">warning</span>
-                                    {t('danger_zone')}
+                                <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400">
+                                    {t('account_section')}
                                 </h3>
                                 <button
                                     onClick={handleLogoutAndClear}
                                     className="w-full flex items-center justify-center gap-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-2 border-red-200 dark:border-red-800/30 font-bold py-3 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 active:scale-[0.98] transition-all"
                                 >
-                                    <span className="material-symbols-outlined">delete_forever</span>
+                                    <span className="material-symbols-outlined" aria-hidden="true">logout</span>
                                     {t('logout')}
                                 </button>
                                 <p className="text-xs text-center text-slate-400 dark:text-slate-500">
-                                    如果您要更換崗位或是給其他人使用此裝置，請點擊上方按鈕。
+                                    {t('logout_help')}
                                 </p>
                             </div>
 
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.23.3
+                                    Version 1.24.0
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
