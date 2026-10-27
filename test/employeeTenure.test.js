@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { employeeTenure } from '../src/utils/employeeTenure.js';
 const now = new Date('2026-10-24T04:00:00Z');
 test('tier boundaries use completed anniversaries', () => {
-  for (const [date, tier] of [['2026-10-05','new'],['2025-10-25','new'],['2025-10-24','bronze'],['2023-10-24','silver'],['2021-10-24','gold'],['2016-10-24','diamond']]) assert.equal(employeeTenure(date, now).tier, tier);
+  for (const [date, tier] of [['2026-10-05','new'],['2025-10-25','new'],['2025-10-24','bronze'],['2023-10-24','silver'],['2021-10-24','gold'],['2016-10-25','gold'],['2016-10-24','platinum'],['2011-10-25','platinum'],['2011-10-24','diamond'],['2006-10-25','diamond'],['2006-10-24','legend'],['2000-01-01','legend']]) assert.equal(employeeTenure(date, now).tier, tier);
 });
 test('missing, invalid and future dates never award a tier', () => {
   for (const date of ['',null,'2025-02-29','2026-10-25','bad']) assert.equal(employeeTenure(date, now), null);
