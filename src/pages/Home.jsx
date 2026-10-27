@@ -69,7 +69,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.27.0 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.27.1 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -1158,7 +1158,7 @@ export default function Home() {
             {/* Settings Popup */}
             {showSettingsPopup && selectedOperator && (
                 <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm sm:p-4">
-                    <div className="bg-white dark:bg-slate-900 w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col transform transition-all animate-[slideUp_0.3s_ease-out]">
+                    <div className="bg-white dark:bg-slate-900 w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col">
                         <div className="flex justify-between items-center p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                 <span className="material-symbols-outlined text-slate-500">settings</span>
@@ -1171,7 +1171,7 @@ export default function Home() {
                                 <span className="material-symbols-outlined">close</span>
                             </button>
                         </div>
-                        <div className="p-5 flex flex-col gap-6 overflow-y-auto max-h-[70vh] [&>*]:shrink-0">
+                        <div className="settings-popup-scroll p-5 flex flex-col gap-6 max-h-[70vh] [&>*]:shrink-0">
 
                             {/* Profile Section */}
                             <TenureHonor hireDate={employeeProfile.data?.['到職日']} name={selectedOperator} />
@@ -1283,7 +1283,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.27.0
+                                    Version 1.27.1
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity

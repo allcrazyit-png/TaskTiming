@@ -221,3 +221,12 @@ html.text-large {
 .home-header-content .home-weather-strip time,
 .home-header-content .home-weather-strip [role="img"] { font-size: .875rem; line-height: 1.5; }
 .home-header-content .home-weather-icon { width: 23px; height: 23px; }
+
+/* Reserve scrollbar width on the first layout, including desktop Safari.
+   Keep overflow:scroll as the fallback for browsers without scrollbar-gutter. */
+.settings-popup-scroll {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+  overflow-anchor: none;
+  overscroll-behavior: contain;
+}

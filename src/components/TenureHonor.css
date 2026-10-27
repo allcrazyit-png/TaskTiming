@@ -1,5 +1,5 @@
 .tenure-honor{--honor:#446e61;--honor-bg:#f0f7f3;color:var(--honor)}
-.tenure-honor .concept-badge{display:block;width:94px;height:94px;margin:0 auto 8px;object-fit:contain}
+.tenure-badge-placeholder,.tenure-honor .concept-badge{display:block;width:94px;height:94px;margin:0 auto 8px;object-fit:contain}
 .tenure-compact .concept-badge{width:30px;height:30px;margin:0;flex-shrink:0}
 .tenure-platinum{--honor:#526781;--honor-bg:#f0f3f8}
 .tenure-legend{--honor:#7d5a23;--honor-bg:#faf5e9}
@@ -9,3 +9,5 @@
 .dark .tenure-new{--honor:#b6d8c9}
 .dark .tenure-platinum{--honor:#d2dceb}
 .dark .tenure-legend{--honor:#f2d799}
+
+.tenure-name,.tenure-label,.tenure-detail{line-height:1.5}
