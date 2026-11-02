@@ -2,7 +2,7 @@ export const WOMEN_DUTY_ROSTER = [
   '林祐香', '何淑如', '陳玉薇', '楊淑婷', '黃舒嬪', '陳麗如', '何佩函', '潘麗芳', '杜氏美蓮', '阮金霞',
 ];
 
-export const MEN_DUTY_ROSTER = ['阿里', '施聖浩', '阿杜', '楊子賢', '志丹'];
+export const MEN_DUTY_ROSTER = ['阿里', '施聖浩', '阿杜', '楊子賢', '志丹', '楊英俊', '鄭廷泰'];
 
 // Confirmed employee IDs are separate from the numbered rotation order.
 export const DUTY_ROSTER_EMPLOYEE_IDS = {
@@ -21,6 +21,8 @@ export const DUTY_ROSTER_EMPLOYEE_IDS = {
   '阿杜': '94',
   '楊子賢': '58',
   '志丹': '84',
+  '楊英俊': '67',
+  '鄭廷泰': '64',
 };
 
 export function getDutyRosterEmployeeId(name) {
@@ -37,6 +39,8 @@ const DUTY_ROSTER_COUNTRY_FLAGS = {
   '阿里': '🇮🇩',
   '阿杜': '🇮🇩',
   '志丹': '🇮🇩',
+  '楊英俊': '🇻🇳',
+  '鄭廷泰': '🇻🇳',
 };
 
 export function getDutyRosterDisplayName(name) {
@@ -51,6 +55,8 @@ const WOMEN_LEGACY_LENGTH = WOMEN_DUTY_ROSTER.length - 1;
 const WOMEN_EFFECTIVE_INDEX = WOMEN_DUTY_ROSTER.indexOf('楊淑婷');
 const MEN_ROSTER_EXPANDED_MONDAY = new Date(2026, 7, 24);
 const MEN_ROSTER_REMOVAL_MONDAY = new Date(2026, 8, 28);
+const MEN_NEW_MEMBERS_MONDAY = new Date(2026, 10, 9);
+const MEN_PREVIOUS_ROSTER_LENGTH = 5;
 const MEN_REMOVAL_INDEX = MEN_DUTY_ROSTER.indexOf('志丹');
 
 function startOfLocalDay(date) {
@@ -101,10 +107,9 @@ function getMenAssignment(weekStart) {
     return { name, index: MEN_DUTY_ROSTER.indexOf(name) };
   }
 
-  const index = modulo(
-    MEN_REMOVAL_INDEX + weekOffsetBetween(weekStart, MEN_ROSTER_REMOVAL_MONDAY),
-    MEN_DUTY_ROSTER.length,
-  );
+  const index = weekStart < MEN_NEW_MEMBERS_MONDAY
+    ? modulo(MEN_REMOVAL_INDEX + weekOffsetBetween(weekStart, MEN_ROSTER_REMOVAL_MONDAY), MEN_PREVIOUS_ROSTER_LENGTH)
+    : modulo(weekOffsetBetween(weekStart, MEN_NEW_MEMBERS_MONDAY), MEN_DUTY_ROSTER.length);
   return { name: MEN_DUTY_ROSTER[index], index };
 }
 
