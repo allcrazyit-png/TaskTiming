@@ -11,5 +11,5 @@ export function employeeTenure(hireDate, now = new Date()) {
   const anniversaryDay = Math.min(day, new Date(Date.UTC(today[0], month, 0)).getUTCDate());
   let years = today[0] - year;
   if (today[1] < month || (today[1] === month && today[2] < anniversaryDay)) years--;
-  return { years, tier: years >= 10 ? 'diamond' : years >= 5 ? 'gold' : years >= 3 ? 'silver' : years >= 1 ? 'bronze' : 'new' };
+  return { years, tier: years >= 20 ? 'legend' : years >= 15 ? 'diamond' : years >= 10 ? 'platinum' : years >= 5 ? 'gold' : years >= 3 ? 'silver' : years >= 1 ? 'bronze' : 'new' };
 }
