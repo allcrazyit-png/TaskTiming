@@ -23,7 +23,7 @@ test('uses the confirmed employee IDs, separately from roster positions', () => 
     '林祐香': '26', '何淑如': '16', '陳玉薇': '33', '楊淑婷': '21', '黃舒嬪': '39',
     '陳麗如': '20', '何佩函': '36', '潘麗芳': '31', '杜氏美蓮': '15', '阮金霞': '27',
     '阿里': '77', '施聖浩': '32', '阿杜': '94', '楊子賢': '58', '志丹': '84',
-    '楊英俊': '67', '鄭廷泰': '64',
+    '楊英俊': '67',
   };
   const people = [...WOMEN_DUTY_ROSTER, ...MEN_DUTY_ROSTER];
 
@@ -35,15 +35,17 @@ test('uses the confirmed employee IDs, separately from roster positions', () => 
   assert.equal(getDutyRosterEmployeeId('毆吉'), null);
 });
 
-test('adds the Vietnamese men after the existing rotation without changing this week or next week', () => {
-  assert.deepEqual(MEN_DUTY_ROSTER.slice(-2), ['楊英俊', '鄭廷泰']);
+test('removes 鄭廷泰 and wraps after 楊英俊 without shifting the current or next week', () => {
+  assert.deepEqual(MEN_DUTY_ROSTER, ['阿里', '施聖浩', '阿杜', '楊子賢', '志丹', '楊英俊']);
   assert.equal(getDutyRosterDisplayName('楊英俊'), '楊英俊 🇻🇳');
-  assert.equal(getDutyRosterDisplayName('鄭廷泰'), '鄭廷泰 🇻🇳');
   assert.equal(getWeeklyDutyRoster(new Date(2026, 10, 2)).current.men, '志丹');
   assert.equal(getWeeklyDutyRoster(new Date(2026, 10, 2)).next.men, '阿里');
+  const roster = getWeeklyDutyRoster(new Date(2026, 10, 12));
+  assert.equal(roster.current.men, '阿里');
+  assert.equal(roster.next.men, '施聖浩');
   assert.equal(getWeeklyDutyRoster(new Date(2026, 11, 14)).current.men, '楊英俊');
-  assert.equal(getWeeklyDutyRoster(new Date(2026, 11, 21)).current.men, '鄭廷泰');
-  assert.equal(getWeeklyDutyRoster(new Date(2026, 11, 28)).current.men, '阿里');
+  assert.equal(getWeeklyDutyRoster(new Date(2026, 11, 21)).current.men, '阿里');
+  assert.equal(getWeeklyDutyRoster(new Date(2026, 11, 28)).current.men, '施聖浩');
 });
 
 test('removes 毆吉 while preserving the current men assignment', () => {

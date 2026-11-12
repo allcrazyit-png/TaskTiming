@@ -2,7 +2,7 @@ export const WOMEN_DUTY_ROSTER = [
   '林祐香', '何淑如', '陳玉薇', '楊淑婷', '黃舒嬪', '陳麗如', '何佩函', '潘麗芳', '杜氏美蓮', '阮金霞',
 ];
 
-export const MEN_DUTY_ROSTER = ['阿里', '施聖浩', '阿杜', '楊子賢', '志丹', '楊英俊', '鄭廷泰'];
+export const MEN_DUTY_ROSTER = ['阿里', '施聖浩', '阿杜', '楊子賢', '志丹', '楊英俊'];
 
 // Confirmed employee IDs are separate from the numbered rotation order.
 export const DUTY_ROSTER_EMPLOYEE_IDS = {
@@ -22,7 +22,6 @@ export const DUTY_ROSTER_EMPLOYEE_IDS = {
   '楊子賢': '58',
   '志丹': '84',
   '楊英俊': '67',
-  '鄭廷泰': '64',
 };
 
 export function getDutyRosterEmployeeId(name) {
@@ -40,7 +39,6 @@ const DUTY_ROSTER_COUNTRY_FLAGS = {
   '阿杜': '🇮🇩',
   '志丹': '🇮🇩',
   '楊英俊': '🇻🇳',
-  '鄭廷泰': '🇻🇳',
 };
 
 export function getDutyRosterDisplayName(name) {
