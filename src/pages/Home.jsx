@@ -6,6 +6,7 @@ import TenureHonor from '../components/TenureHonor';
 import useEmployeeProfile from '../hooks/useEmployeeProfile';
 import FactoryBuddy from '../components/FactoryBuddy';
 import ProductImagePreview from '../components/ProductImagePreview';
+import NoticeCards from '../components/NoticeCards';
 import useNoticeInbox from '../hooks/useNoticeInbox';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -69,7 +70,7 @@ export default function Home() {
     const { t, i18n } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    console.log("VERSION 1.27.2 LOADED - Supabase production records and battle report");
+    console.log("VERSION 1.28.0 LOADED - Supabase production records and battle report");
     const [products, setProducts] = useState(() => readCache(CACHE_KEY_PRODUCTS) || []);
     const [loading, setLoading] = useState(() => !readCache(CACHE_KEY_PRODUCTS));
     const [filters, setFilters] = useState({
@@ -81,7 +82,7 @@ export default function Home() {
     const [employees, setEmployees] = useState(() => readCache(CACHE_KEY_EMPLOYEES) || []);
     const [selectedOperator, setSelectedOperator] = useState('');
     const noticeEmployeeId = selectedOperator.match(/\[(.*?)\]/)?.[1] || '';
-    const { unreadCount } = useNoticeInbox(noticeEmployeeId);
+    const { notices, isUnread, markRead, unreadCount } = useNoticeInbox(noticeEmployeeId);
     const [operatorHistory, setOperatorHistory] = useState([]); // Added state for today's history
     const [favoriteProducts, setFavoriteProducts] = useState([]); // Store array of favorite `品番`
     const [favoriteToRemove, setFavoriteToRemove] = useState(null);
@@ -975,6 +976,8 @@ export default function Home() {
             {/* Main Content Area */}
             <main className="flex-1 p-4 pb-24 space-y-6">
 
+                <NoticeCards notices={notices.filter(isUnread)} isUnread={isUnread} markRead={markRead} />
+
                 {/* 常用產品（主要入口） */}
                 {favoriteProducts.length > 0 ? (
                     <section className="space-y-4">
@@ -1283,7 +1286,7 @@ export default function Home() {
                             {/* Version Info */}
                             <div className="mt-4 pb-2 text-center">
                                 <p className="text-[10px] font-bold text-slate-400 dark:text-slate-600 tracking-widest uppercase">
-                                    Version 1.27.2
+                                    Version 1.28.0
                                 </p>
                                 <p className="text-[9px] text-slate-300 dark:text-slate-700 mt-1">
                                     Built by Antigravity
