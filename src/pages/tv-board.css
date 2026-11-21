@@ -1,0 +1,90 @@
+/* TV board (Tesla black): pure black, white type, one red accent.
+   Ported from tv-board-preview.html; every rule is scoped to .tv-root. */
+.tv-root {
+  --tv-bg: #000; --tv-fg: #fff; --tv-fg2: rgba(255,255,255,.55); --tv-fg3: rgba(255,255,255,.32);
+  --tv-rule: rgba(255,255,255,.14); --tv-accent: #e82127; --tv-bar: rgba(255,255,255,.12); --tv-barfill: #fff;
+  position: fixed; inset: 0; overflow: hidden; background: var(--tv-bg); color: var(--tv-fg);
+  font-family: -apple-system, "SF Pro Display", "Helvetica Neue", "Segoe UI", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+  -webkit-font-smoothing: antialiased; cursor: none;
+}
+.tv-root * { box-sizing: border-box; margin: 0; }
+.tv-root .stage { position: absolute; inset: 0; margin: auto; aspect-ratio: 16 / 9;
+  width: min(100vw, calc(100vh * 16 / 9)); container-type: size; }
+.tv-root .screen { position: absolute; inset: 0; padding: 6cqh 5cqw 0; display: grid; grid-template-rows: auto 1fr auto; }
+
+/* full-screen messages: connecting / key error */
+.tv-root .message { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2cqh; text-align: center; padding: 0 8cqw; }
+.tv-root .message .big { font-size: 6cqh; font-weight: 400; }
+.tv-root .message .big.hot { color: var(--tv-accent); }
+.tv-root .message .small { font-size: 2.6cqh; color: var(--tv-fg2); font-weight: 300; }
+
+/* top bar */
+.tv-root .top { display: flex; justify-content: space-between; align-items: baseline; font-size: 2.2cqh; color: var(--tv-fg2); font-weight: 400; letter-spacing: .02em; }
+.tv-root .top .brand { color: var(--tv-fg); font-weight: 500; letter-spacing: .3em; font-size: 2cqh; }
+.tv-root .top .live { display: inline-flex; align-items: center; gap: .6cqw; }
+.tv-root .top .live i { width: 1cqh; height: 1cqh; border-radius: 50%; background: var(--tv-fg3); }
+.tv-root .top .live.ok i { background: #30d158; }
+.tv-root .top .live.stale { color: var(--tv-accent); }
+.tv-root .top .live.stale i { background: var(--tv-accent); }
+
+.tv-root .main { display: grid; min-height: 0; padding: 4cqh 0 3cqh; column-gap: 5cqw; }
+.tv-root .with-notice .main { grid-template-columns: 1.05fr 1fr; }
+.tv-root .no-notice .main { grid-template-columns: 1fr; }
+
+.tv-root .eyebrow { font-size: 1.9cqh; font-weight: 500; letter-spacing: .18em; color: var(--tv-fg2); text-transform: uppercase; }
+.tv-root .eyebrow em { font-style: normal; color: var(--tv-fg3); letter-spacing: .04em; text-transform: none; margin-left: .8cqw; font-weight: 400; }
+
+/* notice */
+.tv-root .notice { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--tv-rule); padding-right: 5cqw; }
+.tv-root .notice .eyebrow { display: flex; justify-content: space-between; color: var(--tv-accent); }
+.tv-root .notice .eyebrow .pg { color: var(--tv-fg2); font-variant-numeric: tabular-nums; }
+.tv-root .notice-body { flex: 1; min-height: 0; overflow: hidden; margin-top: 3cqh;
+  -webkit-mask-image: linear-gradient(#000 88%, transparent); mask-image: linear-gradient(#000 88%, transparent); }
+.tv-root .zh { font-size: 5.4cqh; font-weight: 500; line-height: 1.38; letter-spacing: .01em; white-space: pre-line; }
+.tv-root .tr { font-size: 2.5cqh; font-weight: 300; line-height: 1.5; color: var(--tv-fg2); white-space: pre-line; margin-top: 3cqh; }
+.tv-root .tr b { display: block; font-size: 1.5cqh; font-weight: 500; letter-spacing: .16em; color: var(--tv-fg3); margin-bottom: .6cqh; }
+.tv-root .ticks { display: flex; gap: .6cqw; margin-top: 2cqh; }
+.tv-root .ticks span { flex: 1; height: .35cqh; background: var(--tv-bar); border-radius: 1px; overflow: hidden; }
+.tv-root .ticks span b { display: block; height: 100%; width: 0; background: var(--tv-fg); }
+.tv-root .ticks span.done b { width: 100%; }
+
+/* output */
+.tv-root .output { display: flex; flex-direction: column; min-height: 0; }
+.tv-root .hero { font-weight: 200; line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums;
+  font-size: 19cqh; margin: 2cqh 0 0; }
+.tv-root .hero small { font-size: 4cqh; font-weight: 300; letter-spacing: 0; color: var(--tv-fg2); margin-left: 1cqw; }
+.tv-root .no-notice .hero { font-size: 24cqh; }
+.tv-root .no-notice .kpis { margin-top: 2cqh; }
+.tv-root .no-notice .mile { padding-top: 2cqh; }
+.tv-root .kpis { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 3.4cqh; border-top: 1px solid var(--tv-rule); }
+.tv-root .kpi { padding: 2.2cqh 0 0; }
+.tv-root .kpi + .kpi { padding-left: 2cqw; border-left: 1px solid var(--tv-rule); }
+.tv-root .kpi .v { font-size: 5.6cqh; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.tv-root .kpi .v small { font-size: 2.2cqh; color: var(--tv-fg2); margin-left: .3cqw; }
+.tv-root .kpi .k { font-size: 1.9cqh; color: var(--tv-fg2); margin-top: .4cqh; }
+.tv-root .kpi .k em { font-style: normal; color: var(--tv-fg3); display: block; font-size: 1.4cqh; }
+.tv-root .no-notice .kpi .v { font-size: 6.6cqh; }
+.tv-root .no-notice .kpi .k { font-size: 2.4cqh; }
+
+/* milestone */
+.tv-root .mile { margin-top: auto; padding-top: 3cqh; }
+.tv-root .mile .line { display: flex; justify-content: space-between; align-items: baseline; margin-top: 1.4cqh; font-variant-numeric: tabular-nums; }
+.tv-root .mile .line .now { font-size: 3.6cqh; font-weight: 300; }
+.tv-root .mile .line .goal { font-size: 1.9cqh; color: var(--tv-fg2); }
+.tv-root .track { position: relative; height: .5cqh; background: var(--tv-bar); margin-top: 1.4cqh; border-radius: 1px; }
+.tv-root .track b { position: absolute; inset: 0 auto 0 0; background: var(--tv-barfill); border-radius: 1px; }
+.tv-root .marks { display: flex; justify-content: space-between; margin-top: 1cqh; font-size: 1.5cqh; color: var(--tv-fg3); font-variant-numeric: tabular-nums; }
+.tv-root .marks .done { color: var(--tv-fg); }
+
+/* bottom strip: defects + duty */
+.tv-root .strip { display: grid; grid-template-columns: 1.3fr 1fr; border-top: 1px solid var(--tv-rule); padding: 2.6cqh 0 3.4cqh; column-gap: 5cqw; }
+.tv-root .row { display: flex; align-items: baseline; gap: 3cqw; margin-top: 1.2cqh; }
+.tv-root .cell .v { font-size: 4.4cqh; font-weight: 300; font-variant-numeric: tabular-nums; }
+.tv-root .cell .v.hot { color: var(--tv-accent); }
+.tv-root .cell .k { font-size: 1.7cqh; color: var(--tv-fg2); }
+.tv-root .cell .k em { font-style: normal; color: var(--tv-fg3); font-size: 1.3cqh; display: block; }
+.tv-root .divider { width: 1px; align-self: stretch; background: var(--tv-rule); }
+.tv-root .duty .n { font-size: 3.8cqh; font-weight: 400; }
+.tv-root .duty .n small { font-size: 1.7cqh; color: var(--tv-fg3); margin-left: .4cqw; font-variant-numeric: tabular-nums; }
+.tv-root .duty .k { font-size: 1.7cqh; color: var(--tv-fg2); }
