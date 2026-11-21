@@ -52,6 +52,65 @@ export async function fetchTaskTimingBattleReport({
   return mapTaskTimingBattleReport(await response.json());
 }
 
+export class PublicBoardKeyError extends Error {
+  constructor(message = 'Invalid board key') {
+    super(message);
+    this.name = 'PublicBoardKeyError';
+  }
+}
+
+const text = value => String(value ?? '').trim();
+
+export function mapPublicBoard(payload = {}) {
+  const notices = Array.isArray(payload.notices) ? payload.notices : [];
+  return {
+    today: text(payload.today),
+    todayGoodCount: asNumber(payload.today_good_count),
+    todayOperators: asNumber(payload.today_operator_count),
+    avgEfficiency: asNumber(payload.avg_efficiency),
+    todayRecordCount: asNumber(payload.today_record_count),
+    cumulativeTotal: asNumber(payload.cumulative_total),
+    todayDefects: {
+      missing: asNumber(payload.today_defect_missing),
+      deform: asNumber(payload.today_defect_deform),
+      appearance: asNumber(payload.today_defect_appearance),
+      other: asNumber(payload.today_defect_other),
+    },
+    notices: notices
+      .map(notice => ({ zh: text(notice?.content), vi: text(notice?.content_vi), id: text(notice?.content_id) }))
+      .filter(notice => notice.zh),
+  };
+}
+
+// The TV screen has no employee login; it calls the key-checked RPC as anon.
+export async function fetchPublicBoard({
+  key,
+  signal,
+  supabaseUrl = SUPABASE_URL,
+  publishableKey = SUPABASE_PUBLISHABLE_KEY,
+} = {}) {
+  if (!key) throw new PublicBoardKeyError('Board key missing from URL');
+  if (!supabaseUrl || !publishableKey) {
+    throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_PUBLISHABLE_KEY');
+  }
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/task_timing_public_board`, {
+    method: 'POST',
+    signal,
+    headers: {
+      apikey: publishableKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_key: key }),
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    if (body?.code === '28000') throw new PublicBoardKeyError();
+    throw new Error(`Public board request failed: ${response.status}`);
+  }
+  return mapPublicBoard(await response.json());
+}
+
 
 export function getActiveTaskTimingNotices(notices, today) {
   return (Array.isArray(notices) ? notices : []).filter(notice =>
