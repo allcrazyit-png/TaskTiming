@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import usePublicBoard from '../hooks/usePublicBoard';
 import useScreenWakeLock from '../hooks/useScreenWakeLock';
 import { getDutyRosterEmployeeId, getWeeklyDutyRoster } from '../utils/dutyRoster';
-import { formatClock, getMilestoneProgress, getNoticeDisplayMs, nextNoticeIndex, TV_MILESTONES, TV_NOTICE_HOLD_MS } from '../utils/tvBoard';
+import { formatClock, getMilestoneProgress, getNoticeDisplayMs, nextNoticeIndex, TV_NOTICE_HOLD_MS } from '../utils/tvBoard';
 import './tv-board.css';
 
 const fmt = n => Number(n).toLocaleString('en-US');
@@ -186,7 +186,6 @@ export default function TvBoard() {
                                 <span className="goal">{mile.allDone ? zh('tv_all_done') : zh('tv_to_next', { target: kfmt(mile.next), remaining: fmt(mile.remaining) })}</span>
                             </div>
                             <div className="track"><b style={{ width: `${mile.percent}%` }} /></div>
-                            <div className="marks">{TV_MILESTONES.map(m => <span key={m} className={mile.reached.includes(m) ? 'done' : ''}>{kfmt(m)}</span>)}</div>
                         </div>
                     </section>
                 </div>
