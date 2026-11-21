@@ -94,7 +94,8 @@ function NoticePanel({ notices, label }) {
             </div>
             <div className="ticks">
                 {notices.map((n, j) => (
-                    <span key={j} className={j < current ? 'done' : ''}><b ref={j === current ? barRef : undefined} /></span>
+                    // Keyed by cycle so every rotation starts from fresh ticks (no leftover inline width).
+                    <span key={`${cycle}-${j}`} className={j < current ? 'done' : ''}><b ref={j === current ? barRef : undefined} /></span>
                 ))}
             </div>
         </section>
