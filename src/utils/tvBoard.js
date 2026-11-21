@@ -50,3 +50,8 @@ export function msUntilNextReload(now, hour = TV_RELOAD_HOUR) {
   if (target <= now) target.setDate(target.getDate() + 1);
   return target - now;
 }
+
+const pad2 = n => String(n).padStart(2, '0');
+export function formatClock(date) {
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
+}

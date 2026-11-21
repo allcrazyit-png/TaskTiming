@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import usePublicBoard from '../hooks/usePublicBoard';
 import useScreenWakeLock from '../hooks/useScreenWakeLock';
 import { getDutyRosterEmployeeId, getWeeklyDutyRoster } from '../utils/dutyRoster';
-import { getMilestoneProgress, getNoticeDisplayMs, nextNoticeIndex, TV_MILESTONES, TV_NOTICE_HOLD_MS } from '../utils/tvBoard';
+import { formatClock, getMilestoneProgress, getNoticeDisplayMs, nextNoticeIndex, TV_MILESTONES, TV_NOTICE_HOLD_MS } from '../utils/tvBoard';
 import './tv-board.css';
 
 const fmt = n => Number(n).toLocaleString('en-US');
@@ -40,6 +40,16 @@ function useNow(intervalMs) {
         return () => clearInterval(timer);
     }, [intervalMs]);
     return now;
+}
+
+// Ticks every second on its own so the rest of the board does not redraw each second.
+function Clock({ zh }) {
+    const now = useNow(1_000);
+    return (
+        <span className="clock">
+            {now.getMonth() + 1} 月 {now.getDate()} 日{GAP}{zh('tv_weekday', { day: zh(`tv_day_${now.getDay()}`) })}{GAP}{formatClock(now)}
+        </span>
+    );
 }
 
 function Eyebrow({ label, children }) {
@@ -155,7 +165,7 @@ export default function TvBoard() {
             <div className={`screen ${hasNotices ? 'with-notice' : 'no-notice'}`}>
                 <div className="top">
                     <span className="brand">{zh('tv_brand')}</span>
-                    <span>{now.getMonth() + 1} 月 {now.getDate()} 日{GAP}{zh('tv_weekday', { day: zh(`tv_day_${now.getDay()}`) })}{GAP}{hhmm(now)}</span>
+                    <Clock zh={zh} />
                     <span className={`live ${stale ? 'stale' : 'ok'}`}><i />{zh(stale ? 'tv_stale' : 'tv_live', { time })}</span>
                 </div>
 

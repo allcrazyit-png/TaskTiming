@@ -88,3 +88,6 @@
 .tv-root .duty .n { font-size: 3.8cqh; font-weight: 400; }
 .tv-root .duty .n small { font-size: 1.7cqh; color: var(--tv-fg3); margin-left: .4cqw; font-variant-numeric: tabular-nums; }
 .tv-root .duty .k { font-size: 1.7cqh; color: var(--tv-fg2); }
+
+/* fixed-width digits so the ticking seconds do not shift the top bar */
+.tv-root .top .clock { font-variant-numeric: tabular-nums; }

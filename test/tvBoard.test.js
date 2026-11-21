@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { PublicBoardKeyError } from '../src/services/taskTimingRecords.js';
 import {
-  initialBoardState, reduceBoardState, getMilestoneProgress, nextNoticeIndex, getNoticeDisplayMs, msUntilNextReload,
+  initialBoardState, reduceBoardState, getMilestoneProgress, nextNoticeIndex, getNoticeDisplayMs, msUntilNextReload, formatClock,
   TV_REFRESH_MS, TV_NOTICE_ROTATE_MS, TV_NOTICE_HOLD_MS, TV_RELOAD_HOUR, TV_MILESTONES,
 } from '../src/utils/tvBoard.js';
 
@@ -63,4 +63,9 @@ test('next reload is the coming 04:00', () => {
   assert.equal(msUntilNextReload(new Date('2026-11-21T03:00:00')), 60 * 60 * 1000);
   assert.equal(msUntilNextReload(new Date('2026-11-21T04:00:00')), 24 * 60 * 60 * 1000);
   assert.equal(msUntilNextReload(new Date('2026-11-21T22:30:00')), 5.5 * 60 * 60 * 1000);
+});
+
+test('clock shows hours, minutes and seconds with leading zeros', () => {
+  assert.equal(formatClock(new Date('2026-11-21T09:05:07')), '09:05:07');
+  assert.equal(formatClock(new Date('2026-11-21T15:30:59')), '15:30:59');
 });
