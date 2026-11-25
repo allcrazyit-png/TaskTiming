@@ -5,6 +5,7 @@ import usePublicBoard from '../hooks/usePublicBoard';
 import useScreenWakeLock from '../hooks/useScreenWakeLock';
 import { getDutyRosterEmployeeId, getWeeklyDutyRoster } from '../utils/dutyRoster';
 import { formatClock, getMilestoneProgress, getNoticeDisplayMs, nextNoticeIndex, TV_NOTICE_HOLD_MS } from '../utils/tvBoard';
+import TvNews from '../components/TvNews';
 import './tv-board.css';
 
 const fmt = n => Number(n).toLocaleString('en-US');
@@ -211,6 +212,7 @@ export default function TvBoard() {
                         </div>
                     </div>
                 </div>
+                <TvNews preview={Boolean(preview) && params.get('news') !== 'off'} />
             </div>
         </div></div>
     );
