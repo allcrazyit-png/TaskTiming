@@ -115,9 +115,11 @@
 .tv-root .cell.key-defect .k em span + span::before { content: none; }
 .tv-root .cell.key-defect.alerting { margin: -1.2cqh 0 -1.2cqh -1.2cqw; padding: 1.2cqh 1.2cqw;
   border: .3cqh solid var(--tv-accent); border-radius: .8cqh; background: rgba(232,33,39,.14); }
-.tv-root .cell.key-defect .action { margin-top: .8cqh; font-size: 2.4cqh; font-weight: 600; color: #ff5a5f; white-space: nowrap; }
-.tv-root .cell.key-defect .action em { display: block; font-style: normal; font-weight: 400; font-size: 1.9cqh; color: #ff8a8d; }
 .tv-root .cell.key-defect.flash { animation: tv-missing-flash 1s step-end infinite; }
 @keyframes tv-missing-flash { 50% { background: var(--tv-accent); } }
-.tv-root .cell.key-defect.flash .v, .tv-root .cell.key-defect.flash .action, .tv-root .cell.key-defect.flash .action em { animation: tv-missing-text 1s step-end infinite; }
+.tv-root .cell.key-defect.flash .v { animation: tv-missing-text 1s step-end infinite; }
 @keyframes tv-missing-text { 50% { color: #fff; } }
+/* The action sits on the defects heading line so the alert never makes the strip taller. */
+.tv-root .strip .eyebrow:has(.missing-action) { display: flex; justify-content: space-between; align-items: baseline; gap: 2cqw; }
+.tv-root .missing-action { color: #ff5a5f; font-size: 2.6cqh; font-weight: 600; letter-spacing: .02em; text-transform: none; white-space: nowrap; }
+.tv-root .missing-action em { font-style: normal; font-weight: 400; font-size: 2cqh; color: #ff8a8d; margin-left: .8cqw; }

@@ -57,7 +57,6 @@ function MissingCell({ count, zh, vi, id }) {
         <div className={`cell key-defect ${alerting ? 'alerting' : ''}`} ref={cellRef} role={alerting ? 'alert' : undefined}>
             <div className={`v ${alerting ? 'hot' : ''}`}>{fmt(count)}</div>
             <div className="k">{zh(key)}<em><span>{vi(key)}</span><span>{id(key)}</span></em></div>
-            {alerting && <div className="action">{zh('tv_missing_action')}<em>{vi('tv_missing_action')} · {id('tv_missing_action')}</em></div>}
         </div>
     );
 }
@@ -218,7 +217,9 @@ export default function TvBoard() {
 
                 <div className="strip">
                     <div>
-                        <Eyebrow label={L('tv_defects')} />
+                        <Eyebrow label={L('tv_defects')}>
+                            {d.missing > 0 && <span className="missing-action">{zh('tv_defect_missing')}：{zh('tv_missing_action')}<em>{vi('tv_missing_action')} · {id('tv_missing_action')}</em></span>}
+                        </Eyebrow>
                         <div className="row">
                             <MissingCell count={d.missing} zh={zh} vi={vi} id={id} />
                             <span className="divider" />
