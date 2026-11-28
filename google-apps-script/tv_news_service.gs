@@ -20,7 +20,7 @@ function doGet(){
  items.push({title,source:feed[1],publishedAt:new Date(date).toISOString()});
  });
  }catch(e){}});
- const unique=items.sort((a,b)=>Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).filter((item,i,all)=>all.findIndex(other=>other.title===item.title)===i).slice(0,6);
+ const unique=items.sort((a,b)=>Date.parse(b.publishedAt)-Date.parse(a.publishedAt)).filter((item,i,all)=>all.findIndex(other=>other.title===item.title)===i).slice(0,10);
  value=unique.length?JSON.stringify({fetchedAt:new Date(now).toISOString(),items:unique}):props.getProperty('backup')||JSON.stringify({fetchedAt:new Date(now).toISOString(),items:[]});
  if(unique.length)props.setProperty('backup',value);
  cache.put('news',value,3600);

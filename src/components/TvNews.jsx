@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NEWS_REFRESH_MS, validNews } from '../utils/tvNews';
+import { NEWS_REFRESH_MS, NEWS_ROTATE_MS, validNews } from '../utils/tvNews';
 
 const endpoint = import.meta.env.VITE_TV_NEWS_URL || '';
 const cacheKey = `tvNews:v1:${endpoint}`;
@@ -16,7 +16,7 @@ export default function TvNews({ preview = false }) {
     const [payload, setPayload] = useState(() => preview ? demo() : readCache());
     const [tick, setTick] = useState(0);
     useEffect(() => {
-        const timer = setInterval(() => setTick(n => n + 1), 20_000);
+        const timer = setInterval(() => setTick(n => n + 1), NEWS_ROTATE_MS);
         return () => clearInterval(timer);
     }, []);
     useEffect(() => {
