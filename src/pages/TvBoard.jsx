@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import usePublicBoard from '../hooks/usePublicBoard';
 import useScreenWakeLock from '../hooks/useScreenWakeLock';
+import useTvWeather from '../hooks/useTvWeather';
+import { TV_RAIN_ALERT_PERCENT } from '../utils/tvWeather';
 import { getDutyRosterEmployeeId, getWeeklyDutyRoster } from '../utils/dutyRoster';
 import { formatClock, getNoticeDisplayMs, nextNoticeIndex, TV_NOTICE_HOLD_MS } from '../utils/tvBoard';
 import TvNews from '../components/TvNews';
@@ -153,6 +155,11 @@ export default function TvBoard() {
     }, [preview, previewMissing, live]);
     const now = useNow(10_000);
     useScreenWakeLock();
+    const liveWeather = useTvWeather();
+    // Dev-only override for checking the rain colour: #/tv?preview=two&temp=31&rain=70
+    const weather = preview && params.get('rain') != null
+        ? { temp: Number(params.get('temp') ?? 30), rain: Number(params.get('rain')) }
+        : liveWeather;
 
     const { i18n } = useTranslation();
     const zh = i18n.getFixedT('zh'), vi = i18n.getFixedT('vi'), id = i18n.getFixedT('id');
@@ -199,7 +206,14 @@ export default function TvBoard() {
                 <div className="top">
                     <span className="brand">{zh('tv_brand')}</span>
                     <Clock zh={zh} />
-                    <span className={`live ${stale ? 'stale' : 'ok'}`}><i />{zh(stale ? 'tv_stale' : 'tv_live', { time })}</span>
+                    {stale
+                        ? <span className="live stale"><i />{zh('tv_stale', { time })}</span>
+                        : weather && (
+                            <span className="weather">
+                                {weather.temp}°
+                                <span className={weather.rain >= TV_RAIN_ALERT_PERCENT ? 'wet' : ''}>{zh('tv_rain')} {weather.rain}%</span>
+                            </span>
+                        )}
                 </div>
 
                 <div className="main">

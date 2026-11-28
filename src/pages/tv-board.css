@@ -132,3 +132,7 @@
 .tv-root .top .live i { width: 1.4cqh; height: 1.4cqh; }
 /* No notice: centre the output block so the spare space becomes even margins, not one empty band. */
 .tv-root .no-notice .output { justify-content: center; }
+/* Current weather replaces the "live" label; the red stale warning takes the same spot when data stops. */
+.tv-root .top .weather { color: var(--tv-fg); font-variant-numeric: tabular-nums; display: inline-flex; align-items: baseline; gap: 1.4cqw; }
+.tv-root .top .weather span { color: var(--tv-fg2); }
+.tv-root .top .weather span.wet { color: #5aa9ff; }
