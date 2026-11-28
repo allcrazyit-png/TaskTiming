@@ -130,3 +130,5 @@
 .tv-root .top .clock { color: var(--tv-fg); }
 .tv-root .top .live { font-size: 2.8cqh; }
 .tv-root .top .live i { width: 1.4cqh; height: 1.4cqh; }
+/* No notice: centre the output block so the spare space becomes even margins, not one empty band. */
+.tv-root .no-notice .output { justify-content: center; }
