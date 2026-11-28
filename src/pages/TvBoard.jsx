@@ -189,7 +189,7 @@ export default function TvBoard() {
         );
     };
     const cell = (value, key, hot = false, extra = '') => (
-        <div className={`cell ${extra}`}><div className={`v ${hot ? 'hot' : ''}`}>{fmt(value)}</div><div className="k">{zh(key)}<em>{vi(key)} · {id(key)}</em></div></div>
+        <div className={`cell ${extra}`}><div className={`v ${hot ? 'hot' : ''}`}>{fmt(value)}</div><div className="k">{zh(key)}<em><span>{vi(key)}</span><span>{id(key)}</span></em></div></div>
     );
     const kpi = (value, unit, key) => (
         <div className="kpi"><div className="v">{value}<small>{unit}</small></div><div className="k">{zh(key)}<em>{vi(key)} · {id(key)}</em></div></div>

@@ -118,3 +118,6 @@
 .tv-root .missing-alert .tr-line { font-size: 2.4cqh; line-height: 1.35; color: rgba(255,255,255,.88); }
 .tv-root .missing-alert.flash { animation: tv-missing-flash 1s step-end infinite; }
 @keyframes tv-missing-flash { 50% { background: #000; box-shadow: inset 0 0 0 .4cqh var(--tv-accent); } }
+.tv-root .cell .k em span + span::before { content: ' · '; }
+.tv-root .cell.key-defect .k em span { display: block; }
+.tv-root .cell.key-defect .k em span + span::before { content: none; }
