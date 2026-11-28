@@ -28,3 +28,12 @@ test('public board returns aggregates and trilingual notice text only', () => {
   for (const field of ['content', 'content_vi', 'content_id']) assert.match(fnBody, new RegExp(`'${field}'`));
   for (const leak of ['operator_label', 'operator_name', 'part_number', 'product_name', 'live_feed']) assert.doesNotMatch(fnBody, new RegExp(leak));
 });
+
+test('today-only board no longer sums every record', async () => {
+  const next = await readFile(new URL('../supabase/migrations/20261128_public_board_today_only.sql', import.meta.url), 'utf8');
+  assert.doesNotMatch(next, /cumulative/i);
+  assert.match(next, /where work_date = v_today/);
+  assert.match(next, /security definer/i);
+  assert.match(next, /errcode = '28000'/i);
+  assert.match(next, /grant execute on function public\.task_timing_public_board\(text\) to anon, authenticated/i);
+});

@@ -4,14 +4,13 @@ import { useTranslation } from 'react-i18next';
 import usePublicBoard from '../hooks/usePublicBoard';
 import useScreenWakeLock from '../hooks/useScreenWakeLock';
 import { getDutyRosterEmployeeId, getWeeklyDutyRoster } from '../utils/dutyRoster';
-import { formatClock, getMilestoneProgress, getNoticeDisplayMs, nextNoticeIndex, TV_NOTICE_HOLD_MS } from '../utils/tvBoard';
+import { formatClock, getNoticeDisplayMs, nextNoticeIndex, TV_NOTICE_HOLD_MS } from '../utils/tvBoard';
 import TvNews from '../components/TvNews';
 import './tv-board.css';
 
 const fmt = n => Number(n).toLocaleString('en-US');
 const hhmm = d => (d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '--:--');
 const GAP = '\u3000';
-const kfmt = n => (n >= 1e6 ? `${n / 1e6}M` : `${n / 1e3}K`);
 
 // Development-only fixtures (#/tv?preview=two|long|none|stale|key|connecting), mirroring tv-board-preview.html.
 const PREVIEW_NOTICES = {
@@ -27,7 +26,7 @@ function previewState(mode) {
     if (mode === 'key') return { status: 'keyError', data: null, lastSuccessAt: null, stale: false };
     if (mode === 'connecting') return { status: 'connecting', data: null, lastSuccessAt: null, stale: false };
     const data = {
-        today: '', todayGoodCount: 1240, todayOperators: 5, avgEfficiency: 102, todayRecordCount: 8, cumulativeTotal: 488221,
+        today: '', todayGoodCount: 1240, todayOperators: 5, avgEfficiency: 102, todayRecordCount: 8,
         todayDefects: { missing: 6, deform: 3, appearance: 12, other: 2 },
         notices: PREVIEW_NOTICES[mode] ?? (mode === 'none' ? [] : PREVIEW_NOTICES.two),
     };
@@ -139,7 +138,6 @@ export default function TvBoard() {
 
     const { data, stale, lastSuccessAt } = state;
     const hasNotices = data.notices.length > 0;
-    const mile = getMilestoneProgress(data.cumulativeTotal);
     const d = data.todayDefects;
     const defectTotal = d.missing + d.deform + d.appearance + d.other;
     const roster = getWeeklyDutyRoster(now);
@@ -179,14 +177,6 @@ export default function TvBoard() {
                             {kpi(fmt(data.todayOperators), zh('tv_unit_people'), 'tv_operators')}
                             {kpi(data.avgEfficiency, '%', 'tv_efficiency')}
                             {kpi(fmt(data.todayRecordCount), zh('tv_unit_records'), 'tv_uploads')}
-                        </div>
-                        <div className="mile">
-                            <Eyebrow label={L('tv_cumulative')} />
-                            <div className="line">
-                                <span className="now">{fmt(data.cumulativeTotal)}</span>
-                                <span className="goal">{mile.allDone ? zh('tv_all_done') : zh('tv_to_next', { target: kfmt(mile.next), remaining: fmt(mile.remaining) })}</span>
-                            </div>
-                            <div className="track"><b style={{ width: `${mile.percent}%` }} /></div>
                         </div>
                     </section>
                 </div>
