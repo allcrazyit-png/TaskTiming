@@ -23,3 +23,13 @@ test('battle report is an authenticated aggregate instead of a full-table browse
   assert.match(sql, /count\(distinct operator_id\)/i);
   assert.match(sql, /limit 15/i);
 });
+
+test('battle report no longer sums every record ever uploaded', async () => {
+  const migration = await readFile(new URL('../supabase/migrations/20261128_battle_report_today_only.sql', import.meta.url), 'utf8');
+  for (const text of [sql, migration]) {
+    const fn = text.slice(text.indexOf('function public.task_timing_battle_report('));
+    assert.doesNotMatch(fn.slice(0, fn.indexOf('$$;')), /cumulative|\btotals\b/i);
+  }
+  assert.match(migration, /where work_date = p_today/i);
+  assert.match(migration, /grant execute on function public\.task_timing_battle_report\(date\) to authenticated/i);
+});

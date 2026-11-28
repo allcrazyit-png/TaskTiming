@@ -64,11 +64,7 @@ stable
 security invoker
 set search_path = public
 as $$
-  with totals as (
-    select coalesce(sum(good_count), 0)::bigint as cumulative_total
-    from public.task_timing_records
-  ),
-  today_records as (
+  with today_records as (
     select *
     from public.task_timing_records
     where work_date = p_today
@@ -126,7 +122,6 @@ as $$
     ) latest
   )
   select jsonb_build_object(
-    'cumulative_total', totals.cumulative_total,
     'today_good_count', today_summary.today_good_count,
     'today_record_count', today_summary.today_record_count,
     'today_operator_count', today_summary.today_operator_count,
@@ -137,7 +132,7 @@ as $$
     'today_defect_other', today_summary.today_defect_other,
     'live_feed', live_feed.records
   )
-  from totals, today_summary, live_feed;
+  from today_summary, live_feed;
 $$;
 
 revoke all on function public.task_timing_battle_report(date) from public, anon;

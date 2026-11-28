@@ -15,7 +15,6 @@ import { fetchTaskTimingBattleReport } from '../services/taskTimingRecords';
 
 import { efficiencyGaugePoint } from '../utils/efficiencyGauge';
 
-const MILESTONES = [10000, 50000, 100000, 500000, 1000000];
 
 
 function getLocalDateString() {
@@ -176,7 +175,7 @@ function DutyRoster({ t, roster, isExpanded, onToggle }) {
 }
 
 export default function BattleReport() {
-    const { t, i18n } = useTranslation();
+    const { t } = useTranslation();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [report, setReport] = useState(null);
@@ -202,7 +201,7 @@ export default function BattleReport() {
                         { start_date: todayStr, end_date: null, content: '組裝前請確認卡扣完整。\n發現缺料請先隔離，並通知領班。', content_vi: 'Trước khi lắp ráp, hãy kiểm tra ngàm cài còn nguyên vẹn.\nNếu phát hiện thiếu liệu, hãy tách riêng sản phẩm và báo cho tổ trưởng.', content_id: 'Sebelum perakitan, periksa keutuhan kait pengunci.\nJika ditemukan bagian yang kurang bahan, pisahkan produk dan laporkan kepada kepala regu.' },
                         { start_date: todayStr, end_date: todayStr, content: '下班前請清潔工作桌，並將工具歸位。', content_vi: 'Trước khi tan ca, hãy vệ sinh bàn làm việc và cất dụng cụ đúng chỗ.', content_id: 'Sebelum pulang, bersihkan meja kerja dan kembalikan alat ke tempatnya.' },
                     ]);
-                    setReport({ cumulativeTotal: 488221, todayGoodCount: 1240, todayRecordCount: 8, todayOperators: 5, avgEfficiency: 102, todayDefects: { missing: 6, deform: 3, appearance: 12, other: 2 } });
+                    setReport({ todayGoodCount: 1240, todayRecordCount: 8, todayOperators: 5, avgEfficiency: 102, todayDefects: { missing: 6, deform: 3, appearance: 12, other: 2 } });
                     return;
                 }
                 const accessToken = await getTaskTimingAccessToken({ signal: controller.signal });
@@ -226,33 +225,12 @@ export default function BattleReport() {
         return () => controller.abort();
     }, [todayStr, isPreview]);
 
-    const cumulativeTotal = report?.cumulativeTotal ?? 0;
     const todayGoodCount = report?.todayGoodCount ?? 0;
     const todayRecordCount = report?.todayRecordCount ?? 0;
     const todayOperators = report?.todayOperators ?? 0;
     const avgEfficiency = report?.avgEfficiency ?? 0;
     const defects = report?.todayDefects;
     const totalDefects = defects ? Object.values(defects).reduce((sum, count) => sum + count, 0) : null;
-
-    // Language-aware number formatter
-    const formatSmallNumber = (n) => {
-        const lang = i18n.language;
-        if (lang === 'zh') {
-            if (n >= 10000) return `${(n / 10000).toFixed(1)}萬`;
-            return n.toLocaleString();
-        } else {
-            if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
-            if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
-            return n.toLocaleString();
-        }
-    };
-
-    // Milestone logic
-    const nextMilestone = MILESTONES.find(m => m > cumulativeTotal) ?? MILESTONES[MILESTONES.length - 1];
-    const prevMilestone = [...MILESTONES].reverse().find(m => m <= cumulativeTotal) ?? 0;
-    const progressPct = nextMilestone > prevMilestone
-        ? Math.min(100, ((cumulativeTotal - prevMilestone) / (nextMilestone - prevMilestone)) * 100)
-        : 100;
 
     let gaugeColor = '#ef4444';
     if (avgEfficiency >= 90) gaugeColor = '#f59e0b';
@@ -356,64 +334,6 @@ export default function BattleReport() {
                         </div>
                         {defects?.other > 0 && <p className="rounded-xl bg-slate-50 p-3 text-base font-bold dark:bg-slate-800">{t('br_defect_other')}：{defects.other.toLocaleString()} {t('br_defect_unit')}</p>}
                         {(todayRecordCount === 0 || totalDefects === 0 || !defects) && <p className="text-base font-bold text-slate-500 dark:text-slate-400">{todayRecordCount === 0 ? t('br_no_records') : !defects ? t('br_defect_unavailable') : t('br_defect_none')}</p>}
-                    </section>
-
-                    {/* === SECTION 1: Cumulative Milestone === */}
-                    <section className="bg-white dark:bg-slate-900 rounded-2xl shadow-md border-t-4 border-primary p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-base font-black flex items-center gap-2 text-slate-800 dark:text-white">
-                                    <span className="material-symbols-outlined text-xl text-primary">emoji_events</span>
-                                    {t('br_total_achievement')}
-                                </h2>
-                                <p className="text-xs text-slate-400 font-medium mt-0.5">{t('br_milestone_sub')}</p>
-                            </div>
-                            <div className="bg-primary/10 border border-primary/30 px-3 py-1 rounded-full">
-                                <span className="text-primary font-black text-sm">{progressPct.toFixed(1)}%</span>
-                            </div>
-                        </div>
-
-                        {/* Big count */}
-                        <div className="flex items-baseline gap-2">
-                            <span className="text-4xl font-black text-primary leading-none">
-                                {cumulativeTotal.toLocaleString()}
-                            </span>
-                            <span className="text-base font-bold text-slate-400">{t('br_unit_pcs')}</span>
-                            <span className="text-xs text-slate-400 ml-auto font-medium">↗ {t('br_target_label')} {nextMilestone.toLocaleString()} {t('br_unit_pcs')}</span>
-                        </div>
-
-                        {/* Progress bar */}
-                        <div className="relative h-4 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                                className="h-full bg-primary rounded-full transition-all duration-700"
-                                style={{ width: `${progressPct}%` }}
-                            />
-                        </div>
-
-                        {/* Milestone badges */}
-                        <div className="flex gap-2 flex-wrap pt-1">
-                            {MILESTONES.map(m => {
-                                const done = cumulativeTotal >= m;
-                                const isCurrent = m === nextMilestone;
-                                return (
-                                    <div key={m}
-                                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-black border transition-all ${done
-                                            ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700 text-yellow-600 dark:text-yellow-400'
-                                            : isCurrent
-                                                ? 'bg-primary/10 border-primary/30 text-primary'
-                                                : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400'
-                                            }`}>
-                                        {done
-                                            ? <span className="material-symbols-outlined text-[13px]">check_circle</span>
-                                            : isCurrent
-                                                ? <span className="material-symbols-outlined text-[13px] animate-pulse">radio_button_unchecked</span>
-                                                : <span className="material-symbols-outlined text-[13px]">lock</span>
-                                        }
-                                        {formatSmallNumber(m)}
-                                    </div>
-                                );
-                            })}
-                        </div>
                     </section>
 
 

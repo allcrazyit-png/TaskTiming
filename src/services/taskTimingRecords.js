@@ -7,7 +7,6 @@ const asNumber = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 export function mapTaskTimingBattleReport(payload = {}) {
   const liveFeed = Array.isArray(payload.live_feed) ? payload.live_feed : [];
   return {
-    cumulativeTotal: asNumber(payload.cumulative_total),
     todayGoodCount: asNumber(payload.today_good_count),
     todayRecordCount: asNumber(payload.today_record_count),
     todayOperators: asNumber(payload.today_operator_count),
