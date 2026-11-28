@@ -106,18 +106,18 @@
 .tv-root .screen:has(.tv-news) .mile .line { margin-top: .8cqh; }
 .tv-root .screen:has(.tv-news) .track { margin-top: .8cqh; }
 
-/* Missing parts is the critical defect: listed first, larger, the only red cell. */
-.tv-root .head { display: flex; flex-direction: column; gap: 1.6cqh; }
+/* Missing parts is the critical defect: listed first, larger, the only red cell.
+   When it is above 0 the cell becomes a red box that also says what to do. */
 .tv-root .cell.key-defect .v { font-size: 6.4cqh; line-height: 1; }
 .tv-root .cell.key-defect .k { color: var(--tv-fg); font-weight: 500; }
-.tv-root .missing-alert { display: flex; align-items: center; gap: 1.6cqw; background: var(--tv-accent); color: #fff;
-  border-radius: .8cqh; padding: 1.2cqh 2cqw; }
-.tv-root .missing-alert .mark { flex: 0 0 auto; width: 5.4cqh; height: 5.4cqh; border-radius: 50%; background: #fff; color: var(--tv-accent);
-  display: grid; place-items: center; font-size: 3.8cqh; font-weight: 700; }
-.tv-root .missing-alert .zh-line { font-size: 3.4cqh; font-weight: 600; line-height: 1.25; }
-.tv-root .missing-alert .tr-line { font-size: 2.4cqh; line-height: 1.35; color: rgba(255,255,255,.88); }
-.tv-root .missing-alert.flash { animation: tv-missing-flash 1s step-end infinite; }
-@keyframes tv-missing-flash { 50% { background: #000; box-shadow: inset 0 0 0 .4cqh var(--tv-accent); } }
 .tv-root .cell .k em span + span::before { content: ' · '; }
 .tv-root .cell.key-defect .k em span { display: block; }
 .tv-root .cell.key-defect .k em span + span::before { content: none; }
+.tv-root .cell.key-defect.alerting { margin: -1.2cqh 0 -1.2cqh -1.2cqw; padding: 1.2cqh 1.2cqw;
+  border: .3cqh solid var(--tv-accent); border-radius: .8cqh; background: rgba(232,33,39,.14); }
+.tv-root .cell.key-defect .action { margin-top: .8cqh; font-size: 2.4cqh; font-weight: 600; color: #ff5a5f; white-space: nowrap; }
+.tv-root .cell.key-defect .action em { display: block; font-style: normal; font-weight: 400; font-size: 1.9cqh; color: #ff8a8d; }
+.tv-root .cell.key-defect.flash { animation: tv-missing-flash 1s step-end infinite; }
+@keyframes tv-missing-flash { 50% { background: var(--tv-accent); } }
+.tv-root .cell.key-defect.flash .v, .tv-root .cell.key-defect.flash .action, .tv-root .cell.key-defect.flash .action em { animation: tv-missing-text 1s step-end infinite; }
+@keyframes tv-missing-text { 50% { color: #fff; } }

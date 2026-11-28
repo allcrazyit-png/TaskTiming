@@ -35,30 +35,29 @@ function previewState(mode) {
 
 const MISSING_FLASH_MS = 10_000;
 
-// Flashes when the missing count rises (including the first time it appears), then stays solid.
-function MissingAlert({ count, zh, vi, id }) {
-    const barRef = useRef(null);
+// The critical defect cell. When missing parts appear it turns into a red box with the action to take,
+// and flashes for 10 s each time the count rises.
+function MissingCell({ count, zh, vi, id }) {
+    const cellRef = useRef(null);
     const previous = useRef(0);
     const flashUntil = useRef(0);
     useEffect(() => {
         if (count > previous.current) flashUntil.current = Date.now() + MISSING_FLASH_MS;
         previous.current = count;
-        const bar = barRef.current;
+        const cell = cellRef.current;
         const remaining = flashUntil.current - Date.now();
-        if (!bar || remaining <= 0) return undefined;
-        bar.classList.add('flash');
-        const timer = setTimeout(() => bar.classList.remove('flash'), remaining);
-        return () => { clearTimeout(timer); bar.classList.remove('flash'); };
+        if (!cell || remaining <= 0) return undefined;
+        cell.classList.add('flash');
+        const timer = setTimeout(() => cell.classList.remove('flash'), remaining);
+        return () => { clearTimeout(timer); cell.classList.remove('flash'); };
     }, [count]);
-    if (count <= 0) return null;
+    const key = 'tv_defect_missing';
+    const alerting = count > 0;
     return (
-        <div className="missing-alert" role="alert" ref={barRef}>
-            <span className="mark">!</span>
-            <div>
-                <p className="zh-line">{zh('tv_missing_alert', { count })}</p>
-                <p className="tr-line">{vi('tv_missing_alert', { count })}</p>
-                <p className="tr-line">{id('tv_missing_alert', { count })}</p>
-            </div>
+        <div className={`cell key-defect ${alerting ? 'alerting' : ''}`} ref={cellRef} role={alerting ? 'alert' : undefined}>
+            <div className={`v ${alerting ? 'hot' : ''}`}>{fmt(count)}</div>
+            <div className="k">{zh(key)}<em><span>{vi(key)}</span><span>{id(key)}</span></em></div>
+            {alerting && <div className="action">{zh('tv_missing_action')}<em>{vi('tv_missing_action')} · {id('tv_missing_action')}</em></div>}
         </div>
     );
 }
@@ -188,8 +187,8 @@ export default function TvBoard() {
             </div>
         );
     };
-    const cell = (value, key, hot = false, extra = '') => (
-        <div className={`cell ${extra}`}><div className={`v ${hot ? 'hot' : ''}`}>{fmt(value)}</div><div className="k">{zh(key)}<em><span>{vi(key)}</span><span>{id(key)}</span></em></div></div>
+    const cell = (value, key) => (
+        <div className="cell"><div className="v">{fmt(value)}</div><div className="k">{zh(key)}<em><span>{vi(key)}</span><span>{id(key)}</span></em></div></div>
     );
     const kpi = (value, unit, key) => (
         <div className="kpi"><div className="v">{value}<small>{unit}</small></div><div className="k">{zh(key)}<em>{vi(key)} · {id(key)}</em></div></div>
@@ -198,13 +197,10 @@ export default function TvBoard() {
     return (
         <div className="tv-root"><div className="stage">
             <div className={`screen ${hasNotices ? 'with-notice' : 'no-notice'}`}>
-                <div className="head">
                 <div className="top">
                     <span className="brand">{zh('tv_brand')}</span>
                     <Clock zh={zh} />
                     <span className={`live ${stale ? 'stale' : 'ok'}`}><i />{zh(stale ? 'tv_stale' : 'tv_live', { time })}</span>
-                </div>
-                <MissingAlert count={d.missing} zh={zh} vi={vi} id={id} />
                 </div>
 
                 <div className="main">
@@ -224,7 +220,7 @@ export default function TvBoard() {
                     <div>
                         <Eyebrow label={L('tv_defects')} />
                         <div className="row">
-                            {cell(d.missing, 'tv_defect_missing', d.missing > 0, 'key-defect')}
+                            <MissingCell count={d.missing} zh={zh} vi={vi} id={id} />
                             <span className="divider" />
                             {cell(d.deform, 'tv_defect_deform')}
                             {cell(d.appearance, 'tv_defect_appearance')}
