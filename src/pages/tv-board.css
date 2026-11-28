@@ -123,9 +123,3 @@
 .tv-root .strip .eyebrow:has(.missing-action) { display: flex; justify-content: space-between; align-items: baseline; gap: 2cqw; }
 .tv-root .missing-action { color: #ff5a5f; font-size: 2.6cqh; font-weight: 600; letter-spacing: .02em; text-transform: none; white-space: nowrap; }
 .tv-root .missing-action em { font-style: normal; font-weight: 400; font-size: 2cqh; color: #ff8a8d; margin-left: .8cqw; }
-/* No notice: the output numbers fill the column the old milestone bar used to take. */
-.tv-root .screen.no-notice:has(.tv-news) .hero { font-size: 21cqh; }
-.tv-root .screen.no-notice:has(.tv-news) .kpi .v { font-size: 7.2cqh; }
-.tv-root .screen.no-notice:not(:has(.tv-news)) .hero { font-size: 25cqh; }
-.tv-root .screen.no-notice:not(:has(.tv-news)) .kpi .v { font-size: 8.4cqh; }
-.tv-root .screen.no-notice:not(:has(.tv-news)) .kpi .k { font-size: 3.4cqh; }
